@@ -440,7 +440,7 @@ textarea.fc{resize:vertical;min-height:72px;}
         <button class="btn btn-accent" type="button" onclick="startVoiceJob()">🎙️ Dicter un job</button>
         <button class="btn btn-ghost" type="button" onclick="stopVoiceJob()">⏹ Arrêter</button>
       </div>
-      <div class="voice-status" id="voice-status">Dis dans n’importe quel ordre : « urgent, demain 8h, durée 4 heures, client Tremblay, route 117, remplacement poteau ».</div>
+      <div class="voice-status" id="voice-status">Dis dans n’importe quel ordre : « urgent, demain 8h, durée 4 heures, client Tremblay, téléphone 514 123-4567, courriel client@exemple.com, route 117, notification texto et courriel, remplacement poteau ».</div>
       <textarea class="fc" id="voice-text" style="margin-top:10px;min-height:76px" placeholder="Option terrain : dicte ici avec le micro du clavier, puis touche Analyser."></textarea>
       <button class="btn btn-blue btn-full" type="button" style="margin-top:10px" onclick="analyzeVoiceText()">🧠 Analyser et remplir les champs</button>
     </div>
@@ -453,8 +453,23 @@ textarea.fc{resize:vertical;min-height:72px;}
     </div>
     <div class="form-row">
       <div class="fg"><label class="fl">Téléphone client</label><input class="fc" id="f-client-phone" type="tel" placeholder="514 123-4567"></div>
-      <div class="fg"><label class="fl">Notification</label><select class="fc" id="f-notify"><option value="yes">Texto lors d’un report</option><option value="no">Ne pas notifier</option></select></div>
+      <div class="fg"><label class="fl">Courriel client</label><input class="fc" id="f-client-email" type="email" placeholder="client@exemple.com"></div>
     </div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Notification</label><select class="fc" id="f-notify">
+        <option value="sms">Texto lors d’un report</option>
+        <option value="email">Courriel lors d’un report</option>
+        <option value="both">Texto + courriel</option>
+        <option value="no">Ne pas notifier</option>
+      </select></div>
+      <div class="fg"><label class="fl">Type de travail</label><input class="fc" id="f-type" placeholder="ex: Montage lignes" list="type-suggestions"></div>
+      <datalist id="type-suggestions">
+        <option value="Montage lignes"><option value="Paysagement"><option value="Construction">
+        <option value="Toiture"><option value="Excavation"><option value="Électricité">
+        <option value="Émondage"><option value="Soudure"><option value="Inspection">
+      </datalist>
+    </div>
+
 
     <div class="form-row">
       <div class="fg"><label class="fl">Type de travail</label><input class="fc" id="f-type" placeholder="ex: Montage lignes" list="type-suggestions"></div>
@@ -490,6 +505,7 @@ textarea.fc{resize:vertical;min-height:72px;}
       <div class="fg"><label class="fl">🌡 Temp max (°C)</label><input class="fc" id="f-tmax" type="number" placeholder="35"></div>
     </div>
 
+    <div class="fg"><label class="fl">Rappel / Équipement</label><input class="fc" id="f-reminder" placeholder="ex: nacelle, camion, appeler avant départ"></div>
     <div class="fg"><label class="fl">Notes terrain</label><textarea class="fc" id="f-notes" placeholder="Accès restreint, équipement spécial..."></textarea></div>
 
     <div class="form-actions">
@@ -565,13 +581,15 @@ textarea.fc{resize:vertical;min-height:72px;}
 <div class="sheet-ov" id="sh-sms" onclick="closeOv(event,'sh-sms')">
   <div class="sheet">
     <div class="sh-handle"></div>
-    <div class="sh-title">📲 Texto au client</div>
+    <div class="sh-title">📲 Notification au client</div>
     <div class="sh-sub" id="sms-sub">Message préparé</div>
     <div class="sms-preview" id="sms-preview">—</div>
     <div class="sms-log" id="sms-log">Le site prépare le texto. L’envoi réel doit être confirmé dans Messages/SMS.</div>
     <div style="display:flex;gap:10px;margin-top:14px;flex-direction:column">
       <a class="btn btn-accent btn-full" id="sms-open" href="#">📲 Ouvrir le texto</a>
       <button class="btn btn-ghost btn-full" onclick="copySMSMessage()">📋 Copier le message</button>
+      <a class="btn btn-blue btn-full" id="email-open" href="#" style="display:none">📧 Ouvrir le courriel</a>
+      <button class="btn btn-ghost btn-full" id="email-copy" onclick="copyEmailBody()" style="display:none">📋 Copier le courriel</button>
       <button class="btn btn-ghost btn-full" onclick="closeSheet('sh-sms')">Fermer</button>
     </div>
   </div>
@@ -901,7 +919,6 @@ function jobCard(job,compact=false){
     schedTag=`<span class="jc-sched-tag">📅 ${sd2} · ${fmtH(sched.startHour)}–${fmtH(sched.startHour+job.dur)}</span>`;
   }
 
-  const canCf=al.s==='risk'||al.s==='danger';
   const actBar=`<div class="act-bar">
     <button class="act-btn ab-blue" onclick="openReport(${job.id})"><span class="ai">📅</span>Reporter</button>
     <button class="act-btn ab-green" onclick="addToCalendar(${job.id})"><span class="ai">📅</span>Mettre au calendrier</button>
@@ -913,7 +930,6 @@ function jobCard(job,compact=false){
     <button class="btn-xs" onclick="prefillEdit(${job.id})">✏️ Modifier</button>
     <button class="btn-xs" onclick="openEditTime(${job.id})">⏱ Heure</button>
     <button class="btn-xs" onclick="reschedule(${job.id})">🔄 Replanifier</button>
-    ${canCf?`<button class="btn-xs" onclick="openConfirm(${job.id})" style="border-color:rgba(245,158,11,.4);color:var(--risk)">⚡ Confirmer risque</button>`:''}
   </div>`;
 
   const isRep=job.reportedTo,isCf=job.confirmed;
@@ -1398,7 +1414,7 @@ function doQuickCreate(){
   const prio=document.getElementById('qc-prio').value;
 
   const job={
-    id:Date.now(),name,client:'',clientPhone:'',notifyClient:false,place:'',type,dur,prio,
+    id:Date.now(),name,client:'',clientPhone:'',clientEmail:'',notifyMode:'no',notifyClient:false,place:'',type,dur,prio,
     deadline:'',prefer:'',
     maxWind:50,maxRain:5,minTemp:-5,maxTemp:35,notes:''
   };
@@ -1508,8 +1524,8 @@ function setPrio(v,el){
   el.classList.add('sel-'+v);
 }
 function resetForm(){
-  ['f-name','f-client','f-place','f-client-phone','f-notes','f-deadline','f-prefer','f-type'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-notify').value='yes';
+  ['f-name','f-client','f-place','f-client-phone','f-client-email','f-reminder','f-notes','f-deadline','f-prefer','f-type','voice-text'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-notify').value='sms';
   document.getElementById('f-dur').value='';
   document.getElementById('f-wind').value='50';
   document.getElementById('f-rain').value='5';
@@ -1524,7 +1540,9 @@ function createJob(autoPlan){
     id:Date.now(),name,
     client:document.getElementById('f-client').value.trim()||'N/A',
     clientPhone:document.getElementById('f-client-phone').value.trim(),
-    notifyClient:document.getElementById('f-notify').value==='yes',
+    clientEmail:document.getElementById('f-client-email').value.trim(),
+    notifyMode:document.getElementById('f-notify').value||'sms',
+    notifyClient:document.getElementById('f-notify').value!=='no',
     place:document.getElementById('f-place').value.trim(),
     type:document.getElementById('f-type').value.trim()||'Autre',
     dur:+document.getElementById('f-dur').value||4,
@@ -1536,6 +1554,7 @@ function createJob(autoPlan){
     minTemp:+document.getElementById('f-tmin').value||(-5),
     maxTemp:+document.getElementById('f-tmax').value||35,
     notes:document.getElementById('f-notes').value.trim(),
+    reminder:document.getElementById('f-reminder').value.trim(),
   };
   jobs.push(job);
   if(autoPlan){
@@ -1553,7 +1572,8 @@ function prefillEdit(id){
   document.getElementById('f-name').value=j.name;
   document.getElementById('f-client').value=j.client;
   document.getElementById('f-client-phone').value=j.clientPhone||'';
-  document.getElementById('f-notify').value=j.notifyClient===false?'no':'yes';
+  document.getElementById('f-client-email').value=j.clientEmail||'';
+  document.getElementById('f-notify').value=j.notifyMode||(j.notifyClient===false?'no':'sms');
   document.getElementById('f-place').value=j.place||'';
   document.getElementById('f-type').value=j.type;
   document.getElementById('f-dur').value=j.dur;
@@ -1564,6 +1584,7 @@ function prefillEdit(id){
   document.getElementById('f-tmin').value=j.minTemp;
   document.getElementById('f-tmax').value=j.maxTemp;
   document.getElementById('f-notes').value=j.notes||'';
+  document.getElementById('f-reminder').value=j.reminder||'';
   const pIdx={urgent:3,high:2,med:1,low:0};
   setPrio(j.prio,document.querySelectorAll('#tab-add .prio-opt')[pIdx[j.prio]||1]);
   jobs=jobs.filter(jj=>jj.id!==id);
@@ -1620,11 +1641,14 @@ function openDetail(jobId){
     <div class="det-row"><span class="det-l">🔧 Type</span><span>${j.type}</span></div>
     <div class="det-row"><span class="det-l">📍 Lieu</span><span>${j.place||'—'}</span></div>
     <div class="det-row"><span class="det-l">📲 Téléphone client</span><span>${j.clientPhone||'—'}</span></div>
+    <div class="det-row"><span class="det-l">📧 Courriel client</span><span>${j.clientEmail||'—'}</span></div>
+    <div class="det-row"><span class="det-l">🔔 Notification</span><span>${j.notifyMode||'no'}</span></div>
     <div class="det-row"><span class="det-l">🎯 Priorité</span><span>${prioLabel(j.prio)}</span></div>
     <div class="det-row"><span class="det-l">📅 Échéance</span><span>${fmtDeadline(j.deadline)}</span></div>
     <div class="det-row"><span class="det-l">💨 Vent max</span><span>${j.maxWind} km/h</span></div>
     <div class="det-row"><span class="det-l">🌧 Pluie max</span><span>${j.maxRain} mm</span></div>
     <div class="det-row"><span class="det-l">🌡 Temp</span><span>${j.minTemp}°→${j.maxTemp}°C</span></div>
+    ${j.reminder?`<div class="det-row"><span class="det-l">⏰ Rappel</span><span>${j.reminder}</span></div>`:''}
     ${j.notes?`<div class="det-row"><span class="det-l">📝 Notes</span><span>${j.notes}</span></div>`:''}
     ${al.v.length?`<div style="margin-top:10px" class="conf-warn">⚠️ ${al.v.join(' · ')}</div>`:''}
   `;
@@ -1724,8 +1748,12 @@ function fillJobFromVoice(text){
   else if(lower.includes('aujourd')){d=today();}
   const weekdays={dimanche:0,lundi:1,mardi:2,mercredi:3,jeudi:4,vendredi:5,samedi:6};
   Object.keys(weekdays).forEach(day=>{if(lower.includes(day))d=nextWeekday(weekdays[day]);});
+
+  const monthMap={janvier:0,janv:0,fevrier:1,fevr:1,fev:1,mars:2,avril:3,avr:3,mai:4,juin:5,juillet:6,juil:6,aout:7,septembre:8,sept:8,octobre:9,oct:9,novembre:10,nov:10,decembre:11,dec:11};
+  const longDate=lower.match(/(?:samedi|dimanche|lundi|mardi|mercredi|jeudi|vendredi)?\s*(?:le\s*)?(\d{1,2})\s+(janvier|janv|fevrier|fevr|fev|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)\s+(\d{4})/);
+  if(longDate)d=new Date(Number(longDate[3]),monthMap[longDate[2]],Number(longDate[1]));
   const dateMatch=lower.match(/(?:le\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
-  if(dateMatch){
+  if(!d && dateMatch){
     const now=today();
     let year=dateMatch[3]?Number(dateMatch[3]):now.getFullYear();
     if(year<100)year+=2000;
@@ -1738,25 +1766,42 @@ function fillJobFromVoice(text){
   else if(/priorite basse|\bbasse\b|pas urgent/.test(lower)) setPrio('low',document.querySelectorAll('#tab-add .prio-opt')[0]);
   else if(/moyen|moyenne|normal/.test(lower)) setPrio('med',document.querySelectorAll('#tab-add .prio-opt')[1]);
 
-  const client=extractFirst(raw,[
-    /(?:client|chez)\s+([A-Za-zÀ-ÿ0-9 .'\-]{2,40})(?=\s+(?:a|à|au|aux|sur|secteur|route|rue|boulevard|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|durée|duree|urgent|priorité|priorite|$))/i
+  const phone=extractFirst(raw,[
+    /(?:tel|tél|telephone|téléphone|cell|cellulaire)\s*[:\-]?\s*([+\d][\d\s().-]{7,20})/i,
+    /\b((?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}))\b/
   ]);
-  if(client)setInput('f-client',client);
-
-  const phone=extractFirst(raw,[/(?:tel|tél|telephone|téléphone|cell|cellulaire)\s*[:\-]?\s*([+\d][\d\s().-]{7,20})/i]);
   if(phone)setInput('f-client-phone',phone);
 
-  const place=extractFirst(raw,[
-    /(?:lieu|adresse|secteur|zone)\s+([A-Za-zÀ-ÿ0-9 .'\-]{3,60})(?=\s+(?:client|chez|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|durée|duree|urgent|priorité|priorite|$))/i,
-    /(?:sur|a|à|au|aux)\s+((?:route|rue|rang|chemin|boulevard|boul\.?|avenue|secteur)\s+[A-Za-zÀ-ÿ0-9 .'\-]{2,50})(?=\s+(?:client|chez|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|durée|duree|urgent|priorité|priorite|$))/i
+  const email=extractFirst(raw,[
+    /\b([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\b/i,
+    /(?:courriel|email|mail)\s*[:\-]?\s*([^\s,;]+@[^\s,;]+)/i
   ]);
+  if(email)setInput('f-client-email',email);
+
+  if(/texto\s+et\s+courriel|courriel\s+et\s+texto|sms\s+et\s+courriel|courriel\s+et\s+sms/.test(lower)) document.getElementById('f-notify').value='both';
+  else if(/courriel|email|mail/.test(lower) && /notification|notifie|notifier|avise|aviser/.test(lower)) document.getElementById('f-notify').value='email';
+  else if(/texto|sms/.test(lower) && /notification|notifie|notifier|avise|aviser/.test(lower)) document.getElementById('f-notify').value='sms';
+  else if(/ne pas notifier|pas de notification|aucune notification/.test(lower)) document.getElementById('f-notify').value='no';
+
+  let client=extractFirst(raw,[
+    /(?:client|chez)\s+([^,.\n]+?)(?=\s*(?:,|\.|\bau\b|\bà\b|\ba\b|\ben\b|\bau\s+\d|\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|demain|samedi|dimanche|lundi|mardi|mercredi|jeudi|vendredi|duree|durée|priorite|priorité|$))/i
+  ]);
+  client=client.replace(/^monsieur\s+|^mme\s+|^madame\s+/i,'').trim();
+  if(client)setInput('f-client',client);
+
+  let place=extractFirst(raw,[
+    /(?:adresse|lieu|secteur|zone)\s+([^,.\n]+)(?=\s*(?:,|\.|telephone|téléphone|tel|cell|duree|durée|priorite|priorité|$))/i,
+    /(?:au|a|à)\s+((?:\d+\s+)?[A-Za-zÀ-ÿ0-9'\- ]+(?:rue|route|rang|chemin|boulevard|boul\.?|avenue|av\.?|saint\-?[A-Za-zÀ-ÿ'\- ]+)?[^,.\n]*)(?=\s*(?:,|\.|\b514\b|\b438\b|\b450\b|telephone|téléphone|tel|cell|duree|durée|priorite|priorité|$))/i,
+    /\b(\d+\s+[A-Za-zÀ-ÿ0-9'\- ]+(?:saint\-?[A-Za-zÀ-ÿ'\- ]+)?)(?=\s*(?:,|\.|\b514\b|\b438\b|\b450\b|telephone|téléphone|tel|cell|duree|durée|priorite|priorité|$))/i
+  ]);
+  place=place.replace(/^au\s+/i,'').trim();
   if(place)setInput('f-place',place);
 
   const typeMap=[
-    ['Montage lignes',['montage ligne','montage lignes','ligne','lignes','poteau','poteaux']],
+    ['Montage lignes',['montage ligne','montage lignes','ligne','lignes','poteau','poteaux','phare','phares','transfer','transfert']],
     ['Toiture',['toiture','toit','bardeau']],
     ['Excavation',['excavation','creusage','tranchee','tranchée']],
-    ['Électricité',['electricite','électricité','electrique','électrique']],
+    ['Électricité',['electricite','électricité','electrique','électrique','phare','phares']],
     ['Émondage',['emondage','émondage','arbre','branches']],
     ['Inspection',['inspection','inspecter','verification','vérification']],
     ['Construction',['construction','beton','béton','fondation']],
@@ -1766,19 +1811,33 @@ function fillJobFromVoice(text){
     if(keys.some(k=>lower.includes(normalizeVoiceText(k)))){setInput('f-type',label);break;}
   }
 
+  const reminder=extractFirst(raw,[
+    /(?:rappel|equipement|équipement|materiel|matériel)\s*(?:de|du|des|pour)?\s*([^\.\n]+)/i
+  ]);
+  if(reminder)setInput('f-reminder',reminder);
+
+  let notes='';
+  const noteMatch=raw.match(/(?:note|notes|notification)\s*(?:de|du|des|pour)?\s*([^\.\n]+)/i);
+  if(noteMatch) notes=noteMatch[1].trim();
+  if(notes)setInput('f-notes',notes);
+
   let name=raw;
   const cleanup=[
     /\b(?:demain|après-demain|apres demain|aujourd'hui|aujourdhui|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/ig,
+    /\b(?:le\s+\d{1,2}\s+(?:janvier|janv|fevrier|fevr|fev|mars|avril|avr|mai|juin|juillet|juil|aout|septembre|sept|octobre|oct|novembre|nov|decembre|dec)\s+\d{4})\b/ig,
     /\b(?:urgent|urgence|priorité haute|priorite haute|priorité basse|priorite basse|haute|basse|moyenne|normal)\b/ig,
     /(?:durée|duree|pour|pendant)?\s*\d+(?:[\.,]\d+)?\s*(?:h|heure|heures)\b/ig,
     /(?:\bà\b|\ba\b|vers|pour)?\s*\d{1,2}(?:\s*h\s*\d{0,2}|:\d{2}|\s*heures?\s*\d{0,2})\b/ig,
-    /(?:client|chez)\s+[A-Za-zÀ-ÿ0-9 .'\-]{2,40}/ig,
+    /(?:client|chez)\s+[^,.\n]+/ig,
     /(?:tel|tél|telephone|téléphone|cell|cellulaire)\s*[:\-]?\s*[+\d][\d\s().-]{7,20}/ig,
-    /(?:lieu|adresse|secteur|zone)\s+[A-Za-zÀ-ÿ0-9 .'\-]{3,60}/ig
+    /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})\b/g,
+    /(?:adresse|lieu|secteur|zone|au|a|à)\s+[^,.\n]+/ig,
+    /(?:note|notes|notification)\s*(?:de|du|des|pour)?\s*[^\.\n]+/ig
   ];
   cleanup.forEach(re=>name=name.replace(re,' '));
   name=name.replace(/\s+/g,' ').replace(/^[,;.\- ]+|[,;.\- ]+$/g,'').trim();
   if(!name && document.getElementById('f-type').value)name=document.getElementById('f-type').value;
+  if(name.length>80)name=name.slice(0,80).trim();
   if(name)setInput('f-name',name);
 
   setVoiceStatus('🧠 Analyse terminée : champs remplis. Vérifie, ajuste au besoin, puis crée le job.');
@@ -1789,6 +1848,8 @@ function fillJobFromVoice(text){
 // SMS / REPORT NOTIFICATION
 // ════════════════════════════════════════════
 let lastSMSMessage='';
+let lastEmailBody='';
+let lastEmailSubject='';
 function cleanPhone(p){return String(p||'').replace(/[^0-9+]/g,'');}
 function prettyDateTime(dateStr,hour){
   if(!dateStr)return 'date à confirmer';
@@ -1802,15 +1863,52 @@ function buildReportSMS(job,oldDate,oldHour,newDate,newHour,label){
   const reason=document.getElementById('rp-note')?.value?.trim();
   return `Bonjour${job.client&&job.client!=='N/A'?' '+job.client:''},\n\nLes travaux « ${job.name} » prévus ${oldTxt} sont reportés au ${newTxt}.${reason?'\n\nRaison : '+reason:''}\n\nMerci.`;
 }
+function buildReportEmailSubject(job){
+  return `Mise à jour - ${job.name}`;
+}
+function buildReportEmailBody(job,oldDate,oldHour,newDate,newHour,label){
+  const oldTxt=oldDate?prettyDateTime(oldDate,oldHour):'la date prévue';
+  const newTxt=newDate?prettyDateTime(newDate,newHour):label;
+  const reason=document.getElementById('rp-note')?.value?.trim();
+  return `Bonjour${job.client&&job.client!=='N/A'?' '+job.client:''},\n\nLes travaux « ${job.name} » prévus ${oldTxt} sont reportés au ${newTxt}.${reason?'\n\nRaison : '+reason:''}\n\nMerci.`;
+}
+function updateNotifySheetEmail(job,oldDate,oldHour,newDate,newHour,label){
+  const emailBtn=document.getElementById('email-open');
+  const emailCopy=document.getElementById('email-copy');
+  if((job.notifyMode==='email' || job.notifyMode==='both') && job.clientEmail){
+    lastEmailSubject=buildReportEmailSubject(job);
+    lastEmailBody=buildReportEmailBody(job,oldDate,oldHour,newDate,newHour,label);
+    emailBtn.style.display='flex';
+    emailCopy.style.display='block';
+    emailBtn.href=`mailto:${job.clientEmail}?subject=${encodeURIComponent(lastEmailSubject)}&body=${encodeURIComponent(lastEmailBody)}`;
+  } else {
+    lastEmailSubject='';
+    lastEmailBody='';
+    emailBtn.style.display='none';
+    emailCopy.style.display='none';
+    emailBtn.href='#';
+  }
+}
 function prepareReportSMS(job,oldDate,oldHour,newDate,newHour,label){
-  if(!job.clientPhone){toast('📲 Aucun téléphone client dans ce job','var(--risk)');return;}
-  const phone=cleanPhone(job.clientPhone);
   const msg=buildReportSMS(job,oldDate,oldHour,newDate,newHour,label);
   lastSMSMessage=msg;
-  document.getElementById('sms-sub').textContent=`À : ${job.clientPhone}`;
+  document.getElementById('sms-sub').textContent=`Notification préparée pour ${job.client||'le client'}`;
   document.getElementById('sms-preview').textContent=msg;
-  document.getElementById('sms-open').href=`sms:${phone}?&body=${encodeURIComponent(msg)}`;
+  const smsBtn=document.getElementById('sms-open');
+  if((job.notifyMode==='sms' || job.notifyMode==='both') && job.clientPhone){
+    const phone=cleanPhone(job.clientPhone);
+    smsBtn.style.display='flex';
+    smsBtn.href=`sms:${phone}?&body=${encodeURIComponent(msg)}`;
+  } else {
+    smsBtn.style.display='none';
+    smsBtn.href='#';
+  }
+  updateNotifySheetEmail(job,oldDate,oldHour,newDate,newHour,label);
   openSheet('sh-sms');
+}
+function copyEmailBody(){
+  if(!lastEmailBody)return;
+  navigator.clipboard?.writeText(`Sujet: ${lastEmailSubject}\n\n${lastEmailBody}`).then(()=>toast('📋 Courriel copié','var(--accent)')).catch(()=>alert(lastEmailBody));
 }
 function copySMSMessage(){
   if(!lastSMSMessage)return;
@@ -1829,7 +1927,7 @@ function openReport(jobId){
   const j=jobs.find(j=>j.id===jobId);
   document.getElementById('rp-name').textContent=j.name;
   document.getElementById('rp-note').value='';
-  document.getElementById('rp-notify-client').checked=(j.notifyClient!==false);
+  document.getElementById('rp-notify-client').checked=(j.notifyMode||'sms')!=='no' && (j.notifyClient!==false);
   document.getElementById('rp-custom-date').value='';
   const ev=schedule.find(e=>e.jobId===jobId);
   document.getElementById('rp-custom-hour').value=ev?ev.startHour:'';
@@ -1895,7 +1993,15 @@ function doReport(){
 
   closeSheet('sh-report');renderAll();
   toast(`📅 Reporté → ${label}${targetDate?' à '+fmtH(startHour):''}`,'var(--blue)');
-  if(document.getElementById('rp-notify-client').checked){prepareReportSMS(j, oldDate, oldHour, targetDate, startHour, label);}
+  if(document.getElementById('rp-notify-client').checked && j.notifyMode!=='no'){
+    if((j.notifyMode==='sms' || j.notifyMode==='both') && !j.clientPhone && (j.notifyMode!=='email')){
+      toast('📲 Pas de téléphone client pour envoyer un texto','var(--risk)');
+    } else if((j.notifyMode==='email' || j.notifyMode==='both') && !j.clientEmail && (j.notifyMode!=='sms')){
+      toast('📧 Pas de courriel client pour préparer le courriel','var(--risk)');
+    } else {
+      prepareReportSMS(j, oldDate, oldHour, targetDate, startHour, label);
+    }
+  }
 }
 
 

@@ -382,6 +382,18 @@ textarea.fc{resize:vertical;min-height:72px;}
     <input id="ics-import" type="file" accept=".ics,text/calendar" style="display:none" onchange="importICSFile(event)">
   </div>
 
+  <div class="import-box">
+    <div class="import-title">⚙️ Réglage calendrier</div>
+    <div class="import-sub">Choisis où SmartPlan envoie un job quand tu cliques sur "Mettre au calendrier".</div>
+    <div class="fg" style="margin-bottom:0">
+      <label class="fl">Destination par défaut</label>
+      <select class="fc" id="calendar-target" onchange="saveCalendarTarget()">
+        <option value="google">Google Calendar</option>
+        <option value="ics">Apple / iPhone / Outlook (.ics)</option>
+      </select>
+    </div>
+  </div>
+
   <div class="view-toggle">
     <button class="vt-btn active" id="vt-day" onclick="setView('day')">📆 Jour</button>
     <button class="vt-btn" id="vt-week" onclick="setView('week')">📅 7 jours</button>
@@ -650,6 +662,7 @@ const FX = [
 
 let schedule = [];
 let externalEvents = JSON.parse(localStorage.getItem('smartplan_external_events')||'[]');
+let calendarTarget = localStorage.getItem('smartplan_calendar_target') || 'google';
 
 let jobs = [
   {id:1,name:"Remplacement poteaux Sect.4",client:"Hydro-Québec",place:"Secteur Nord",type:"Montage lignes",dur:6,prio:"urgent",deadline:"2026-05-02T16:00",prefer:"",maxWind:40,maxRain:0,minTemp:-10,maxTemp:35,notes:""},
@@ -858,8 +871,8 @@ function jobCard(job,compact=false){
   const canCf=al.s==='risk'||al.s==='danger';
   const actBar=`<div class="act-bar">
     <button class="act-btn ab-blue" onclick="openReport(${job.id})"><span class="ai">📅</span>Reporter</button>
-    <button class="act-btn ab-green" onclick="addToGoogleCalendar(${job.id})"><span class="ai">📅</span>Google</button>
-    <button class="act-btn ab-yellow" onclick="downloadICS(${job.id})"><span class="ai">📲</span>iPhone</button>
+    <button class="act-btn ab-green" onclick="sendToCalendar(${job.id})"><span class="ai">📅</span>Mettre au calendrier</button>
+    <button class="act-btn ab-yellow" onclick="openEditTime(${job.id})"><span class="ai">⏱</span>Heure</button>
     <button class="act-btn ab-red" onclick="confirmDelete(${job.id})"><span class="ai">🗑</span>Supprimer</button>
   </div>`;
 
@@ -1501,8 +1514,8 @@ function openDetail(jobId){
   `;
   document.getElementById('dt-acts').innerHTML=`
     <button class="act-btn ab-blue" onclick="closeSheet('sh-detail');openEditTime(${j.id})"><span class="ai">⏱</span>Heure</button>
-    <button class="act-btn ab-green" onclick="addToGoogleCalendar(${j.id})"><span class="ai">📅</span>Google</button>
-    <button class="act-btn ab-yellow" onclick="downloadICS(${j.id})"><span class="ai">📲</span>iPhone</button>
+    <button class="act-btn ab-green" onclick="sendToCalendar(${j.id})"><span class="ai">📅</span>Mettre au calendrier</button>
+    <button class="act-btn ab-yellow" onclick="reschedule(${j.id})"><span class="ai">🔄</span>Replanifier</button>
     <button class="act-btn ab-red" onclick="confirmDelete(${j.id})"><span class="ai">🗑</span>Supprimer</button>
   `;
   openSheet('sh-detail');
@@ -1588,6 +1601,26 @@ function doConfirm(){
   toast('✅ Job confirmé — soyez prudents!','var(--risk)');
 }
 
+
+
+// ════════════════════════════════════════════
+// CALENDAR TARGET SETTINGS
+// ════════════════════════════════════════════
+function saveCalendarTarget(){
+  const sel=document.getElementById('calendar-target');
+  if(!sel) return;
+  calendarTarget=sel.value||'google';
+  localStorage.setItem('smartplan_calendar_target',calendarTarget);
+  toast(calendarTarget==='google'?'⚙️ Destination: Google Calendar':'⚙️ Destination: fichier .ics','var(--blue)');
+}
+function applyCalendarTargetUI(){
+  const sel=document.getElementById('calendar-target');
+  if(sel) sel.value=calendarTarget;
+}
+function sendToCalendar(jobId){
+  if(calendarTarget==='ics') return downloadICS(jobId);
+  return addToGoogleCalendar(jobId);
+}
 
 // ════════════════════════════════════════════
 // CALENDAR EXPORT — Google Calendar + iPhone/Apple/Outlook (.ics)
@@ -1738,6 +1771,7 @@ function goTab(name){
 // ════════════════════════════════════════════
 initSchedule();
 renderAll();
+applyCalendarTargetUI();
 setInterval(()=>{if(document.getElementById('tab-cal').classList.contains('active')&&calView==='day')renderDayView();},60000);
 </script>
 </body>

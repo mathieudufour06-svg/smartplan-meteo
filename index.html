@@ -231,7 +231,7 @@ textarea.fc{resize:vertical;min-height:72px;}
 .jc-meta{display:flex;gap:14px;font-size:14px;color:var(--muted);font-family:var(--fm);margin-top:11px;flex-wrap:wrap;line-height:1.5;}
 .jc-sched-tag{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-family:var(--fm);padding:5px 12px;border-radius:20px;margin-top:8px;background:rgba(0,212,170,.12);color:var(--accent);border:1px solid rgba(0,212,170,.25);}
 
-.act-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
+.act-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px;}
 .act-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:13px 4px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:var(--fd);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;min-height:70px;}
 .act-btn:active{transform:scale(.96);}
 .act-btn .ai{font-size:24px;}
@@ -304,7 +304,6 @@ textarea.fc{resize:vertical;min-height:72px;}
 .live-dot{display:inline-block;width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 2s infinite;margin-right:5px;}
 
 @media(max-width:520px){
-  .act-bar{grid-template-columns:1fr 1fr;}
   .form-row{grid-template-columns:1fr;}
   .fx-grid{grid-template-columns:1fr;}
   .prio-grid{grid-template-columns:1fr 1fr;}
@@ -834,8 +833,8 @@ function jobCard(job,compact=false){
   const canCf=al.s==='risk'||al.s==='danger';
   const actBar=`<div class="act-bar">
     <button class="act-btn ab-blue" onclick="openReport(${job.id})"><span class="ai">📅</span>Reporter</button>
-    <button class="act-btn ab-green" onclick="openReplace(${job.id})"><span class="ai">🔄</span>Remplacer</button>
-    <button class="act-btn ab-yellow" onclick="downloadICS(${job.id})"><span class="ai">📲</span>Calendrier</button>
+    <button class="act-btn ab-green" onclick="addToGoogleCalendar(${job.id})"><span class="ai">📅</span>Google</button>
+    <button class="act-btn ab-yellow" onclick="downloadICS(${job.id})"><span class="ai">📲</span>iPhone</button>
     <button class="act-btn ab-red" onclick="confirmDelete(${job.id})"><span class="ai">🗑</span>Supprimer</button>
   </div>`;
 
@@ -1388,8 +1387,8 @@ function openDetail(jobId){
   `;
   document.getElementById('dt-acts').innerHTML=`
     <button class="act-btn ab-blue" onclick="closeSheet('sh-detail');openEditTime(${j.id})"><span class="ai">⏱</span>Heure</button>
-    <button class="act-btn ab-green" onclick="closeSheet('sh-detail');reschedule(${j.id})"><span class="ai">🔄</span>Replanifier</button>
-    <button class="act-btn ab-yellow" onclick="downloadICS(${j.id})"><span class="ai">📲</span>Calendrier</button>
+    <button class="act-btn ab-green" onclick="addToGoogleCalendar(${j.id})"><span class="ai">📅</span>Google</button>
+    <button class="act-btn ab-yellow" onclick="downloadICS(${j.id})"><span class="ai">📲</span>iPhone</button>
     <button class="act-btn ab-red" onclick="confirmDelete(${j.id})"><span class="ai">🗑</span>Supprimer</button>
   `;
   openSheet('sh-detail');
@@ -1477,50 +1476,95 @@ function doConfirm(){
 
 
 // ════════════════════════════════════════════
-// CALENDAR EXPORT (.ICS) — Apple / Google / Outlook
+// CALENDAR EXPORT — Google Calendar + iPhone/Apple/Outlook (.ics)
 // ════════════════════════════════════════════
-function pad2(n){return String(n).padStart(2,'0');}
-function icsEscape(s){
-  return String(s||'')
+function getJobCalendarInfo(jobId){
+  const job=jobs.find(j=>j.id===jobId);
+  if(!job) return null;
+
+  const ev=schedule.find(e=>e.jobId===jobId);
+  let dateStr,startHour;
+
+  if(ev){
+    dateStr=ev.date;
+    startHour=ev.startHour;
+  } else if(job.prefer){
+    dateStr=job.prefer.split('T')[0];
+    startHour=job.prefer.includes('T') ? Number(job.prefer.split('T')[1].split(':')[0]) + Number(job.prefer.split('T')[1].split(':')[1]||0)/60 : 8;
+  } else if(job.deadline){
+    dateStr=job.deadline.split('T')[0];
+    startHour=8;
+  } else {
+    dateStr=ds(today());
+    startHour=8;
+  }
+
+  const dur=Number(job.dur)||1;
+  const title=job.name||'Job SmartPlan';
+  const location=[job.place,job.client].filter(Boolean).join(' · ');
+  const description=[
+    `Type: ${job.type||'—'}`,
+    `Priorité: ${job.prio||'—'}`,
+    `Durée: ${dur}h`,
+    `Tolérance météo: vent ≤${job.maxWind} km/h, pluie ≤${job.maxRain} mm, temp ${job.minTemp}° à ${job.maxTemp}°C`,
+    job.notes?`Notes: ${job.notes}`:''
+  ].filter(Boolean).join('\n');
+
+  return {job,dateStr,startHour,dur,title,location,description};
+}
+
+function dateFromLocalHour(dateStr,hour){
+  const h=Math.floor(hour);
+  const m=Math.round((hour-h)*60);
+  const d=new Date(`${dateStr}T00:00:00`);
+  d.setHours(h,m,0,0);
+  return d;
+}
+
+function googleDate(d){
+  return d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+}
+
+function icsDate(d){
+  return googleDate(d);
+}
+
+function icsEscape(text){
+  return String(text||'')
     .replace(/\\/g,'\\\\')
     .replace(/\n/g,'\\n')
     .replace(/,/g,'\\,')
     .replace(/;/g,'\\;');
 }
-function toICSDateLocal(dateStr, hour){
-  const d = sd(dateStr || ds(today()));
-  const h = Math.floor(hour || 8);
-  const m = Math.round(((hour || 8) - h) * 60);
-  return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}T${pad2(h)}${pad2(m)}00`;
-}
-function toICSStampUTC(d=new Date()){
-  return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-}
-function safeFileName(s){
-  return String(s||'smartplan-job').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'smartplan-job';
-}
-function downloadICS(jobId){
-  const job = jobs.find(j=>j.id===jobId);
-  if(!job){toast('Job introuvable','var(--danger)');return;}
-  const ev = schedule.find(e=>e.jobId===jobId);
-  const dateStr = ev?.date || (job.prefer ? job.prefer.split('T')[0] : ds(today()));
-  const startHour = ev?.startHour ?? (job.prefer && job.prefer.includes('T') ? Number(job.prefer.split('T')[1].split(':')[0]) : 8);
-  const endHour = startHour + (Number(job.dur)||1);
-  const title = `SmartPlan - ${job.name}`;
-  const location = job.place || '';
-  const description = [
-    job.client ? `Client: ${job.client}` : '',
-    job.type ? `Type: ${job.type}` : '',
-    job.prio ? `Priorité: ${job.prio}` : '',
-    `Durée: ${job.dur || 1}h`,
-    job.notes ? `Notes: ${job.notes}` : '',
-    `Créé avec SmartPlan Météo`
-  ].filter(Boolean).join('\\n');
 
-  const uid = `smartplan-${job.id}-${Date.now()}@smartplan-meteo`;
-  const ics = [
+function safeFileName(text){
+  return String(text||'smartplan-job').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'') || 'smartplan-job';
+}
+
+function addToGoogleCalendar(jobId){
+  const info=getJobCalendarInfo(jobId);
+  if(!info){toast('Job introuvable','var(--danger)');return;}
+  const start=dateFromLocalHour(info.dateStr,info.startHour);
+  const end=new Date(start.getTime()+info.dur*60*60*1000);
+  const url='https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text=' + encodeURIComponent(info.title)
+    + '&dates=' + googleDate(start) + '/' + googleDate(end)
+    + '&location=' + encodeURIComponent(info.location)
+    + '&details=' + encodeURIComponent(info.description);
+  window.open(url,'_blank');
+  toast('📅 Ouverture Google Calendar','var(--accent)');
+}
+
+function downloadICS(jobId){
+  const info=getJobCalendarInfo(jobId);
+  if(!info){toast('Job introuvable','var(--danger)');return;}
+  const start=dateFromLocalHour(info.dateStr,info.startHour);
+  const end=new Date(start.getTime()+info.dur*60*60*1000);
+  const uid=`smartplan-${info.job.id}-${Date.now()}@smartplan-meteo`;
+  const ics=[
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//SmartPlan Meteo//FR',
@@ -1528,25 +1572,25 @@ function downloadICS(jobId){
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${uid}`,
-    `DTSTAMP:${toICSStampUTC()}`,
-    `DTSTART:${toICSDateLocal(dateStr,startHour)}`,
-    `DTEND:${toICSDateLocal(dateStr,endHour)}`,
-    `SUMMARY:${icsEscape(title)}`,
-    `LOCATION:${icsEscape(location)}`,
-    `DESCRIPTION:${icsEscape(description)}`,
+    `DTSTAMP:${icsDate(new Date())}`,
+    `DTSTART:${icsDate(start)}`,
+    `DTEND:${icsDate(end)}`,
+    `SUMMARY:${icsEscape(info.title)}`,
+    `LOCATION:${icsEscape(info.location)}`,
+    `DESCRIPTION:${icsEscape(info.description)}`,
     'END:VEVENT',
     'END:VCALENDAR'
   ].join('\r\n');
 
-  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${safeFileName(job.name)}.ics`;
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${safeFileName(info.title)}.ics`;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('📲 Fichier calendrier créé (.ics)','var(--accent)');
 }
 

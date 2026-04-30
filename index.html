@@ -307,6 +307,17 @@ textarea.fc{resize:vertical;min-height:72px;}
 .import-actions{display:flex;gap:8px;flex-wrap:wrap;}
 .import-count{font-size:14px;color:#93c5fd;font-family:var(--fm);margin-top:8px;}
 
+
+/* ══════ NOTIFICATIONS / VOICE ══════ */
+.voice-box{background:var(--s2);border:1px solid rgba(0,212,170,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;}
+.voice-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.voice-status{font-size:14px;color:var(--muted);font-family:var(--fm);line-height:1.4;margin-top:8px;}
+.voice-live{color:var(--accent);}
+.sms-preview{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;font-family:var(--fm);font-size:14px;line-height:1.45;white-space:pre-wrap;color:var(--text);margin:12px 0;max-height:220px;overflow:auto;}
+.sms-log{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:11px 13px;color:#bfdbfe;font-size:14px;font-family:var(--fm);line-height:1.4;margin-top:10px;}
+.check-line{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:16px;cursor:pointer;}
+.check-line input{width:20px;height:20px;accent-color:var(--accent);}
+
 /* ══════ TOAST ══════ */
 .toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;z-index:999;opacity:0;transition:all .3s cubic-bezier(.22,.68,0,1.2);box-shadow:0 8px 28px rgba(0,0,0,.55);max-width:90vw;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -424,11 +435,25 @@ textarea.fc{resize:vertical;min-height:72px;}
   <div class="form-card">
     <div class="sec-title" style="margin-bottom:16px">📋 Nouveau job</div>
 
+    <div class="voice-box">
+      <div class="voice-row">
+        <button class="btn btn-accent" type="button" onclick="startVoiceJob()">🎙️ Dicter un job</button>
+        <button class="btn btn-ghost" type="button" onclick="stopVoiceJob()">⏹ Arrêter</button>
+      </div>
+      <div class="voice-status" id="voice-status">Dis dans n’importe quel ordre : « urgent, demain 8h, durée 4 heures, client Tremblay, route 117, remplacement poteau ».</div>
+      <textarea class="fc" id="voice-text" style="margin-top:10px;min-height:76px" placeholder="Option terrain : dicte ici avec le micro du clavier, puis touche Analyser."></textarea>
+      <button class="btn btn-blue btn-full" type="button" style="margin-top:10px" onclick="analyzeVoiceText()">🧠 Analyser et remplir les champs</button>
+    </div>
+
     <div class="fg"><label class="fl">Nom du job *</label><input class="fc" id="f-name" placeholder="ex: Remplacement poteaux Sect.4"></div>
 
     <div class="form-row">
       <div class="fg"><label class="fl">Client</label><input class="fc" id="f-client" placeholder="Hydro-Québec"></div>
       <div class="fg"><label class="fl">Lieu / Zone</label><input class="fc" id="f-place" placeholder="Route 117 Nord"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Téléphone client</label><input class="fc" id="f-client-phone" type="tel" placeholder="514 123-4567"></div>
+      <div class="fg"><label class="fl">Notification</label><select class="fc" id="f-notify"><option value="yes">Texto lors d’un report</option><option value="no">Ne pas notifier</option></select></div>
     </div>
 
     <div class="form-row">
@@ -523,10 +548,31 @@ textarea.fc{resize:vertical;min-height:72px;}
       <div class="dt-opt" onclick="selRepDate('wk')"><div class="dti">🗓</div><div class="dtl">Sem. prochaine</div><div class="dts">Lundi</div></div>
       <div class="dt-opt" onclick="selRepDate('nd')"><div class="dti">⏸</div><div class="dtl">Indéfini</div><div class="dts">En attente</div></div>
     </div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Date personnalisée</label><input class="fc" id="rp-custom-date" type="date" onchange="clearPresetReport()"></div>
+      <div class="fg"><label class="fl">Heure</label><input class="fc" id="rp-custom-hour" type="number" min="0" max="23.5" step="0.5" placeholder="8" onchange="clearPresetReport()"></div>
+    </div>
     <div class="fg" style="margin-bottom:14px"><label class="fl">Note</label><input class="fc" id="rp-note" placeholder="Raison..."></div>
+    <label class="check-line"><input type="checkbox" id="rp-notify-client" checked>📲 Préparer un texto au client après le report</label>
     <div style="display:flex;gap:10px">
       <button class="btn btn-ghost" onclick="closeSheet('sh-report')">Annuler</button>
       <button class="btn btn-blue btn-full" onclick="doReport()">📅 Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: TEXTO CLIENT -->
+<div class="sheet-ov" id="sh-sms" onclick="closeOv(event,'sh-sms')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">📲 Texto au client</div>
+    <div class="sh-sub" id="sms-sub">Message préparé</div>
+    <div class="sms-preview" id="sms-preview">—</div>
+    <div class="sms-log" id="sms-log">Le site prépare le texto. L’envoi réel doit être confirmé dans Messages/SMS.</div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-direction:column">
+      <a class="btn btn-accent btn-full" id="sms-open" href="#">📲 Ouvrir le texto</a>
+      <button class="btn btn-ghost btn-full" onclick="copySMSMessage()">📋 Copier le message</button>
+      <button class="btn btn-ghost btn-full" onclick="closeSheet('sh-sms')">Fermer</button>
     </div>
   </div>
 </div>
@@ -652,10 +698,10 @@ let schedule = [];
 let externalEvents = JSON.parse(localStorage.getItem('smartplan_external_events')||'[]');
 
 let jobs = [
-  {id:1,name:"Remplacement poteaux Sect.4",client:"Hydro-Québec",place:"Secteur Nord",type:"Montage lignes",dur:6,prio:"urgent",deadline:"2026-05-02T16:00",prefer:"",maxWind:40,maxRain:0,minTemp:-10,maxTemp:35,notes:""},
-  {id:2,name:"Émondage route 117",client:"MTQ",place:"Route 117",type:"Paysagement",dur:4,prio:"med",deadline:"2026-05-10T17:00",prefer:"",maxWind:60,maxRain:10,minTemp:0,maxTemp:38,notes:""},
-  {id:3,name:"Coulée béton fondation",client:"Constructions Martel",place:"Laval",type:"Construction",dur:8,prio:"high",deadline:"2026-04-30T18:00",prefer:"",maxWind:50,maxRain:2,minTemp:5,maxTemp:35,notes:""},
-  {id:4,name:"Panneaux solaires",client:"EcoSoleil",place:"Montréal",type:"Toiture",dur:5,prio:"low",deadline:"2026-05-20T17:00",prefer:"",maxWind:25,maxRain:0,minTemp:0,maxTemp:40,notes:""},
+  {id:1,name:"Remplacement poteaux Sect.4",client:"Hydro-Québec",place:"Secteur Nord",type:"Montage lignes",dur:6,prio:"urgent",deadline:"2026-05-02T16:00",prefer:"",maxWind:40,maxRain:0,minTemp:-10,maxTemp:35,notes:"",clientPhone:"",notifyClient:false},
+  {id:2,name:"Émondage route 117",client:"MTQ",place:"Route 117",type:"Paysagement",dur:4,prio:"med",deadline:"2026-05-10T17:00",prefer:"",maxWind:60,maxRain:10,minTemp:0,maxTemp:38,notes:"",clientPhone:"",notifyClient:false},
+  {id:3,name:"Coulée béton fondation",client:"Constructions Martel",place:"Laval",type:"Construction",dur:8,prio:"high",deadline:"2026-04-30T18:00",prefer:"",maxWind:50,maxRain:2,minTemp:5,maxTemp:35,notes:"",clientPhone:"",notifyClient:false},
+  {id:4,name:"Panneaux solaires",client:"EcoSoleil",place:"Montréal",type:"Toiture",dur:5,prio:"low",deadline:"2026-05-20T17:00",prefer:"",maxWind:25,maxRain:0,minTemp:0,maxTemp:40,notes:"",clientPhone:"",notifyClient:false},
 ];
 
 // ════════════════════════════════════════════
@@ -1352,7 +1398,7 @@ function doQuickCreate(){
   const prio=document.getElementById('qc-prio').value;
 
   const job={
-    id:Date.now(),name,client:'',place:'',type,dur,prio,
+    id:Date.now(),name,client:'',clientPhone:'',notifyClient:false,place:'',type,dur,prio,
     deadline:'',prefer:'',
     maxWind:50,maxRain:5,minTemp:-5,maxTemp:35,notes:''
   };
@@ -1462,7 +1508,8 @@ function setPrio(v,el){
   el.classList.add('sel-'+v);
 }
 function resetForm(){
-  ['f-name','f-client','f-place','f-notes','f-deadline','f-prefer','f-type'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-client','f-place','f-client-phone','f-notes','f-deadline','f-prefer','f-type'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-notify').value='yes';
   document.getElementById('f-dur').value='';
   document.getElementById('f-wind').value='50';
   document.getElementById('f-rain').value='5';
@@ -1476,6 +1523,8 @@ function createJob(autoPlan){
   const job={
     id:Date.now(),name,
     client:document.getElementById('f-client').value.trim()||'N/A',
+    clientPhone:document.getElementById('f-client-phone').value.trim(),
+    notifyClient:document.getElementById('f-notify').value==='yes',
     place:document.getElementById('f-place').value.trim(),
     type:document.getElementById('f-type').value.trim()||'Autre',
     dur:+document.getElementById('f-dur').value||4,
@@ -1503,6 +1552,8 @@ function prefillEdit(id){
   const j=jobs.find(jj=>jj.id===id);
   document.getElementById('f-name').value=j.name;
   document.getElementById('f-client').value=j.client;
+  document.getElementById('f-client-phone').value=j.clientPhone||'';
+  document.getElementById('f-notify').value=j.notifyClient===false?'no':'yes';
   document.getElementById('f-place').value=j.place||'';
   document.getElementById('f-type').value=j.type;
   document.getElementById('f-dur').value=j.dur;
@@ -1568,6 +1619,7 @@ function openDetail(jobId){
     <div class="det-row"><span class="det-l">⏱ Durée</span><span>${j.dur}h</span></div>
     <div class="det-row"><span class="det-l">🔧 Type</span><span>${j.type}</span></div>
     <div class="det-row"><span class="det-l">📍 Lieu</span><span>${j.place||'—'}</span></div>
+    <div class="det-row"><span class="det-l">📲 Téléphone client</span><span>${j.clientPhone||'—'}</span></div>
     <div class="det-row"><span class="det-l">🎯 Priorité</span><span>${prioLabel(j.prio)}</span></div>
     <div class="det-row"><span class="det-l">📅 Échéance</span><span>${fmtDeadline(j.deadline)}</span></div>
     <div class="det-row"><span class="det-l">💨 Vent max</span><span>${j.maxWind} km/h</span></div>
@@ -1585,6 +1637,186 @@ function openDetail(jobId){
   openSheet('sh-detail');
 }
 
+
+// ════════════════════════════════════════════
+// VOICE JOB ENTRY
+// ════════════════════════════════════════════
+let voiceRecognition=null;
+function setVoiceStatus(msg,live=false){
+  const el=document.getElementById('voice-status');
+  if(el){el.textContent=msg;el.classList.toggle('voice-live',!!live);}
+}
+function startVoiceJob(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    const box=document.getElementById('voice-text');
+    toast('🎙️ Utilise le micro du clavier, puis Analyser','var(--risk)');
+    setVoiceStatus('Dictée web non supportée ici. Clique dans la boîte, utilise le micro du clavier, puis touche “Analyser”.');
+    if(box)box.focus();
+    return;
+  }
+  voiceRecognition=new SR();
+  voiceRecognition.lang='fr-CA';
+  voiceRecognition.interimResults=false;
+  voiceRecognition.continuous=false;
+  voiceRecognition.onstart=()=>setVoiceStatus('🎙️ J’écoute… dis les infos dans l’ordre que tu veux.',true);
+  voiceRecognition.onerror=(e)=>{setVoiceStatus('Erreur micro : '+(e.error||'inconnue'));toast('Erreur micro','var(--danger)');};
+  voiceRecognition.onend=()=>setVoiceStatus('Dictée terminée. Tu peux corriger les champs avant de créer.');
+  voiceRecognition.onresult=(event)=>{
+    const text=event.results[0][0].transcript;
+    const box=document.getElementById('voice-text');
+    if(box)box.value=text;
+    setVoiceStatus('Compris : « '+text+' »');
+    fillJobFromVoice(text);
+  };
+  voiceRecognition.start();
+}
+function stopVoiceJob(){if(voiceRecognition){voiceRecognition.stop();voiceRecognition=null;setVoiceStatus('Dictée arrêtée.');}}
+function analyzeVoiceText(){
+  const text=(document.getElementById('voice-text')?.value||'').trim();
+  if(!text){toast('Écris ou dicte une phrase à analyser','var(--risk)');return;}
+  fillJobFromVoice(text);
+}
+function normalizeVoiceText(text){
+  return String(text||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[’']/g,"'")
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function nextWeekday(target){
+  const base=today();
+  let add=(target-base.getDay()+7)%7;
+  if(add===0)add=7;
+  base.setDate(base.getDate()+add);
+  return base;
+}
+function setInput(id,value){
+  const el=document.getElementById(id);
+  if(el && value!==undefined && value!==null && String(value).trim()!=='')el.value=String(value).trim();
+}
+function extractFirst(raw,patterns){
+  for(const re of patterns){
+    const m=raw.match(re);
+    if(m)return (m[1]||'').trim();
+  }
+  return '';
+}
+function fillJobFromVoice(text){
+  const raw=String(text||'').trim();
+  const lower=normalizeVoiceText(raw);
+  if(!raw)return;
+
+  const durMatch=lower.match(/(?:duree|durera|pour|pendant)?\s*(\d+(?:[\.,]\d+)?)\s*(?:h|heure|heures)\b/);
+  if(durMatch)setInput('f-dur',durMatch[1].replace(',','.'));
+
+  const timeMatch=lower.match(/(?:\ba\b|vers|pour|debut|debutant)?\s*(\d{1,2})(?:\s*h\s*(\d{2})?|:(\d{2})|\s*heures?\s*(\d{2})?)\b/);
+  let hour='08',mins='00';
+  if(timeMatch){
+    hour=String(Math.min(23,Number(timeMatch[1]))).padStart(2,'0');
+    mins=String(timeMatch[2]||timeMatch[3]||timeMatch[4]||'00').padStart(2,'0');
+  }
+
+  let d=null;
+  if(lower.includes('apres demain')){d=today();d.setDate(d.getDate()+2);}
+  else if(lower.includes('demain')){d=today();d.setDate(d.getDate()+1);}
+  else if(lower.includes('aujourd')){d=today();}
+  const weekdays={dimanche:0,lundi:1,mardi:2,mercredi:3,jeudi:4,vendredi:5,samedi:6};
+  Object.keys(weekdays).forEach(day=>{if(lower.includes(day))d=nextWeekday(weekdays[day]);});
+  const dateMatch=lower.match(/(?:le\s*)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+  if(dateMatch){
+    const now=today();
+    let year=dateMatch[3]?Number(dateMatch[3]):now.getFullYear();
+    if(year<100)year+=2000;
+    d=new Date(year,Number(dateMatch[2])-1,Number(dateMatch[1]));
+  }
+  if(d)setInput('f-prefer',ds(d)+'T'+hour+':'+mins);
+
+  if(/\burgent\b|\burgence\b/.test(lower)) setPrio('urgent',document.querySelectorAll('#tab-add .prio-opt')[3]);
+  else if(/priorite haute|\bhaute\b|important/.test(lower)) setPrio('high',document.querySelectorAll('#tab-add .prio-opt')[2]);
+  else if(/priorite basse|\bbasse\b|pas urgent/.test(lower)) setPrio('low',document.querySelectorAll('#tab-add .prio-opt')[0]);
+  else if(/moyen|moyenne|normal/.test(lower)) setPrio('med',document.querySelectorAll('#tab-add .prio-opt')[1]);
+
+  const client=extractFirst(raw,[
+    /(?:client|chez)\s+([A-Za-zÀ-ÿ0-9 .'\-]{2,40})(?=\s+(?:a|à|au|aux|sur|secteur|route|rue|boulevard|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|durée|duree|urgent|priorité|priorite|$))/i
+  ]);
+  if(client)setInput('f-client',client);
+
+  const phone=extractFirst(raw,[/(?:tel|tél|telephone|téléphone|cell|cellulaire)\s*[:\-]?\s*([+\d][\d\s().-]{7,20})/i]);
+  if(phone)setInput('f-client-phone',phone);
+
+  const place=extractFirst(raw,[
+    /(?:lieu|adresse|secteur|zone)\s+([A-Za-zÀ-ÿ0-9 .'\-]{3,60})(?=\s+(?:client|chez|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|durée|duree|urgent|priorité|priorite|$))/i,
+    /(?:sur|a|à|au|aux)\s+((?:route|rue|rang|chemin|boulevard|boul\.?|avenue|secteur)\s+[A-Za-zÀ-ÿ0-9 .'\-]{2,50})(?=\s+(?:client|chez|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|durée|duree|urgent|priorité|priorite|$))/i
+  ]);
+  if(place)setInput('f-place',place);
+
+  const typeMap=[
+    ['Montage lignes',['montage ligne','montage lignes','ligne','lignes','poteau','poteaux']],
+    ['Toiture',['toiture','toit','bardeau']],
+    ['Excavation',['excavation','creusage','tranchee','tranchée']],
+    ['Électricité',['electricite','électricité','electrique','électrique']],
+    ['Émondage',['emondage','émondage','arbre','branches']],
+    ['Inspection',['inspection','inspecter','verification','vérification']],
+    ['Construction',['construction','beton','béton','fondation']],
+    ['Paysagement',['paysagement','terrain','gazon']]
+  ];
+  for(const [label,keys] of typeMap){
+    if(keys.some(k=>lower.includes(normalizeVoiceText(k)))){setInput('f-type',label);break;}
+  }
+
+  let name=raw;
+  const cleanup=[
+    /\b(?:demain|après-demain|apres demain|aujourd'hui|aujourdhui|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/ig,
+    /\b(?:urgent|urgence|priorité haute|priorite haute|priorité basse|priorite basse|haute|basse|moyenne|normal)\b/ig,
+    /(?:durée|duree|pour|pendant)?\s*\d+(?:[\.,]\d+)?\s*(?:h|heure|heures)\b/ig,
+    /(?:\bà\b|\ba\b|vers|pour)?\s*\d{1,2}(?:\s*h\s*\d{0,2}|:\d{2}|\s*heures?\s*\d{0,2})\b/ig,
+    /(?:client|chez)\s+[A-Za-zÀ-ÿ0-9 .'\-]{2,40}/ig,
+    /(?:tel|tél|telephone|téléphone|cell|cellulaire)\s*[:\-]?\s*[+\d][\d\s().-]{7,20}/ig,
+    /(?:lieu|adresse|secteur|zone)\s+[A-Za-zÀ-ÿ0-9 .'\-]{3,60}/ig
+  ];
+  cleanup.forEach(re=>name=name.replace(re,' '));
+  name=name.replace(/\s+/g,' ').replace(/^[,;.\- ]+|[,;.\- ]+$/g,'').trim();
+  if(!name && document.getElementById('f-type').value)name=document.getElementById('f-type').value;
+  if(name)setInput('f-name',name);
+
+  setVoiceStatus('🧠 Analyse terminée : champs remplis. Vérifie, ajuste au besoin, puis crée le job.');
+  toast('🧠 Dictée analysée — champs remplis','var(--accent)');
+}
+
+// ════════════════════════════════════════════
+// SMS / REPORT NOTIFICATION
+// ════════════════════════════════════════════
+let lastSMSMessage='';
+function cleanPhone(p){return String(p||'').replace(/[^0-9+]/g,'');}
+function prettyDateTime(dateStr,hour){
+  if(!dateStr)return 'date à confirmer';
+  const d=sd(dateStr);
+  const date=d.toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  return hour!==null&&hour!==undefined?`${date} à ${fmtH(hour)}`:date;
+}
+function buildReportSMS(job,oldDate,oldHour,newDate,newHour,label){
+  const oldTxt=oldDate?prettyDateTime(oldDate,oldHour):'la date prévue';
+  const newTxt=newDate?prettyDateTime(newDate,newHour):label;
+  const reason=document.getElementById('rp-note')?.value?.trim();
+  return `Bonjour${job.client&&job.client!=='N/A'?' '+job.client:''},\n\nLes travaux « ${job.name} » prévus ${oldTxt} sont reportés au ${newTxt}.${reason?'\n\nRaison : '+reason:''}\n\nMerci.`;
+}
+function prepareReportSMS(job,oldDate,oldHour,newDate,newHour,label){
+  if(!job.clientPhone){toast('📲 Aucun téléphone client dans ce job','var(--risk)');return;}
+  const phone=cleanPhone(job.clientPhone);
+  const msg=buildReportSMS(job,oldDate,oldHour,newDate,newHour,label);
+  lastSMSMessage=msg;
+  document.getElementById('sms-sub').textContent=`À : ${job.clientPhone}`;
+  document.getElementById('sms-preview').textContent=msg;
+  document.getElementById('sms-open').href=`sms:${phone}?&body=${encodeURIComponent(msg)}`;
+  openSheet('sh-sms');
+}
+function copySMSMessage(){
+  if(!lastSMSMessage)return;
+  navigator.clipboard?.writeText(lastSMSMessage).then(()=>toast('📋 Message copié','var(--accent)')).catch(()=>alert(lastSMSMessage));
+}
+
 // ════════════════════════════════════════════
 // SHEETS
 // ════════════════════════════════════════════
@@ -1594,8 +1826,14 @@ function closeOv(e,id){if(e.target===document.getElementById(id))closeSheet(id);
 
 function openReport(jobId){
   activeJobId=jobId;selReportDate=null;
-  document.getElementById('rp-name').textContent=jobs.find(j=>j.id===jobId).name;
+  const j=jobs.find(j=>j.id===jobId);
+  document.getElementById('rp-name').textContent=j.name;
   document.getElementById('rp-note').value='';
+  document.getElementById('rp-notify-client').checked=(j.notifyClient!==false);
+  document.getElementById('rp-custom-date').value='';
+  const ev=schedule.find(e=>e.jobId===jobId);
+  document.getElementById('rp-custom-hour').value=ev?ev.startHour:'';
+  document.getElementById('rp-custom-date').min=ds(today());
   const t1=new Date();t1.setDate(t1.getDate()+1);
   const t2=new Date();t2.setDate(t2.getDate()+2);
   document.getElementById('dt-d1').textContent=t1.toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
@@ -1603,16 +1841,63 @@ function openReport(jobId){
   document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));
   openSheet('sh-report');
 }
-function selRepDate(v){selReportDate=v;document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));event.currentTarget.classList.add('sel');}
-function doReport(){
-  if(!selReportDate){toast('⚠️ Choisis une date','var(--risk)');return;}
-  const j=jobs.find(jj=>jj.id===activeJobId);
-  const lbls={d1:'demain',d2:'après-demain',wk:'sem. prochaine',nd:'indéfini'};
-  j.reportedTo=lbls[selReportDate];j.confirmed=false;
-  const note=document.getElementById('rp-note').value;if(note)j.reportNote=note;
-  closeSheet('sh-report');renderAll();
-  toast(`📅 Reporté → ${lbls[selReportDate]}`,'var(--blue)');
+function clearPresetReport(){
+  selReportDate=null;
+  document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));
 }
+function selRepDate(v){
+  selReportDate=v;
+  document.getElementById('rp-custom-date').value='';
+  document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));
+  event.currentTarget.classList.add('sel');
+}
+function nextMondayDate(){
+  const d=today();
+  const add=((8-d.getDay())%7)||7;
+  d.setDate(d.getDate()+add);
+  return d;
+}
+function doReport(){
+  const j=jobs.find(jj=>jj.id===activeJobId);
+  const customDate=document.getElementById('rp-custom-date').value;
+  const oldEv=schedule.find(e=>e.jobId===activeJobId);
+  const oldDate=oldEv?oldEv.date:null;
+  const oldHour=oldEv?oldEv.startHour:null;
+  const chosenHourRaw=document.getElementById('rp-custom-hour').value;
+  const startHour=chosenHourRaw!==''?Math.max(0,Math.min(23.5,+chosenHourRaw)):(oldEv?oldEv.startHour:8);
+  let targetDate=null;
+  let label='';
+
+  if(customDate){
+    targetDate=customDate;
+    const d=sd(customDate);
+    label=d.toLocaleDateString('fr-CA',{weekday:'long',month:'long',day:'numeric'});
+  } else {
+    if(!selReportDate){toast('⚠️ Choisis une date ou inscris une date personnalisée','var(--risk)');return;}
+    if(selReportDate==='d1'){const d=today();d.setDate(d.getDate()+1);targetDate=ds(d);label='demain';}
+    if(selReportDate==='d2'){const d=today();d.setDate(d.getDate()+2);targetDate=ds(d);label='après-demain';}
+    if(selReportDate==='wk'){const d=nextMondayDate();targetDate=ds(d);label='sem. prochaine';}
+    if(selReportDate==='nd'){label='indéfini';}
+  }
+
+  j.reportedTo=label;
+  j.confirmed=false;
+  const note=document.getElementById('rp-note').value;if(note)j.reportNote=note;
+
+  // Si une vraie date est choisie, on déplace aussi le job dans le calendrier.
+  if(targetDate){
+    schedule=schedule.filter(e=>e.jobId!==activeJobId);
+    schedule.push({jobId:activeJobId,date:targetDate,startHour:startHour});
+    calDate=sd(targetDate);
+  } else {
+    schedule=schedule.filter(e=>e.jobId!==activeJobId);
+  }
+
+  closeSheet('sh-report');renderAll();
+  toast(`📅 Reporté → ${label}${targetDate?' à '+fmtH(startHour):''}`,'var(--blue)');
+  if(document.getElementById('rp-notify-client').checked){prepareReportSMS(j, oldDate, oldHour, targetDate, startHour, label);}
+}
+
 
 function openReplace(jobId){
   activeJobId=jobId;

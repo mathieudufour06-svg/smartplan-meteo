@@ -382,18 +382,6 @@ textarea.fc{resize:vertical;min-height:72px;}
     <input id="ics-import" type="file" accept=".ics,text/calendar" style="display:none" onchange="importICSFile(event)">
   </div>
 
-  <div class="import-box">
-    <div class="import-title">⚙️ Réglage calendrier</div>
-    <div class="import-sub">Choisis où SmartPlan envoie un job quand tu cliques sur "Mettre au calendrier".</div>
-    <div class="fg" style="margin-bottom:0">
-      <label class="fl">Destination par défaut</label>
-      <select class="fc" id="calendar-target" onchange="saveCalendarTarget()">
-        <option value="google">Google Calendar</option>
-        <option value="ics">Apple / iPhone / Outlook (.ics)</option>
-      </select>
-    </div>
-  </div>
-
   <div class="view-toggle">
     <button class="vt-btn active" id="vt-day" onclick="setView('day')">📆 Jour</button>
     <button class="vt-btn" id="vt-week" onclick="setView('week')">📅 7 jours</button>
@@ -662,7 +650,6 @@ const FX = [
 
 let schedule = [];
 let externalEvents = JSON.parse(localStorage.getItem('smartplan_external_events')||'[]');
-let calendarTarget = localStorage.getItem('smartplan_calendar_target') || 'google';
 
 let jobs = [
   {id:1,name:"Remplacement poteaux Sect.4",client:"Hydro-Québec",place:"Secteur Nord",type:"Montage lignes",dur:6,prio:"urgent",deadline:"2026-05-02T16:00",prefer:"",maxWind:40,maxRain:0,minTemp:-10,maxTemp:35,notes:""},
@@ -871,8 +858,8 @@ function jobCard(job,compact=false){
   const canCf=al.s==='risk'||al.s==='danger';
   const actBar=`<div class="act-bar">
     <button class="act-btn ab-blue" onclick="openReport(${job.id})"><span class="ai">📅</span>Reporter</button>
-    <button class="act-btn ab-green" onclick="sendToCalendar(${job.id})"><span class="ai">📅</span>Mettre au calendrier</button>
-    <button class="act-btn ab-yellow" onclick="openEditTime(${job.id})"><span class="ai">⏱</span>Heure</button>
+    <button class="act-btn ab-green" onclick="addToCalendar(${job.id})"><span class="ai">📅</span>Mettre au calendrier</button>
+    <button class="act-btn ab-yellow" onclick="downloadICS(${job.id})"><span class="ai">📲</span>.ics</button>
     <button class="act-btn ab-red" onclick="confirmDelete(${job.id})"><span class="ai">🗑</span>Supprimer</button>
   </div>`;
 
@@ -1196,47 +1183,124 @@ function renderAll(){renderDash();renderList();renderCal();renderWxTab();updateI
 // ════════════════════════════════════════════
 // IMPORT CALENDAR (.ICS)
 // ════════════════════════════════════════════
-function unfoldICS(text){return text.replace(/\r\n[ \t]/g,'').replace(/\n[ \t]/g,'');}
-function parseICSDate(value){
-  if(!value)return null; value=value.trim();
-  if(/^\d{8}$/.test(value))return new Date(+value.slice(0,4),+value.slice(4,6)-1,+value.slice(6,8),0,0,0);
-  if(/^\d{8}T\d{6}Z$/.test(value))return new Date(Date.UTC(+value.slice(0,4),+value.slice(4,6)-1,+value.slice(6,8),+value.slice(9,11),+value.slice(11,13),+value.slice(13,15)));
-  if(/^\d{8}T\d{6}$/.test(value))return new Date(+value.slice(0,4),+value.slice(4,6)-1,+value.slice(6,8),+value.slice(9,11),+value.slice(11,13),+value.slice(13,15));
-  return null;
+function unfoldICS(text){
+  return String(text || '').replace(/\r?\n[ \t]/g, '');
+}
+function parseICSDate(value, params={}){
+  if(!value) return null;
+  value=String(value).trim();
+  const isDateOnly = params.VALUE==='DATE' || /^\d{8}$/.test(value);
+  if(isDateOnly){
+    const y=+value.slice(0,4), m=+value.slice(4,6)-1, d=+value.slice(6,8);
+    return new Date(y,m,d,0,0,0,0);
+  }
+  if(/^\d{8}T\d{6}Z$/.test(value)){
+    return new Date(Date.UTC(+value.slice(0,4),+value.slice(4,6)-1,+value.slice(6,8),+value.slice(9,11),+value.slice(11,13),+value.slice(13,15)));
+  }
+  if(/^\d{8}T\d{6}$/.test(value)){
+    return new Date(+value.slice(0,4),+value.slice(4,6)-1,+value.slice(6,8),+value.slice(9,11),+value.slice(11,13),+value.slice(13,15));
+  }
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+function parseICSField(block,name){
+  const re = new RegExp('^'+name+'(?:;[^:\n\r]*)?:(.*)$','mi');
+  const m = block.match(re);
+  if(!m) return { value:'', params:{} };
+  const fullLine=m[0];
+  const head=fullLine.split(':')[0];
+  const parts=head.split(';').slice(1);
+  const params={};
+  parts.forEach(p=>{
+    const idx=p.indexOf('=');
+    if(idx>0){ params[p.slice(0,idx).toUpperCase()] = p.slice(idx+1); }
+  });
+  const value=m[1].replace(/\n/g,' ').replace(/\,/g,',').replace(/\;/g,';').trim();
+  return { value, params };
 }
 function icsGet(block,name){
-  const re=new RegExp('^'+name+'(?:;[^:]*)?:(.*)$','mi');
-  const m=block.match(re);
-  return m?m[1].replace(/\\n/g,' ').replace(/\\,/g,',').replace(/\\;/g,';').trim():'';
+  return parseICSField(block,name).value;
+}
+function expandRecurringEvents(event, limitDate){
+  if(!event.rrule || !event.start || !event.end) return [event];
+  const rule=event.rrule;
+  const freq=(rule.match(/FREQ=([^;]+)/)||[])[1]||'';
+  const count=parseInt((rule.match(/COUNT=([^;]+)/)||[])[1]||'0',10)||0;
+  const untilRaw=(rule.match(/UNTIL=([^;]+)/)||[])[1]||'';
+  const until=untilRaw?parseICSDate(untilRaw):null;
+  const maxDate=until && until<limitDate ? until : limitDate;
+  const durationMs=event.end-event.start;
+  const out=[];
+  let cur=new Date(event.start);
+  let n=0;
+  while(cur<=maxDate){
+    n++;
+    out.push({
+      id:event.id+'_'+n,
+      title:event.title,
+      location:event.location,
+      desc:event.desc,
+      date:ds(new Date(cur.getFullYear(),cur.getMonth(),cur.getDate())),
+      startHour:cur.getHours()+cur.getMinutes()/60,
+      dur:Math.max(.5,Math.round((durationMs/3600000)*2)/2)
+    });
+    if(count && n>=count) break;
+    if(freq==='DAILY') cur.setDate(cur.getDate()+1);
+    else if(freq==='WEEKLY') cur.setDate(cur.getDate()+7);
+    else if(freq==='MONTHLY') cur.setMonth(cur.getMonth()+1);
+    else break;
+  }
+  return out;
 }
 function parseICS(text){
   text=unfoldICS(text);
   const blocks=text.split('BEGIN:VEVENT').slice(1).map(x=>x.split('END:VEVENT')[0]);
-  return blocks.map((b,i)=>{
+  const horizon=new Date(); horizon.setMonth(horizon.getMonth()+12);
+  let out=[];
+  blocks.forEach((b,i)=>{
     const title=icsGet(b,'SUMMARY')||'Événement calendrier';
     const location=icsGet(b,'LOCATION');
     const desc=icsGet(b,'DESCRIPTION');
-    const start=parseICSDate(icsGet(b,'DTSTART'));
-    const end=parseICSDate(icsGet(b,'DTEND'))||(start?new Date(start.getTime()+3600000):null);
-    if(!start||!end)return null;
-    const dateStr=ds(new Date(start.getFullYear(),start.getMonth(),start.getDate()));
-    const startHour=start.getHours()+start.getMinutes()/60;
-    const dur=Math.max(.5,Math.round(((end-start)/3600000)*2)/2);
-    return {id:'ics_'+Date.now()+'_'+i,title,location,desc,date:dateStr,startHour,dur};
-  }).filter(Boolean);
+    const startField=parseICSField(b,'DTSTART');
+    const endField=parseICSField(b,'DTEND');
+    const start=parseICSDate(startField.value,startField.params);
+    let end=parseICSDate(endField.value,endField.params);
+    if(!start) return;
+    if(!end){
+      end = startField.params.VALUE==='DATE'
+        ? new Date(start.getFullYear(),start.getMonth(),start.getDate()+1,0,0,0,0)
+        : new Date(start.getTime()+3600000);
+    }
+    const raw={
+      id:'ics_'+Date.now()+'_'+i,
+      title, location, desc, start, end,
+      rrule:icsGet(b,'RRULE')
+    };
+    out.push(...expandRecurringEvents(raw,horizon));
+  });
+  return out.filter(Boolean);
 }
 function importICSFile(event){
   const file=event.target.files&&event.target.files[0]; if(!file)return;
   const reader=new FileReader();
   reader.onload=()=>{
-    const imported=parseICS(String(reader.result||''));
-    if(!imported.length){toast('Aucun événement trouvé dans ce fichier','var(--danger)');return;}
-    const seen=new Set(externalEvents.map(e=>`${e.title}|${e.date}|${e.startHour}`));
-    let added=0;
-    imported.forEach(e=>{const k=`${e.title}|${e.date}|${e.startHour}`;if(!seen.has(k)){externalEvents.push(e);seen.add(k);added++;}});
-    localStorage.setItem('smartplan_external_events',JSON.stringify(externalEvents));
-    renderAll();
-    toast(`📥 ${added} événement(s) importé(s)`,'var(--blue)');
+    try{
+      const imported=parseICS(String(reader.result||''));
+      if(!imported.length){toast('Aucun événement lisible trouvé dans ce fichier .ics','var(--danger)');return;}
+      const seen=new Set(externalEvents.map(e=>`${e.title}|${e.date}|${e.startHour}|${e.dur}`));
+      let added=0;
+      imported.forEach(e=>{
+        const k=`${e.title}|${e.date}|${e.startHour}|${e.dur}`;
+        if(!seen.has(k)){externalEvents.push(e);seen.add(k);added++;}
+      });
+      localStorage.setItem('smartplan_external_events',JSON.stringify(externalEvents));
+      renderAll();
+      setView('month');
+      toast(`📥 ${added} événement(s) importé(s)`,'var(--blue)');
+    }catch(err){
+      console.error(err);
+      toast("Erreur pendant l'import du calendrier",'var(--danger)');
+    }
     event.target.value='';
   };
   reader.readAsText(file);
@@ -1514,8 +1578,8 @@ function openDetail(jobId){
   `;
   document.getElementById('dt-acts').innerHTML=`
     <button class="act-btn ab-blue" onclick="closeSheet('sh-detail');openEditTime(${j.id})"><span class="ai">⏱</span>Heure</button>
-    <button class="act-btn ab-green" onclick="sendToCalendar(${j.id})"><span class="ai">📅</span>Mettre au calendrier</button>
-    <button class="act-btn ab-yellow" onclick="reschedule(${j.id})"><span class="ai">🔄</span>Replanifier</button>
+    <button class="act-btn ab-green" onclick="addToCalendar(${j.id})"><span class="ai">📅</span>Mettre au calendrier</button>
+    <button class="act-btn ab-yellow" onclick="downloadICS(${j.id})"><span class="ai">📲</span>.ics</button>
     <button class="act-btn ab-red" onclick="confirmDelete(${j.id})"><span class="ai">🗑</span>Supprimer</button>
   `;
   openSheet('sh-detail');
@@ -1602,26 +1666,6 @@ function doConfirm(){
 }
 
 
-
-// ════════════════════════════════════════════
-// CALENDAR TARGET SETTINGS
-// ════════════════════════════════════════════
-function saveCalendarTarget(){
-  const sel=document.getElementById('calendar-target');
-  if(!sel) return;
-  calendarTarget=sel.value||'google';
-  localStorage.setItem('smartplan_calendar_target',calendarTarget);
-  toast(calendarTarget==='google'?'⚙️ Destination: Google Calendar':'⚙️ Destination: fichier .ics','var(--blue)');
-}
-function applyCalendarTargetUI(){
-  const sel=document.getElementById('calendar-target');
-  if(sel) sel.value=calendarTarget;
-}
-function sendToCalendar(jobId){
-  if(calendarTarget==='ics') return downloadICS(jobId);
-  return addToGoogleCalendar(jobId);
-}
-
 // ════════════════════════════════════════════
 // CALENDAR EXPORT — Google Calendar + iPhone/Apple/Outlook (.ics)
 // ════════════════════════════════════════════
@@ -1691,7 +1735,7 @@ function safeFileName(text){
     .replace(/^-+|-+$/g,'') || 'smartplan-job';
 }
 
-function addToGoogleCalendar(jobId){
+function addToCalendar(jobId){
   const info=getJobCalendarInfo(jobId);
   if(!info){toast('Job introuvable','var(--danger)');return;}
   const start=dateFromLocalHour(info.dateStr,info.startHour);
@@ -1771,7 +1815,6 @@ function goTab(name){
 // ════════════════════════════════════════════
 initSchedule();
 renderAll();
-applyCalendarTargetUI();
 setInterval(()=>{if(document.getElementById('tab-cal').classList.contains('active')&&calView==='day')renderDayView();},60000);
 </script>
 </body>

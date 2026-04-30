@@ -1,93 +1,1586 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>SmartPlan Météo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b0f14;--card:#141a24;--card2:#1c2431;--line:#2c3648;--text:#f2f5f8;--muted:#a5afc0;
-  --accent:#00d4aa;--blue:#3b82f6;--ok:#22c55e;--risk:#f59e0b;--danger:#ef4444;
-  --r:18px;--shadow:0 18px 45px rgba(0,0,0,.35);
+  --bg:#0d0f14; --s1:#161920; --s2:#1e222d; --s3:#252a38;
+  --border:#2e3447; --text:#eceef5; --muted:#7a8499;
+  --ok:#22c55e; --ok2:rgba(34,197,94,.18); --ok3:rgba(34,197,94,.09);
+  --risk:#f59e0b; --risk2:rgba(245,158,11,.18); --risk3:rgba(245,158,11,.09);
+  --danger:#ef4444; --danger2:rgba(239,68,68,.18); --danger3:rgba(239,68,68,.09);
+  --blue:#3b82f6; --accent:#00d4aa; --purple:#7c3aed;
+  --fd:'Syne',sans-serif; --fm:'Space Mono',monospace;
+  --hour-h:72px;
+  --r:12px;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:18px;line-height:1.45;padding-bottom:92px}
-button,input,select,textarea{font:inherit}
-.header{position:sticky;top:0;z-index:20;background:rgba(11,15,20,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:16px}
-.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand h1{font-size:24px;line-height:1}.brand small{display:block;color:var(--muted);font-size:13px;margin-top:3px}.logo{display:flex;align-items:center;gap:11px}.bolt{width:42px;height:42px;border-radius:13px;background:var(--accent);display:grid;place-items:center;color:#001b15;font-weight:900}.clock{color:var(--muted);font-size:14px}
-.wrap{padding:16px;max-width:900px;margin:0 auto}.section{display:none}.section.active{display:block}.grid{display:grid;gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.title{font-weight:900;font-size:24px;margin-bottom:12px}.sub{color:var(--muted);font-size:15px}.pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 12px;font-size:14px;font-weight:800;background:var(--card2);border:1px solid var(--line)}.pill.ok{color:#86efac;background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.35)}.pill.risk{color:#fde68a;background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35)}.pill.danger{color:#fecaca;background:rgba(239,68,68,.13);border-color:rgba(239,68,68,.35)}
-.btn{min-height:50px;border:0;border-radius:14px;padding:12px 16px;font-weight:900;cursor:pointer;background:var(--card2);color:var(--text);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;gap:8px}.btn.primary{background:var(--accent);color:#001b15;border-color:var(--accent)}.btn.blue{background:var(--blue);color:white;border-color:var(--blue)}.btn.red{background:rgba(239,68,68,.15);color:#fecaca;border-color:rgba(239,68,68,.4)}.btn.full{width:100%}.btn.small{min-height:40px;padding:8px 11px;border-radius:11px;font-size:15px}
-.weather{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}.wxicon{font-size:52px}.temp{font-size:48px;font-weight:950;color:var(--accent);line-height:1}.wxstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.stat{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px}.stat label{display:block;color:var(--muted);font-size:13px;text-transform:uppercase}.stat strong{font-size:22px}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sum{padding:14px;text-align:center;border-radius:16px;background:var(--card);border:1px solid var(--line)}.sum strong{font-size:34px;display:block}.sum.ok strong{color:var(--ok)}.sum.risk strong{color:var(--risk)}.sum.danger strong{color:var(--danger)}
-.job{position:relative;border-left:6px solid var(--line)}.job.ok{border-left-color:var(--ok)}.job.risk{border-left-color:var(--risk)}.job.danger{border-left-color:var(--danger)}.job h3{font-size:24px;line-height:1.15;margin-bottom:6px}.meta{display:flex;gap:9px;flex-wrap:wrap;color:var(--muted);font-size:15px;margin:9px 0}.conds{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.cond{font-size:14px;border:1px solid var(--line);background:var(--card2);padding:7px 10px;border-radius:10px;color:var(--muted)}.cond.bad{color:#fecaca;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.1)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.hint{padding:12px 14px;border-radius:14px;background:var(--card2);border-left:4px solid var(--line);color:var(--muted)}.hint.ok{border-color:var(--ok);color:#bbf7d0}.hint.risk{border-color:var(--risk);color:#fde68a}.hint.danger{border-color:var(--danger);color:#fecaca}
-.bottom{position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(20,26,36,.97);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px calc(7px + env(safe-area-inset-bottom))}.nav{background:transparent;border:0;color:var(--muted);font-size:12px;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 3px;border-radius:13px}.nav span{font-size:23px}.nav.active{color:var(--accent);background:rgba(0,212,170,.10)}
-.form{display:grid;gap:13px}.fg label{display:block;color:var(--muted);font-size:14px;text-transform:uppercase;font-weight:800;margin-bottom:6px}.fc{width:100%;min-height:52px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:12px 14px;outline:none}.fc:focus{border-color:var(--accent)}textarea.fc{min-height:90px}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}.prio{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.prio button{min-height:62px;font-size:14px}.prio button.sel{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08)}
-.toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--card);border:1px solid var(--line);padding:5px;border-radius:15px;margin-bottom:14px}.seg button{border:0;background:transparent;color:var(--muted);border-radius:11px;padding:10px;font-weight:900}.seg button.active{background:var(--accent);color:#001b15}.calTitle{font-size:18px;font-weight:900;text-align:center;min-width:180px}.timeline{display:grid;grid-template-columns:56px 1fr;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--line)}.hour{background:var(--card2);min-height:74px;padding:8px;color:var(--muted);font-size:14px;text-align:right}.slot{min-height:74px;background:var(--card);position:relative;border-bottom:1px solid var(--line);padding:6px;cursor:pointer}.slot:active{background:var(--card2)}.slotEmpty{opacity:.18;font-size:14px;text-align:center;margin-top:18px}.event{border-radius:13px;padding:9px 40px 9px 10px;margin:2px 0;background:rgba(0,212,170,.13);border-left:4px solid var(--accent);position:relative}.event strong{display:block;font-size:16px}.event small{color:var(--muted)}.event .x{position:absolute;right:6px;top:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(239,68,68,.18);color:#fecaca;font-weight:900}
-.month{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--line)}.mh,.mc{background:var(--card);padding:7px 5px}.mh{font-size:12px;color:var(--muted);text-align:center;font-weight:900}.mc{min-height:78px;cursor:pointer}.mc.other{opacity:.35}.mc.today{outline:2px solid var(--accent);outline-offset:-2px}.daynum{font-size:13px;font-weight:900}.dot{display:inline-block;width:8px;height:8px;background:var(--risk);border-radius:50%;margin-left:3px}.mevent{font-size:11px;margin-top:4px;padding:3px 5px;background:rgba(0,212,170,.12);border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.weekList{display:grid;gap:10px}.weekDay{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}.fab{position:fixed;right:18px;bottom:98px;z-index:35;width:62px;height:62px;border-radius:50%;background:var(--accent);color:#001b15;border:0;font-size:34px;font-weight:900;box-shadow:var(--shadow)}
-.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:none;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:900px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:18px;max-height:90vh;overflow:auto}.handle{width:44px;height:5px;background:var(--line);border-radius:99px;margin:0 auto 14px}.toast{position:fixed;left:50%;bottom:105px;transform:translateX(-50%) translateY(25px);z-index:80;opacity:0;transition:.25s;background:var(--card);border:1px solid var(--line);padding:13px 16px;border-radius:14px;box-shadow:var(--shadow);max-width:92vw;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:560px){body{font-size:17px}.wrap{padding:12px}.brand h1{font-size:21px}.clock{display:none}.wxstats{grid-template-columns:1fr}.summary{gap:7px}.sum{padding:11px 6px}.sum strong{font-size:28px}.actions{grid-template-columns:1fr}.twocol{grid-template-columns:1fr}.prio{grid-template-columns:1fr 1fr}.mc{min-height:66px}.mevent{display:none}.nav{font-size:11px}.btn{font-size:16px}.job h3{font-size:22px}}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--fd);min-height:100vh;font-size:20px;line-height:1.5;}
+
+/* ── HEADER ── */
+.hdr{background:var(--s1);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.logo{font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px;}
+.logo-ic{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+#clock{font-family:var(--fm);font-size:16px;color:var(--muted);}
+
+/* ── BOTTOM NAV (replaces top tabs) ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:150;
+  background:var(--s1);border-top:1px solid var(--border);
+  display:grid;grid-template-columns:repeat(5,1fr);
+  padding:6px 4px 8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 4px;border:none;background:transparent;cursor:pointer;
+  color:var(--muted);font-family:var(--fd);font-size:13px;font-weight:700;
+  border-radius:10px;transition:all .15s;min-height:58px;
+}
+.nav-item .ni-icon{font-size:24px;line-height:1;}
+.nav-item.active{color:var(--accent);background:rgba(0,212,170,.08);}
+.nav-item:hover:not(.active){color:var(--text);}
+
+/* ── MAIN ── */
+.main{padding:16px 16px 100px;max-width:860px;margin:0 auto;}
+.sec{display:none;}.sec.active{display:block;}
+
+/* ── WEATHER BAR ── */
+.wx-bar{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.wx-temp{font-size:44px;font-weight:800;font-family:var(--fm);color:var(--accent);line-height:1;}
+.wx-icon{font-size:46px;}
+.wx-stats{display:flex;gap:10px;flex-wrap:wrap;flex:1;}
+.wx-stat{background:var(--s1);border-radius:9px;padding:9px 13px;border:1px solid var(--border);min-width:72px;}
+.wx-stat-l{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;letter-spacing:.4px;}
+.wx-stat-v{font-size:26px;font-weight:700;font-family:var(--fm);margin-top:2px;}
+.wx-desc{font-size:16px;color:var(--muted);margin-top:4px;}
+
+/* ── SUMMARY ── */
+.sum-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;}
+.sum-card{background:var(--s1);border-radius:var(--r);padding:14px 10px;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden;}
+.sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.sum-card.ok::before{background:var(--ok);}
+.sum-card.risk::before{background:var(--risk);}
+.sum-card.dng::before{background:var(--danger);}
+.sum-n{font-size:34px;font-weight:800;font-family:var(--fm);}
+.sum-card.ok .sum-n{color:var(--ok);}
+.sum-card.risk .sum-n{color:var(--risk);}
+.sum-card.dng .sum-n{color:var(--danger);}
+.sum-l{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;margin-top:3px;}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+.sec-title{font-size:22px;font-weight:800;}
+
+/* ── BUTTONS ── */
+.btn{padding:13px 20px;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--fd);transition:all .15s;border:1px solid transparent;min-height:54px;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.btn-accent{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-accent:hover{opacity:.85;}
+.btn-ghost{background:var(--s2);color:var(--text);border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:var(--danger3);color:var(--danger);border-color:rgba(239,68,68,.4);}
+.btn-danger:hover{background:var(--danger2);}
+.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-optimize{width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;font-family:var(--fd);font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;transition:opacity .15s;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-optimize:hover{opacity:.88;}
+.btn-full{width:100%;}
+
+/* ── FORM ── */
+.form-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.fl{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;letter-spacing:.6px;}
+.fc{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:13px 14px;color:var(--text);font-family:var(--fd);font-size:18px;outline:none;transition:border-color .15s;width:100%;min-height:52px;}
+.fc:focus{border-color:var(--accent);}
+textarea.fc{resize:vertical;min-height:72px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-sep{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 10px;display:flex;align-items:center;gap:8px;}
+.form-sep::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.prio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px;}
+.prio-opt{padding:11px 4px;border-radius:9px;border:1px solid var(--border);background:var(--s2);text-align:center;cursor:pointer;font-size:15px;font-weight:700;transition:all .15s;min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.prio-opt.sel-low{border-color:var(--muted);color:var(--muted);background:rgba(107,114,128,.15);}
+.prio-opt.sel-med{border-color:#fcd34d;color:#fcd34d;background:rgba(252,211,77,.08);}
+.prio-opt.sel-high{border-color:var(--risk);color:var(--risk);background:var(--risk3);}
+.prio-opt.sel-urgent{border-color:var(--danger);color:var(--danger);background:var(--danger3);}
+.form-actions{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+
+/* ── BADGE ── */
+.badge{padding:4px 11px;border-radius:20px;font-size:14px;font-weight:700;font-family:var(--fm);text-transform:uppercase;}
+.badge.ok{background:var(--ok2);color:var(--ok);}
+.badge.risk{background:var(--risk2);color:var(--risk);}
+.badge.danger{background:var(--danger2);color:var(--danger);}
+.badge.blue{background:rgba(59,130,246,.15);color:#93c5fd;}
+.ubadge{font-size:13px;padding:3px 8px;border-radius:4px;font-family:var(--fm);text-transform:uppercase;font-weight:700;}
+.ubadge.urgent{background:var(--danger2);color:var(--danger);}
+.ubadge.high{background:var(--risk2);color:var(--risk);}
+.ubadge.med{background:rgba(252,211,77,.1);color:#fcd34d;}
+.ubadge.low{background:var(--s3);color:var(--muted);}
+
+/* ══════ CALENDAR ══════ */
+.cal-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;}
+.cal-day-label{font-size:17px;font-weight:800;font-family:var(--fm);min-width:160px;text-align:center;}
+.nav-btn{background:var(--s2);border:1px solid var(--border);color:var(--text);padding:11px 16px;border-radius:9px;font-size:18px;cursor:pointer;font-family:var(--fd);min-height:52px;min-width:52px;}
+.nav-btn:hover{border-color:var(--accent);}
+
+/* View toggle */
+.view-toggle{display:flex;gap:5px;margin-bottom:14px;background:var(--s2);border-radius:10px;padding:4px;border:1px solid var(--border);}
+.vt-btn{flex:1;padding:10px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-family:var(--fd);font-size:14px;font-weight:700;cursor:pointer;min-height:42px;}
+.vt-btn.active{background:var(--accent);color:#000;}
+
+/* Day strip */
+.day-strip{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.day-strip::-webkit-scrollbar{display:none;}
+.ds-btn{flex-shrink:0;padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;text-align:center;font-family:var(--fd);transition:all .15s;position:relative;min-width:60px;}
+.ds-btn.today{border-color:rgba(0,212,170,.5);color:var(--accent);}
+.ds-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
+.ds-btn .ds-day{font-size:14px;font-weight:800;}
+.ds-btn .ds-icon{font-size:22px;margin:3px 0;}
+.ds-btn .ds-temp{font-size:13px;font-family:var(--fm);font-weight:700;}
+.ds-btn .ds-dot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--ok);}
+
+/* 24h Timeline */
+.timeline-wrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);}
+.timeline{display:grid;grid-template-columns:48px 1fr;background:var(--border);gap:1px;}
+.tl-label{background:var(--s2);padding:5px 8px 0;text-align:right;font-size:13px;font-family:var(--fm);color:var(--muted);height:var(--hour-h);display:flex;align-items:flex-start;justify-content:flex-end;font-weight:700;}
+.tl-label.night{background:rgba(10,12,20,.7);}
+.tl-slot{background:var(--s1);height:var(--hour-h);position:relative;cursor:pointer;transition:background .1s;}
+.tl-slot:hover{background:var(--s3);}
+.tl-slot.night-slot{background:rgba(10,12,20,.6);}
+.tl-slot.night-slot:hover{background:rgba(22,26,40,.7);}
+.tl-slot::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);opacity:.5;}
+
+/* "Empty slot" hint shown on hover/touch */
+.slot-hint{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:var(--accent);color:#000;padding:6px 14px;border-radius:8px;
+  font-size:14px;font-weight:800;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .15s;font-family:var(--fd);
+  box-shadow:0 4px 14px rgba(0,212,170,.4);z-index:4;
+}
+.tl-slot:hover .slot-hint{opacity:1;}
+.tl-slot.night-slot:hover .slot-hint{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.4);}
+
+/* Now line */
+.time-now-line{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:10;pointer-events:none;}
+.time-now-dot{position:absolute;left:48px;width:10px;height:10px;background:var(--accent);border-radius:50%;top:-4px;margin-left:-5px;}
+
+/* Event blocks */
+.cal-event{position:absolute;left:5px;right:5px;border-radius:8px;padding:6px 9px;cursor:grab;overflow:hidden;z-index:5;border-left:4px solid;transition:opacity .15s,box-shadow .15s;user-select:none;touch-action:none;}
+.cal-event:active{cursor:grabbing;opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;}
+.cal-event.ok{background:var(--ok2);border-left-color:var(--ok);}
+.cal-event.risk{background:var(--risk2);border-left-color:var(--risk);}
+.cal-event.danger{background:var(--danger2);border-left-color:var(--danger);}
+.cal-event.dragging{opacity:.5;z-index:100;}
+.ev-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ev-meta{font-size:12px;font-family:var(--fm);opacity:.85;margin-top:2px;}
+.ev-resize{position:absolute;bottom:0;left:0;right:0;height:14px;cursor:ns-resize;display:flex;align-items:center;justify-content:center;}
+.ev-resize::after{content:'';width:26px;height:3px;background:currentColor;opacity:.5;border-radius:2px;}
+.ev-delete{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:rgba(239,68,68,.85);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;cursor:pointer;border:none;font-family:var(--fd);}
+.ev-delete:hover{background:var(--danger);}
+
+.drag-ghost{position:fixed;background:var(--accent);color:#000;padding:8px 14px;border-radius:8px;font-size:15px;font-weight:800;pointer-events:none;z-index:999;display:none;font-family:var(--fm);box-shadow:0 4px 14px rgba(0,0,0,.4);}
+
+/* ══════ MONTHLY VIEW ══════ */
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.month-day-hdr{background:var(--s2);padding:8px 4px;text-align:center;font-size:12px;font-weight:700;font-family:var(--fm);color:var(--muted);text-transform:uppercase;}
+.month-cell{background:var(--s1);min-height:80px;padding:6px 4px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:3px;position:relative;}
+.month-cell:hover{background:var(--s3);}
+.month-cell.other-month{background:var(--bg);opacity:.4;}
+.month-cell.today{background:rgba(0,212,170,.08);}
+.month-cell.today .month-day-num{color:var(--accent);font-weight:800;}
+.month-day-num{font-size:14px;font-weight:700;font-family:var(--fm);}
+.month-event{
+  font-size:10px;padding:2px 5px;border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  border-left:3px solid;font-weight:700;
+}
+.month-event.ok{background:var(--ok2);color:#a7f3d0;border-left-color:var(--ok);}
+.month-event.risk{background:var(--risk2);color:#fde68a;border-left-color:var(--risk);}
+.month-event.danger{background:var(--danger2);color:#fca5a5;border-left-color:var(--danger);}
+.month-more{font-size:10px;color:var(--muted);font-family:var(--fm);text-align:center;}
+
+/* ══════ UNSCHEDULED ══════ */
+.unsched-box{background:var(--s1);border:1px dashed var(--border);border-radius:var(--r);padding:16px;margin-top:16px;}
+.unsched-title{font-size:17px;font-weight:700;color:var(--muted);margin-bottom:12px;}
+.unsched-item{background:var(--s2);border-radius:10px;padding:15px 16px;margin-bottom:10px;border:1px solid var(--border);}
+.unsched-name{font-size:17px;font-weight:700;}
+.unsched-sug{font-size:15px;color:var(--accent);font-family:var(--fm);margin-top:6px;line-height:1.4;}
+
+/* ══════ JOB CARDS ══════ */
+.job-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px 18px 16px;margin-bottom:16px;position:relative;overflow:hidden;transition:transform .1s;}
+.job-card:hover{transform:translateY(-1px);}
+.job-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;}
+.job-card.ok::before{background:var(--ok);}
+.job-card.risk::before{background:var(--risk);}
+.job-card.danger::before{background:var(--danger);}
+.job-card.reported{opacity:.5;}
+
+.jc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:10px;}
+.jc-name{font-size:22px;font-weight:800;line-height:1.3;}
+.jc-sub{font-size:16px;color:var(--muted);margin-top:5px;line-height:1.4;}
+.jc-conds{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.cond-tag{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 11px;font-size:14px;color:var(--muted);font-family:var(--fm);}
+.cond-tag.viol{background:var(--danger3);border-color:rgba(239,68,68,.35);color:var(--danger);}
+.jc-sug{background:var(--s2);border-radius:8px;padding:11px 14px;font-size:16px;color:var(--muted);border-left:3px solid;line-height:1.5;}
+.jc-sug.ok{border-color:var(--ok);color:#a7f3d0;}
+.jc-sug.risk{border-color:var(--risk);color:#fde68a;}
+.jc-sug.danger{border-color:var(--danger);color:#fca5a5;}
+.jc-meta{display:flex;gap:14px;font-size:14px;color:var(--muted);font-family:var(--fm);margin-top:11px;flex-wrap:wrap;line-height:1.5;}
+.jc-sched-tag{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-family:var(--fm);padding:5px 12px;border-radius:20px;margin-top:8px;background:rgba(0,212,170,.12);color:var(--accent);border:1px solid rgba(0,212,170,.25);}
+
+.act-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
+.act-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:13px 4px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:var(--fd);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;min-height:70px;}
+.act-btn:active{transform:scale(.96);}
+.act-btn .ai{font-size:24px;}
+.act-btn.ab-blue{border-color:rgba(59,130,246,.35);color:#93c5fd;}
+.act-btn.ab-blue:hover{background:rgba(59,130,246,.1);}
+.act-btn.ab-green{border-color:rgba(0,212,170,.35);color:var(--accent);}
+.act-btn.ab-green:hover{background:rgba(0,212,170,.08);}
+.act-btn.ab-yellow{border-color:rgba(245,158,11,.35);color:var(--risk);}
+.act-btn.ab-yellow:hover{background:var(--risk3);}
+.act-btn.ab-red{border-color:rgba(239,68,68,.35);color:var(--danger);}
+.act-btn.ab-red:hover{background:var(--danger3);}
+
+.edit-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.btn-xs{padding:9px 14px;border-radius:7px;font-size:15px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:var(--fd);min-height:44px;}
+.btn-xs:hover{border-color:var(--accent);color:var(--accent);}
+.btn-xs.del{border-color:rgba(239,68,68,.35);color:var(--danger);}
+.btn-xs.del:hover{background:var(--danger3);}
+
+/* ══════ MÉTÉO TAB ══════ */
+.wx-sliders{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:18px;}
+.wx-sl-title{font-size:18px;font-weight:700;margin-bottom:16px;}
+.sl-g{margin-bottom:18px;}
+.sl-l{display:flex;justify-content:space-between;font-size:16px;color:var(--muted);font-family:var(--fm);margin-bottom:8px;}
+.sl{width:100%;appearance:none;height:5px;background:var(--s3);border-radius:3px;outline:none;}
+.sl::-webkit-slider-thumb{appearance:none;width:22px;height:22px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 0 3px rgba(0,212,170,.2);}
+.fx-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fx-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.fx-title{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;margin-bottom:12px;}
+.fx-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:16px;}
+.fx-row:last-child{border-bottom:none;}
+.fx-day{color:var(--muted);font-family:var(--fm);font-size:14px;}
+
+/* ══════ SHEETS ══════ */
+.sheet-ov{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:400;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.sheet-ov.open{opacity:1;pointer-events:all;}
+.sheet{background:var(--s1);border-radius:20px 20px 0 0;padding:20px 18px;width:100%;max-width:860px;border:1px solid var(--border);border-bottom:none;transform:translateY(30px);transition:transform .25s cubic-bezier(.22,.68,0,1.2);max-height:88vh;overflow-y:auto;}
+.sheet-ov.open .sheet{transform:translateY(0);}
+.sh-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.sh-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.sh-sub{font-size:16px;color:var(--muted);font-family:var(--fm);margin-bottom:16px;}
+
+.time-picker{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.time-picker .fg{margin-bottom:0;}
+
+.det-row{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border);font-size:16px;gap:8px;}
+.det-row:last-child{border-bottom:none;}
+.det-l{color:var(--muted);font-size:14px;font-family:var(--fm);}
+
+.dt-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;}
+.dt-opt{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .15s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.dt-opt:hover,.dt-opt.sel{border-color:var(--blue);background:rgba(59,130,246,.1);color:#93c5fd;}
+.dt-opt .dti{font-size:26px;margin-bottom:4px;}
+.dt-opt .dtl{font-size:16px;font-weight:700;}
+.dt-opt .dts{font-size:13px;color:var(--muted);font-family:var(--fm);margin-top:2px;}
+
+.repl-item{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;min-height:54px;}
+.repl-item:hover{border-color:var(--accent);}
+
+.chk-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);font-size:16px;cursor:pointer;min-height:54px;}
+.chk-item:last-child{border-bottom:none;}
+.chk-box{width:28px;height:28px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s;}
+.chk-item.chked .chk-box{background:var(--risk);border-color:var(--risk);}
+.conf-warn{background:var(--risk3);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:16px;line-height:1.55;color:#fde68a;}
+
+/* ══════ TOAST ══════ */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;z-index:999;opacity:0;transition:all .3s cubic-bezier(.22,.68,0,1.2);box-shadow:0 8px 28px rgba(0,0,0,.55);max-width:90vw;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.live-dot{display:inline-block;width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 2s infinite;margin-right:5px;}
+
+@media(max-width:520px){
+  .act-bar{grid-template-columns:1fr 1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .fx-grid{grid-template-columns:1fr;}
+  .prio-grid{grid-template-columns:1fr 1fr;}
+  .wx-bar{gap:12px;}
+  .wx-temp{font-size:38px;}
+  .wx-icon{font-size:40px;}
+  .cal-day-label{font-size:14px;min-width:120px;}
+  .act-btn{font-size:12px;padding:11px 3px;}
+  .act-btn .ai{font-size:22px;}
+  .nav-item{font-size:11px;}
+  .nav-item .ni-icon{font-size:22px;}
+  .month-cell{min-height:70px;}
+}
 </style>
 </head>
 <body>
-<header class="header"><div class="brand"><div class="logo"><div class="bolt">⚡</div><div><h1>SmartPlan Météo</h1><small id="modeLabel">Démo météo simulée</small></div></div><div class="clock" id="clock">--:--</div></div></header>
-<main class="wrap">
-<section id="dashboard" class="section active">
-  <div class="card weather"><div class="wxicon" id="wxIcon">⛅</div><div><div class="temp" id="wxTemp">14°C</div><div id="wxDesc" class="sub">Partiellement nuageux</div><button class="btn primary small" style="margin-top:10px" onclick="getRealWeather()">📍 Météo réelle</button></div></div>
-  <div class="wxstats"><div class="stat"><label>Vent</label><strong id="wxWind">32 km/h</strong></div><div class="stat"><label>Pluie</label><strong id="wxRain">4 mm</strong></div><div class="stat"><label>Ressenti</label><strong id="wxFeel">9°C</strong></div></div>
-  <div style="height:14px"></div><div class="summary"><div class="sum ok"><strong id="cOk">0</strong><span>OK</span></div><div class="sum risk"><strong id="cRisk">0</strong><span>Risque</span></div><div class="sum danger"><strong id="cDanger">0</strong><span>Danger</span></div></div>
-  <div style="height:18px"></div><div class="row"><h2 class="title" style="margin:0">Jobs du jour</h2><button class="btn primary" onclick="openJobModal()">+ Créer</button></div><div id="dashJobs" class="grid" style="margin-top:14px"></div>
-</section>
-<section id="calendar" class="section">
-  <button class="btn blue full" onclick="autoPlanAll()">🔮 Planification automatique</button><div class="seg"><button id="vDay" class="active" onclick="setCalView('day')">Jour</button><button id="vWeek" onclick="setCalView('week')">7 jours</button><button id="vMonth" onclick="setCalView('month')">Mois</button></div>
-  <div class="toolbar"><button class="btn small" onclick="moveDate(-1)">‹</button><div class="calTitle" id="calTitle">—</div><button class="btn small" onclick="moveDate(1)">›</button><button class="btn small primary" onclick="todayCal()">Auj.</button></div><div id="calArea"></div>
-</section>
-<section id="create" class="section"><div class="card"><h2 class="title">Créer un job</h2><div id="createForm"></div></div></section>
-<section id="list" class="section"><div class="row"><h2 class="title" style="margin:0">Tous les jobs</h2><button class="btn primary" onclick="openJobModal()">+ Créer</button></div><div id="allJobs" class="grid" style="margin-top:14px"></div></section>
-<section id="weather" class="section"><div class="card"><h2 class="title">Météo</h2><p class="sub">Utilise les sliders pour tester les alertes, ou active la météo réelle.</p><button class="btn primary full" onclick="getRealWeather()">📍 Utiliser ma position</button><div style="height:15px"></div><div class="fg"><label>Vent: <span id="sWindVal">32</span> km/h</label><input class="fc" type="range" id="sWind" min="0" max="120" value="32" oninput="sliderWeather()"></div><div class="fg"><label>Pluie: <span id="sRainVal">4</span> mm</label><input class="fc" type="range" id="sRain" min="0" max="50" value="4" oninput="sliderWeather()"></div><div class="fg"><label>Température: <span id="sTempVal">14</span> °C</label><input class="fc" type="range" id="sTemp" min="-25" max="40" value="14" oninput="sliderWeather()"></div></div></section>
-</main>
-<nav class="bottom"><button class="nav active" onclick="tab('dashboard',this)"><span>📊</span>Accueil</button><button class="nav" onclick="tab('calendar',this)"><span>📅</span>Agenda</button><button class="nav" onclick="tab('create',this)"><span>➕</span>Créer</button><button class="nav" onclick="tab('list',this)"><span>📋</span>Liste</button><button class="nav" onclick="tab('weather',this)"><span>🌤</span>Météo</button></nav>
-<button class="fab" onclick="openJobModal()">+</button>
-<div class="modal" id="jobModal" onclick="if(event.target.id==='jobModal')closeJobModal()"><div class="sheet"><div class="handle"></div><div class="row"><h2 class="title" id="modalTitle">Nouveau job</h2><button class="btn small" onclick="closeJobModal()">✕</button></div><div id="modalForm"></div></div></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo"><div class="logo-ic">⚡</div>SmartPlan</div>
+  <div id="clock">--:--</div>
+</div>
+
+<div class="main">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="tab-dash" class="sec active">
+  <div class="wx-bar">
+    <div class="wx-icon" id="wi">⛅</div>
+    <div>
+      <div class="wx-temp" id="wt">14°C</div>
+      <div class="wx-desc" id="wd">Partiellement nuageux</div>
+      <div style="font-size:13px;color:var(--muted);font-family:var(--fm);margin-top:4px"><span class="live-dot"></span>SIMULÉ</div>
+    </div>
+    <div class="wx-stats">
+      <div class="wx-stat"><div class="wx-stat-l">💨 Vent</div><div class="wx-stat-v" id="ww">32 km/h</div></div>
+      <div class="wx-stat"><div class="wx-stat-l">🌧 Pluie</div><div class="wx-stat-v" id="wr">4 mm</div></div>
+      <div class="wx-stat"><div class="wx-stat-l">🌡 Ressenti</div><div class="wx-stat-v" id="wf">9°C</div></div>
+    </div>
+  </div>
+  <div class="sum-row">
+    <div class="sum-card ok"><div class="sum-n" id="cnt-ok">0</div><div class="sum-l">✅ OK</div></div>
+    <div class="sum-card risk"><div class="sum-n" id="cnt-risk">0</div><div class="sum-l">⚠️ Risque</div></div>
+    <div class="sum-card dng"><div class="sum-n" id="cnt-dng">0</div><div class="sum-l">🚨 Danger</div></div>
+  </div>
+  <div class="sec-hdr">
+    <span class="sec-title">Jobs du jour</span>
+    <button class="btn btn-accent" onclick="goTab('add')">+ Nouveau</button>
+  </div>
+  <div id="dash-jobs"></div>
+</div>
+
+<!-- ═══ CALENDRIER ═══ -->
+<div id="tab-cal" class="sec">
+  <button class="btn-optimize" onclick="optimizeAll()">🔮 Planification automatique</button>
+
+  <div class="view-toggle">
+    <button class="vt-btn active" id="vt-day" onclick="setView('day')">📆 Jour</button>
+    <button class="vt-btn" id="vt-week" onclick="setView('week')">📅 7 jours</button>
+    <button class="vt-btn" id="vt-month" onclick="setView('month')">🗓 Mois</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="cal-toolbar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="nav-btn" onclick="navDate(-1)">‹</button>
+      <span class="cal-day-label" id="cal-day-lbl">—</span>
+      <button class="nav-btn" onclick="navDate(1)">›</button>
+    </div>
+    <button class="nav-btn" onclick="navDate(0)">Auj.</button>
+  </div>
+
+  <!-- Day strip (only in day view) -->
+  <div class="day-strip" id="day-strip"></div>
+
+  <!-- Day view -->
+  <div id="view-day-content">
+    <div class="timeline-wrap">
+      <div class="timeline" id="timeline"></div>
+      <div class="time-now-line" id="now-line" style="display:none"><div class="time-now-dot"></div></div>
+    </div>
+  </div>
+
+  <!-- Month view -->
+  <div id="view-month-content" style="display:none"></div>
+
+  <!-- Unscheduled -->
+  <div class="unsched-box" id="unsched-box" style="display:none">
+    <div class="unsched-title">⏳ À planifier</div>
+    <div id="unsched-list"></div>
+  </div>
+</div>
+
+<!-- ═══ AJOUTER JOB ═══ -->
+<div id="tab-add" class="sec">
+  <div class="form-card">
+    <div class="sec-title" style="margin-bottom:16px">📋 Nouveau job</div>
+
+    <div class="fg"><label class="fl">Nom du job *</label><input class="fc" id="f-name" placeholder="ex: Remplacement poteaux Sect.4"></div>
+
+    <div class="form-row">
+      <div class="fg"><label class="fl">Client</label><input class="fc" id="f-client" placeholder="Hydro-Québec"></div>
+      <div class="fg"><label class="fl">Lieu / Zone</label><input class="fc" id="f-place" placeholder="Route 117 Nord"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="fg"><label class="fl">Type de travail</label><input class="fc" id="f-type" placeholder="ex: Montage lignes" list="type-suggestions"></div>
+      <datalist id="type-suggestions">
+        <option value="Montage lignes"><option value="Paysagement"><option value="Construction">
+        <option value="Toiture"><option value="Excavation"><option value="Électricité">
+        <option value="Émondage"><option value="Soudure"><option value="Inspection">
+      </datalist>
+      <div class="fg"><label class="fl">Durée (h)</label><input class="fc" id="f-dur" type="number" placeholder="4" min=".5" step=".5"></div>
+    </div>
+
+    <div class="form-sep">Priorité</div>
+    <div class="prio-grid">
+      <div class="prio-opt" onclick="setPrio('low',this)">🟢<br>Basse</div>
+      <div class="prio-opt sel-med" onclick="setPrio('med',this)">🟡<br>Moyenne</div>
+      <div class="prio-opt" onclick="setPrio('high',this)">🟠<br>Haute</div>
+      <div class="prio-opt" onclick="setPrio('urgent',this)">🔴<br>Urgente</div>
+    </div>
+    <input type="hidden" id="f-prio" value="med">
+
+    <div class="form-row">
+      <div class="fg"><label class="fl">Date limite (avec heure)</label><input class="fc" id="f-deadline" type="datetime-local"></div>
+      <div class="fg"><label class="fl">Date préférée (avec heure)</label><input class="fc" id="f-prefer" type="datetime-local"></div>
+    </div>
+
+    <div class="form-sep">Tolérance météo</div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">💨 Vent max (km/h)</label><input class="fc" id="f-wind" type="number" placeholder="50"></div>
+      <div class="fg"><label class="fl">🌧 Pluie max (mm)</label><input class="fc" id="f-rain" type="number" placeholder="5"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">🌡 Temp min (°C)</label><input class="fc" id="f-tmin" type="number" placeholder="-5"></div>
+      <div class="fg"><label class="fl">🌡 Temp max (°C)</label><input class="fc" id="f-tmax" type="number" placeholder="35"></div>
+    </div>
+
+    <div class="fg"><label class="fl">Notes terrain</label><textarea class="fc" id="f-notes" placeholder="Accès restreint, équipement spécial..."></textarea></div>
+
+    <div class="form-actions">
+      <button class="btn btn-accent btn-full" onclick="createJob(false)">✅ Créer</button>
+      <button class="btn btn-blue btn-full" onclick="createJob(true)">🔮 Créer + Planification auto</button>
+      <button class="btn btn-ghost btn-full" onclick="resetForm()">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LISTE ═══ -->
+<div id="tab-list" class="sec">
+  <div class="sec-hdr">
+    <span class="sec-title">Tous les jobs</span>
+    <button class="btn btn-accent" onclick="goTab('add')">+ Nouveau</button>
+  </div>
+  <div id="jobs-list"></div>
+</div>
+
+<!-- ═══ MÉTÉO ═══ -->
+<div id="tab-wx" class="sec">
+  <div class="wx-sliders">
+    <div class="wx-sl-title">🎛 Simuler la météo</div>
+    <div class="sl-g"><div class="sl-l"><span>💨 Vent</span><span id="sl-wv">32 km/h</span></div><input type="range" class="sl" id="sl-w" min="0" max="120" value="32" oninput="updateWx()"></div>
+    <div class="sl-g"><div class="sl-l"><span>🌧 Pluie</span><span id="sl-rv">4 mm</span></div><input type="range" class="sl" id="sl-r" min="0" max="50" value="4" oninput="updateWx()"></div>
+    <div class="sl-g"><div class="sl-l"><span>🌡 Température</span><span id="sl-tv">14°C</span></div><input type="range" class="sl" id="sl-t" min="-20" max="40" value="14" oninput="updateWx()"></div>
+  </div>
+  <div class="fx-grid">
+    <div class="fx-card"><div class="fx-title">📅 Prévisions 7 jours</div><div id="fx-list"></div></div>
+    <div class="fx-card"><div class="fx-title">📊 Impact sur les jobs</div><div id="fx-impact"></div></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="goTab('dash')"><span class="ni-icon">📊</span>Accueil</button>
+  <button class="nav-item" onclick="goTab('cal')"><span class="ni-icon">📅</span>Agenda</button>
+  <button class="nav-item" onclick="goTab('add')"><span class="ni-icon">➕</span>Créer</button>
+  <button class="nav-item" onclick="goTab('list')"><span class="ni-icon">📋</span>Liste</button>
+  <button class="nav-item" onclick="goTab('wx')"><span class="ni-icon">🌤</span>Météo</button>
+</nav>
+
+<!-- DRAG GHOST -->
+<div class="drag-ghost" id="drag-ghost">12h</div>
+
+<!-- SHEET: REPORTER -->
+<div class="sheet-ov" id="sh-report" onclick="closeOv(event,'sh-report')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="rp-name">—</div><div class="sh-sub">📅 Reporter le job</div>
+    <div class="dt-opts">
+      <div class="dt-opt" onclick="selRepDate('d1')"><div class="dti">📅</div><div class="dtl">Demain</div><div class="dts" id="dt-d1">—</div></div>
+      <div class="dt-opt" onclick="selRepDate('d2')"><div class="dti">📆</div><div class="dtl">Après-demain</div><div class="dts" id="dt-d2">—</div></div>
+      <div class="dt-opt" onclick="selRepDate('wk')"><div class="dti">🗓</div><div class="dtl">Sem. prochaine</div><div class="dts">Lundi</div></div>
+      <div class="dt-opt" onclick="selRepDate('nd')"><div class="dti">⏸</div><div class="dtl">Indéfini</div><div class="dts">En attente</div></div>
+    </div>
+    <div class="fg" style="margin-bottom:14px"><label class="fl">Note</label><input class="fc" id="rp-note" placeholder="Raison..."></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="closeSheet('sh-report')">Annuler</button>
+      <button class="btn btn-blue btn-full" onclick="doReport()">📅 Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: REMPLACER -->
+<div class="sheet-ov" id="sh-replace" onclick="closeOv(event,'sh-replace')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="repl-name">—</div><div class="sh-sub">🔄 Choisir un remplacement</div>
+    <div id="repl-cands"></div>
+    <button class="btn btn-ghost btn-full" style="margin-top:12px" onclick="closeSheet('sh-replace')">Annuler</button>
+  </div>
+</div>
+
+<!-- SHEET: CONFIRMER RISQUE -->
+<div class="sheet-ov" id="sh-confirm" onclick="closeOv(event,'sh-confirm')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="cf-name">—</div><div class="sh-sub" id="cf-sub">⚠️ Confirmer malgré le risque</div>
+    <div class="conf-warn" id="cf-warn">—</div>
+    <div id="cf-checks"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeSheet('sh-confirm')">Annuler</button>
+      <button id="cf-go" class="btn btn-full" onclick="doConfirm()" style="background:var(--risk);color:#000;border:none;opacity:.4;pointer-events:none">✅ On y va quand même</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: EDIT TIME -->
+<div class="sheet-ov" id="sh-edit" onclick="closeOv(event,'sh-edit')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="ed-name">—</div><div class="sh-sub">✏️ Modifier heure et durée</div>
+    <div class="time-picker">
+      <div class="fg"><label class="fl">Heure de début (h)</label><input class="fc" id="ed-hour" type="number" min="0" max="23" step="0.5"></div>
+      <div class="fg"><label class="fl">Durée (h)</label><input class="fc" id="ed-dur" type="number" min="0.5" max="24" step="0.5"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="closeSheet('sh-edit')">Annuler</button>
+      <button class="btn btn-accent btn-full" onclick="saveEdit()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: DÉTAIL -->
+<div class="sheet-ov" id="sh-detail" onclick="closeOv(event,'sh-detail')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="dt-name">—</div><div class="sh-sub" id="dt-status">—</div>
+    <div id="dt-body"></div>
+    <div class="act-bar" style="margin-top:14px" id="dt-acts"></div>
+    <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="closeSheet('sh-detail')">Fermer</button>
+  </div>
+</div>
+
+<!-- SHEET: QUICK CREATE (depuis clic sur plage horaire) -->
+<div class="sheet-ov" id="sh-quick" onclick="closeOv(event,'sh-quick')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">⚡ Créer un job rapidement</div>
+    <div class="sh-sub" id="qc-when">—</div>
+
+    <div class="fg"><label class="fl">Nom du job *</label><input class="fc" id="qc-name" placeholder="ex: Inspection ligne"></div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Durée (h)</label><input class="fc" id="qc-dur" type="number" value="2" min=".5" step=".5"></div>
+      <div class="fg"><label class="fl">Type</label><input class="fc" id="qc-type" placeholder="ex: Inspection"></div>
+    </div>
+    <div class="form-sep">Priorité</div>
+    <div class="prio-grid">
+      <div class="prio-opt" onclick="setQuickPrio('low',this)">🟢<br>Basse</div>
+      <div class="prio-opt sel-med" onclick="setQuickPrio('med',this)">🟡<br>Moy.</div>
+      <div class="prio-opt" onclick="setQuickPrio('high',this)">🟠<br>Haute</div>
+      <div class="prio-opt" onclick="setQuickPrio('urgent',this)">🔴<br>Urgente</div>
+    </div>
+    <input type="hidden" id="qc-prio" value="med">
+
+    <div style="display:flex;gap:10px;margin-top:14px;flex-direction:column">
+      <button class="btn btn-accent btn-full" onclick="doQuickCreate()">✅ Créer ici</button>
+      <button class="btn btn-ghost btn-full" onclick="closeSheet('sh-quick')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
 <script>
-const $=s=>document.querySelector(s); const $$=s=>document.querySelectorAll(s);
-let jobs=JSON.parse(localStorage.getItem('spm_jobs')||'[]');
-let selectedDate=new Date(); selectedDate.setHours(0,0,0,0);
-let calView='day'; let editingId=null; let slotPreset=null;
-let wx={temp:14,wind:32,rain:4};
-const months=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
-const monthsFull=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const days=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam']; const daysFull=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-function save(){localStorage.setItem('spm_jobs',JSON.stringify(jobs)); render();}
-function ymd(d){return d.toISOString().slice(0,10)} function fromYmd(s){let [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
-function fmtDate(s){if(!s)return '—'; let d=s.includes('T')?s.split('T')[0]:s; let t=s.includes('T')?s.split('T')[1]:''; let [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}${t?' '+t:''}`}
-function fmtTime(h){h=Number(h||0); let hr=Math.floor(h), mn=Math.round((h-hr)*60); return `${String(hr).padStart(2,'0')}h${mn?String(mn).padStart(2,'0'):''}`}
-function toast(msg){let t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove('show'),2500)}
-function tab(id,el){$$('.section').forEach(s=>s.classList.remove('active'));$('#'+id).classList.add('active');$$('.nav').forEach(n=>n.classList.remove('active'));el.classList.add('active');window.scrollTo(0,0);render()}
-function status(job){let bad=[]; if(wx.wind>job.maxWind)bad.push('vent'); if(wx.rain>job.maxRain)bad.push('pluie'); if(wx.temp<job.minTemp||wx.temp>job.maxTemp)bad.push('température'); if(!bad.length)return {s:'ok',msg:'✅ Conditions parfaites.'}; if(bad.length>=2)return {s:'danger',msg:'🚨 Trop risqué. Reporter ce job.'}; return {s:'risk',msg:'⚠️ À surveiller.'}}
-function wxIcon(){if(wx.rain>20)return'⛈';if(wx.rain>5)return'🌧';if(wx.wind>60)return'🌪';if(wx.temp<0)return'❄️';if(wx.rain>0)return'🌦';return wx.wind>40?'🌬':'⛅'}
-function wxDesc(){if(wx.rain>20&&wx.wind>50)return'Tempête — danger';if(wx.rain>5)return'Pluie';if(wx.wind>55)return'Vents forts';if(wx.temp<0)return'Gel';return'Conditions variables'}
-function jobCard(job){let st=status(job);let d=job.date||'';return `<div class="card job ${st.s}"><div class="row"><div><h3>${esc(job.name)}</h3><div class="sub">${esc(job.client||'Sans client')} ${job.place?'· '+esc(job.place):''}</div></div><span class="pill ${st.s}">${st.s==='ok'?'✅ OK':st.s==='risk'?'⚠️ Risque':'🚨 Danger'}</span></div><div class="meta"><span>📅 ${fmtDate(job.date)}</span><span>🕘 ${job.start?fmtTime(job.start):'—'}</span><span>⏱ ${job.duration||1}h</span><span>🔧 ${esc(job.type||'Autre')}</span><span>🎯 ${esc(job.priority||'moyenne')}</span></div><div class="conds"><span class="cond ${wx.wind>job.maxWind?'bad':''}">💨 ≤${job.maxWind} km/h</span><span class="cond ${wx.rain>job.maxRain?'bad':''}">🌧 ≤${job.maxRain} mm</span><span class="cond ${(wx.temp<job.minTemp||wx.temp>job.maxTemp)?'bad':''}">🌡 ${job.minTemp}° à ${job.maxTemp}°</span></div><div class="hint ${st.s}">${st.msg}</div><div class="actions"><button class="btn" onclick="editJob('${job.id}')">✏️ Modifier</button><button class="btn red" onclick="delJob('${job.id}')">🗑 Supprimer</button></div></div>`}
-function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function renderWeather(){ $('#wxIcon').textContent=wxIcon();$('#wxTemp').textContent=Math.round(wx.temp)+'°C';$('#wxWind').textContent=Math.round(wx.wind)+' km/h';$('#wxRain').textContent=Math.round(wx.rain)+' mm';$('#wxFeel').textContent=Math.round(wx.temp-wx.wind*.15)+'°C';$('#wxDesc').textContent=wxDesc();$('#sWindVal').textContent=Math.round(wx.wind);$('#sRainVal').textContent=Math.round(wx.rain);$('#sTempVal').textContent=Math.round(wx.temp);$('#sWind').value=Math.round(wx.wind);$('#sRain').value=Math.round(wx.rain);$('#sTemp').value=Math.round(wx.temp)}
-function render(){renderWeather();let c={ok:0,risk:0,danger:0};jobs.forEach(j=>c[status(j).s]++);$('#cOk').textContent=c.ok;$('#cRisk').textContent=c.risk;$('#cDanger').textContent=c.danger;let todayJobs=jobs.filter(j=>(j.date||'').slice(0,10)===ymd(new Date()));$('#dashJobs').innerHTML=todayJobs.length?todayJobs.map(jobCard).join(''):'<div class="card sub">Aucun job aujourd’hui. Appuie sur + pour créer.</div>';$('#allJobs').innerHTML=jobs.length?jobs.map(jobCard).join(''):'<div class="card sub">Aucun job encore.</div>';renderCalendar();renderForm('#createForm')}
-function setCalView(v){calView=v;['Day','Week','Month'].forEach(x=>$('#v'+x).classList.toggle('active',x.toLowerCase()===v));renderCalendar()}
-function moveDate(n){if(calView==='month'){selectedDate.setMonth(selectedDate.getMonth()+n);selectedDate.setDate(1)}else selectedDate.setDate(selectedDate.getDate()+(calView==='week'?7*n:n));renderCalendar()}
-function todayCal(){selectedDate=new Date();selectedDate.setHours(0,0,0,0);renderCalendar()}
-function renderCalendar(){if(!$('#calArea'))return; if(calView==='month')return renderMonth(); if(calView==='week')return renderWeek(); return renderDay()}
-function renderDay(){let ds=ymd(selectedDate);$('#calTitle').textContent=`${daysFull[selectedDate.getDay()]} ${selectedDate.getDate()} ${months[selectedDate.getMonth()]}`;let html='<div class="timeline">';for(let h=0;h<24;h++){let items=jobs.filter(j=>(j.date||'').slice(0,10)===ds&&Number(j.start||0)>=h&&Number(j.start||0)<h+1);html+=`<div class="hour">${String(h).padStart(2,'0')}h</div><div class="slot" onclick="openJobModal('${ds}',${h})"><div class="slotEmpty">+ Créer ici</div>${items.map(j=>`<div class="event" onclick="event.stopPropagation();editJob('${j.id}')"><button class="x" onclick="event.stopPropagation();delJob('${j.id}')">×</button><strong>${esc(j.name)}</strong><small>${fmtTime(j.start)} · ${j.duration||1}h</small></div>`).join('')}</div>`}html+='</div>';$('#calArea').innerHTML=html}
-function renderWeek(){let d=new Date(selectedDate);let off=d.getDay()===0?-6:1-d.getDay();d.setDate(d.getDate()+off);$('#calTitle').textContent=`Semaine du ${d.getDate()} ${months[d.getMonth()]}`;let html='<div class="weekList">';for(let i=0;i<7;i++){let dd=new Date(d);dd.setDate(d.getDate()+i);let ds=ymd(dd);let items=jobs.filter(j=>(j.date||'').slice(0,10)===ds);html+=`<div class="weekDay" onclick="selectedDate=fromYmd('${ds}');setCalView('day')"><div class="row"><strong>${daysFull[dd.getDay()]} ${dd.getDate()}</strong><button class="btn small primary" onclick="event.stopPropagation();openJobModal('${ds}',8)">+ Job</button></div>${items.length?items.map(j=>`<div class="event" onclick="event.stopPropagation();editJob('${j.id}')"><strong>${esc(j.name)}</strong><small>${fmtTime(j.start)} · ${j.duration||1}h</small></div>`).join(''):'<p class="sub" style="margin-top:8px">Aucun job</p>'}</div>`}html+='</div>';$('#calArea').innerHTML=html}
-function renderMonth(){let y=selectedDate.getFullYear(),m=selectedDate.getMonth();$('#calTitle').textContent=`${monthsFull[m]} ${y}`;let first=new Date(y,m,1);let start=first.getDay()===0?6:first.getDay()-1;let dim=new Date(y,m+1,0).getDate();let html='<div class="month">';['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(x=>html+=`<div class="mh">${x}</div>`);for(let i=0;i<42;i++){let num=i-start+1;let cd=new Date(y,m,num);let ds=ymd(cd);let other=cd.getMonth()!==m;let isToday=ds===ymd(new Date());let items=jobs.filter(j=>(j.date||'').slice(0,10)===ds);html+=`<div class="mc ${other?'other':''} ${isToday?'today':''}" onclick="selectedDate=fromYmd('${ds}');setCalView('day')"><div class="daynum">${cd.getDate()}${items.length?'<span class="dot"></span>':''}</div>${items.slice(0,2).map(j=>`<div class="mevent">${esc(j.name)}</div>`).join('')}</div>`}html+='</div>';$('#calArea').innerHTML=html}
-function renderForm(target){$(target).innerHTML=`<div class="form"><div class="fg"><label>Nom du job *</label><input class="fc" id="f_name" placeholder="Ex: remplacement poteaux"></div><div class="twocol"><div class="fg"><label>Client</label><input class="fc" id="f_client" placeholder="Hydro-Québec"></div><div class="fg"><label>Lieu / zone</label><input class="fc" id="f_place" placeholder="Secteur Nord"></div></div><div class="twocol"><div class="fg"><label>Type de travail</label><input class="fc" id="f_type" placeholder="Montage lignes"></div><div class="fg"><label>Durée (h)</label><input class="fc" id="f_duration" type="number" min="0.5" step="0.5" value="2"></div></div><div class="twocol"><div class="fg"><label>Date</label><input class="fc" id="f_date" type="date"></div><div class="fg"><label>Heure début</label><input class="fc" id="f_start" type="time"></div></div><div class="fg"><label>Priorité</label><select class="fc" id="f_priority"><option value="basse">Basse</option><option value="moyenne" selected>Moyenne</option><option value="haute">Haute</option><option value="urgente">Urgente</option></select></div><div class="twocol"><div class="fg"><label>Vent max km/h</label><input class="fc" id="f_wind" type="number" value="50"></div><div class="fg"><label>Pluie max mm</label><input class="fc" id="f_rain" type="number" value="5"></div></div><div class="twocol"><div class="fg"><label>Temp min °C</label><input class="fc" id="f_tmin" type="number" value="-5"></div><div class="fg"><label>Temp max °C</label><input class="fc" id="f_tmax" type="number" value="35"></div></div><button class="btn primary full" onclick="saveForm('${target}')">✅ Créer</button></div>`}
-function openJobModal(date,start){editingId=null;slotPreset={date,start};$('#modalTitle').textContent='Nouveau job';renderForm('#modalForm');setTimeout(()=>{if(date)$('#f_date').value=date;if(start!==undefined)$('#f_start').value=String(start).padStart(2,'0')+':00';$('#jobModal').classList.add('open')},0)}
-function closeJobModal(){$('#jobModal').classList.remove('open')}
-function saveForm(target){let name=$('#f_name').value.trim();if(!name)return toast('Nom obligatoire');let time=$('#f_start').value||'08:00';let start=Number(time.split(':')[0])+Number(time.split(':')[1]||0)/60;let job={id:editingId||Date.now().toString(),name,client:$('#f_client').value,place:$('#f_place').value,type:$('#f_type').value||'Autre',duration:Number($('#f_duration').value||1),date:$('#f_date').value,start,priority:$('#f_priority').value,maxWind:Number($('#f_wind').value||50),maxRain:Number($('#f_rain').value||5),minTemp:Number($('#f_tmin').value||-5),maxTemp:Number($('#f_tmax').value||35)};if(!job.date)job.date=ymd(selectedDate); if(editingId){jobs=jobs.map(j=>j.id===editingId?job:j)}else jobs.push(job); closeJobModal(); save(); toast(editingId?'Job modifié':'Job créé')}
-function editJob(id){let j=jobs.find(x=>x.id===id);if(!j)return;editingId=id;$('#modalTitle').textContent='Modifier job';renderForm('#modalForm');setTimeout(()=>{$('#f_name').value=j.name;$('#f_client').value=j.client||'';$('#f_place').value=j.place||'';$('#f_type').value=j.type||'';$('#f_duration').value=j.duration||1;$('#f_date').value=(j.date||'').slice(0,10);let hh=Math.floor(j.start||8), mm=Math.round(((j.start||8)-hh)*60);$('#f_start').value=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;$('#f_priority').value=j.priority||'moyenne';$('#f_wind').value=j.maxWind;$('#f_rain').value=j.maxRain;$('#f_tmin').value=j.minTemp;$('#f_tmax').value=j.maxTemp;$('#jobModal').classList.add('open')},0)}
-function delJob(id){let j=jobs.find(x=>x.id===id);if(j&&confirm('Supprimer '+j.name+' ?')){jobs=jobs.filter(x=>x.id!==id);save();toast('Job supprimé')}}
-function autoPlanAll(){let start=7;let date=ymd(selectedDate);jobs=jobs.map((j,i)=>({...j,date:j.date||date,start:j.start??(start+i*2)}));save();toast('Planning auto appliqué')}
-function sliderWeather(){wx.wind=Number($('#sWind').value);wx.rain=Number($('#sRain').value);wx.temp=Number($('#sTemp').value);$('#modeLabel').textContent='Démo météo simulée';render()}
-async function getRealWeather(){if(!navigator.geolocation)return toast('Géolocalisation non supportée');toast('Localisation…');navigator.geolocation.getCurrentPosition(async pos=>{try{let lat=pos.coords.latitude,lon=pos.coords.longitude;let url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation`;let r=await fetch(url);let d=await r.json();wx.temp=d.current.temperature_2m;wx.wind=d.current.wind_speed_10m;wx.rain=d.current.precipitation;$('#modeLabel').textContent='Météo réelle activée';render();toast('Météo réelle chargée')}catch(e){toast('Erreur météo')}},()=>toast('Permission localisation refusée'))}
-setInterval(()=>$('#clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'}),1000);$('#clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'});render();
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const MONTHS_FULL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DAYS_S=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const DAYS_F=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const HOUR_H = 72;
+
+let wx = {wind:32, rain:4, temp:14};
+let calDate = new Date(); calDate.setHours(0,0,0,0);
+let calView = 'day'; // day | week | month
+let activeJobId = null;
+let selReportDate = null;
+let cfChecks = {};
+let editJobId = null;
+let quickCreateContext = null; // {date,startHour}
+
+const FX = [
+  {wind:32,rain:4, temp:14,icon:'⛅'},
+  {wind:55,rain:18,temp:10,icon:'🌧'},
+  {wind:70,rain:30,temp:8, icon:'⛈'},
+  {wind:20,rain:0, temp:17,icon:'🌤'},
+  {wind:12,rain:0, temp:22,icon:'☀️'},
+  {wind:25,rain:2, temp:19,icon:'🌤'},
+  {wind:40,rain:8, temp:13,icon:'🌦'},
+  {wind:15,rain:0, temp:20,icon:'☀️'},
+  {wind:50,rain:12,temp:11,icon:'🌧'},
+  {wind:35,rain:5, temp:16,icon:'🌦'},
+  {wind:18,rain:0, temp:21,icon:'☀️'},
+  {wind:60,rain:20,temp:9, icon:'⛈'},
+  {wind:22,rain:0, temp:18,icon:'🌤'},
+  {wind:30,rain:3, temp:15,icon:'⛅'},
+];
+
+let schedule = [];
+
+let jobs = [
+  {id:1,name:"Remplacement poteaux Sect.4",client:"Hydro-Québec",place:"Secteur Nord",type:"Montage lignes",dur:6,prio:"urgent",deadline:"2026-05-02T16:00",prefer:"",maxWind:40,maxRain:0,minTemp:-10,maxTemp:35,notes:""},
+  {id:2,name:"Émondage route 117",client:"MTQ",place:"Route 117",type:"Paysagement",dur:4,prio:"med",deadline:"2026-05-10T17:00",prefer:"",maxWind:60,maxRain:10,minTemp:0,maxTemp:38,notes:""},
+  {id:3,name:"Coulée béton fondation",client:"Constructions Martel",place:"Laval",type:"Construction",dur:8,prio:"high",deadline:"2026-04-30T18:00",prefer:"",maxWind:50,maxRain:2,minTemp:5,maxTemp:35,notes:""},
+  {id:4,name:"Panneaux solaires",client:"EcoSoleil",place:"Montréal",type:"Toiture",dur:5,prio:"low",deadline:"2026-05-20T17:00",prefer:"",maxWind:25,maxRain:0,minTemp:0,maxTemp:40,notes:""},
+];
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function ds(d){return d.toISOString().split('T')[0];}
+function sd(s){
+  // Accept YYYY-MM-DD or YYYY-MM-DDTHH:MM
+  const dateOnly=s.includes('T')?s.split('T')[0]:s;
+  const[y,m,day]=dateOnly.split('-').map(Number);
+  return new Date(y,m-1,day);
+}
+function today(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function fxFor(dateStr){
+  const diff=Math.round((sd(dateStr)-today())/86400000);
+  return FX[Math.max(0,Math.min(13,diff))];
+}
+function alert4(job,w){
+  w=w||wx;
+  const v=[];
+  if(w.wind>job.maxWind) v.push(`Vent ${w.wind}>${job.maxWind}km/h`);
+  if(w.rain>job.maxRain) v.push(`Pluie ${w.rain}>${job.maxRain}mm`);
+  if(w.temp<job.minTemp) v.push(`Temp ${w.temp}<${job.minTemp}°C`);
+  if(w.temp>job.maxTemp) v.push(`Temp ${w.temp}>${job.maxTemp}°C`);
+  if(!v.length) return{s:'ok',v:[],msg:'✅ Conditions parfaites.'};
+  const crit=v.length>=2||(w.wind>job.maxWind*1.5)||(w.rain>job.maxRain*3&&job.maxRain>0);
+  return crit?{s:'danger',v,msg:'🚨 Trop risqué. Reporter ce job.'}:{s:'risk',v,msg:'⚠️ À surveiller.'};
+}
+function fmtH(h){
+  const hr=Math.floor(h);const mn=Math.round((h-hr)*60);
+  return `${String(hr).padStart(2,'0')}h${mn?String(mn).padStart(2,'0'):''}`;
+}
+function fmtDeadline(s){
+  if(!s) return '—';
+  if(s.includes('T')){
+    const[d,t]=s.split('T');const[y,m,day]=d.split('-');
+    return `${day}/${m}/${y} ${t}`;
+  }
+  return s;
+}
+
+// ════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════
+function tic(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'});}
+setInterval(tic,1000);tic();
+
+// ════════════════════════════════════════════
+// WEATHER
+// ════════════════════════════════════════════
+function wxIcon(w,r,t){if(r>20)return'⛈';if(r>5)return'🌧';if(w>60)return'🌪';if(t<0)return'❄️';if(r>0)return'🌦';return w>40?'🌬':'⛅';}
+function wxDesc(w,r,t){
+  if(r>20&&w>50)return'Tempête — DANGER';if(r>10)return'Pluie forte';if(r>3)return'Pluie modérée';
+  if(w>70)return'Vents violents';if(w>50)return'Vents forts';if(t<-10)return'Grand froid';
+  if(t<0)return'Gel';if(r===0&&w<20)return'Idéal ✓';return'Partiellement nuageux';
+}
+function updateWx(){
+  wx.wind=+document.getElementById('sl-w').value;
+  wx.rain=+document.getElementById('sl-r').value;
+  wx.temp=+document.getElementById('sl-t').value;
+  document.getElementById('sl-wv').textContent=wx.wind+' km/h';
+  document.getElementById('sl-rv').textContent=wx.rain+' mm';
+  document.getElementById('sl-tv').textContent=wx.temp+'°C';
+  document.getElementById('wi').textContent=wxIcon(wx.wind,wx.rain,wx.temp);
+  document.getElementById('wt').textContent=wx.temp+'°C';
+  document.getElementById('ww').textContent=wx.wind+' km/h';
+  document.getElementById('wr').textContent=wx.rain+' mm';
+  document.getElementById('wf').textContent=Math.round(wx.temp-wx.wind*.15)+'°C';
+  document.getElementById('wd').textContent=wxDesc(wx.wind,wx.rain,wx.temp);
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+// SCHEDULING
+// ════════════════════════════════════════════
+const PRIO_W={urgent:4,high:3,med:2,low:1};
+const PREF_START=6, PREF_END=18;
+
+function usedHours(dateStr){
+  return schedule.filter(e=>e.date===dateStr).reduce((s,e)=>{
+    const j=jobs.find(jj=>jj.id===e.jobId);return s+(j?j.dur:0);
+  },0);
+}
+function slotsForDate(dateStr){
+  return schedule.filter(e=>e.date===dateStr).map(e=>{
+    const j=jobs.find(jj=>jj.id===e.jobId);
+    return{start:e.startHour,end:e.startHour+(j?j.dur:0)};
+  }).sort((a,b)=>a.start-b.start);
+}
+function firstFreeSlot(dateStr,dur,allowNight=false){
+  const occupied=slotsForDate(dateStr);
+  const start=allowNight?0:PREF_START;
+  const end=allowNight?24:PREF_END;
+  let candidate=start;
+  for(const blk of occupied){
+    if(candidate+dur<=blk.start) return candidate;
+    candidate=Math.max(candidate,blk.end);
+  }
+  if(candidate+dur<=end) return candidate;
+  return null;
+}
+function isScheduled(jobId){return schedule.some(e=>e.jobId===jobId);}
+function isSlotFree(dateStr,startHour,dur){
+  const occupied=slotsForDate(dateStr);
+  for(const blk of occupied){
+    if(startHour<blk.end && startHour+dur>blk.start) return false;
+  }
+  return true;
+}
+
+function findBestSlot(job){
+  const t0=today();
+  const deadline=job.deadline?sd(job.deadline):new Date(t0.getTime()+14*86400000);
+  const allowNight=job.prio==='urgent';
+
+  if(job.prefer){
+    const fxd=fxFor(job.prefer);
+    const al=alert4(job,fxd);
+    const dateOnly=job.prefer.split('T')[0];
+    const slot=firstFreeSlot(dateOnly,job.dur,allowNight);
+    if(al.s==='ok'&&slot!==null) return{date:dateOnly,startHour:slot,alert:al};
+  }
+
+  let best=null,bestScore=-Infinity;
+  for(let i=0;i<14;i++){
+    const d=new Date(t0);d.setDate(t0.getDate()+i);
+    const dateStr=ds(d);
+    const f=fxFor(dateStr);const al=alert4(job,f);
+    const slot=firstFreeSlot(dateStr,job.dur,allowNight);
+    if(slot===null) continue;
+
+    let score=0;
+    if(al.s==='ok') score+=100;
+    else if(al.s==='risk') score+=35;
+    else score-=50;
+    score+=(PRIO_W[job.prio]||1)*(14-i)*2;
+    const dtd=Math.max(1,(deadline-d)/86400000);
+    score-=dtd*.4;
+    if(slot>=PREF_START&&slot+job.dur<=PREF_END) score+=10;
+
+    if(score>bestScore){bestScore=score;best={date:dateStr,startHour:slot,alert:al};}
+  }
+  return best;
+}
+
+function autoSchedule(job,notify=true){
+  if(isScheduled(job.id))return;
+  const slot=findBestSlot(job);
+  if(slot){
+    schedule.push({jobId:job.id,date:slot.date,startHour:slot.startHour});
+    if(notify){
+      const dl=sd(slot.date).toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+      const icon=slot.alert.s==='ok'?'✅':slot.alert.s==='risk'?'⚠️':'🚨';
+      toast(`${icon} Planifié : ${dl} à ${fmtH(slot.startHour)}`,slot.alert.s==='ok'?'var(--ok)':'var(--risk)');
+    }
+  } else if(notify) toast(`⏳ "${job.name}" → À planifier`,'var(--muted)');
+}
+
+function optimizeAll(){
+  schedule=[];
+  [...jobs].sort((a,b)=>(PRIO_W[b.prio]||1)-(PRIO_W[a.prio]||1)).forEach(j=>autoSchedule(j,false));
+  renderAll();
+  toast('🔮 Calendrier optimisé!','#7c3aed');
+}
+
+function initSchedule(){jobs.forEach(j=>autoSchedule(j,false));}
+
+// ════════════════════════════════════════════
+// JOB CARD
+// ════════════════════════════════════════════
+function prioLabel(p){
+  const cls={urgent:'urgent',high:'high',med:'med',low:'low'};
+  const txt={urgent:'🔴 Urgente',high:'🟠 Haute',med:'🟡 Moyenne',low:'🟢 Basse'};
+  return `<span class="ubadge ${cls[p]||'low'}">${txt[p]||p}</span>`;
+}
+
+function jobCard(job,compact=false){
+  const al=alert4(job);
+  const sched=schedule.find(e=>e.jobId===job.id);
+  const dead=fmtDeadline(job.deadline);
+
+  const conds=[
+    {l:`💨 ≤${job.maxWind}km/h`,v:wx.wind>job.maxWind},
+    {l:`🌧 ≤${job.maxRain}mm`,v:wx.rain>job.maxRain},
+    {l:`🌡 ${job.minTemp}→${job.maxTemp}°`,v:wx.temp<job.minTemp||wx.temp>job.maxTemp},
+  ].map(c=>`<span class="cond-tag ${c.v?'viol':''}">${c.l}</span>`).join('');
+
+  let ovTag='';
+  if(job.reportedTo) ovTag=`<span class="badge blue" style="margin-top:4px;display:inline-block">📅 Reporté → ${job.reportedTo}</span>`;
+  else if(job.confirmed) ovTag=`<span class="badge risk" style="margin-top:4px;display:inline-block">✅ Confirmé</span>`;
+
+  let schedTag='';
+  if(sched){
+    const sd2=sd(sched.date).toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+    schedTag=`<span class="jc-sched-tag">📅 ${sd2} · ${fmtH(sched.startHour)}–${fmtH(sched.startHour+job.dur)}</span>`;
+  }
+
+  const canCf=al.s==='risk'||al.s==='danger';
+  const actBar=`<div class="act-bar">
+    <button class="act-btn ab-blue" onclick="openReport(${job.id})"><span class="ai">📅</span>Reporter</button>
+    <button class="act-btn ab-green" onclick="openReplace(${job.id})"><span class="ai">🔄</span>Remplacer</button>
+    <button class="act-btn ab-yellow" onclick="downloadICS(${job.id})"><span class="ai">📲</span>Calendrier</button>
+    <button class="act-btn ab-red" onclick="confirmDelete(${job.id})"><span class="ai">🗑</span>Supprimer</button>
+  </div>`;
+
+  const editRow=compact?'':`<div class="edit-row">
+    <button class="btn-xs" onclick="prefillEdit(${job.id})">✏️ Modifier</button>
+    <button class="btn-xs" onclick="openEditTime(${job.id})">⏱ Heure</button>
+    <button class="btn-xs" onclick="reschedule(${job.id})">🔄 Replanifier</button>
+    ${canCf?`<button class="btn-xs" onclick="openConfirm(${job.id})" style="border-color:rgba(245,158,11,.4);color:var(--risk)">⚡ Confirmer risque</button>`:''}
+  </div>`;
+
+  const isRep=job.reportedTo,isCf=job.confirmed;
+  const cls=['job-card',isRep?'reported':isCf?'confirmed':al.s].join(' ');
+  const badgeCls=isRep?'blue':isCf?'ok':al.s;
+  const badgeTxt=isRep?'📅 Reporté':isCf?'✅ Confirmé':al.s==='ok'?'✅ OK':al.s==='risk'?'⚠️ Risque':'🚨 Danger';
+
+  return `<div class="${cls}">
+    <div class="jc-top">
+      <div><div class="jc-name">${job.name}</div><div class="jc-sub">${job.client}${job.place?' · '+job.place:''} · ${prioLabel(job.prio)}</div></div>
+      <span class="badge ${badgeCls}">${badgeTxt}</span>
+    </div>
+    <div class="jc-conds">${conds}</div>
+    <div class="jc-sug ${al.s}">${al.msg}</div>
+    ${ovTag}${schedTag}
+    <div class="jc-meta"><span>⏱ ${job.dur}h</span><span>📅 Éch: ${dead}</span><span>🔧 ${job.type}</span>${job.place?`<span>📍 ${job.place}</span>`:''}</div>
+    ${actBar}${editRow}
+  </div>`;
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function renderDash(){
+  const counts={ok:0,risk:0,danger:0};
+  jobs.forEach(j=>counts[alert4(j).s]++);
+  document.getElementById('cnt-ok').textContent=counts.ok;
+  document.getElementById('cnt-risk').textContent=counts.risk;
+  document.getElementById('cnt-dng').textContent=counts.danger;
+  const sorted=[...jobs].sort((a,b)=>({danger:0,risk:1,ok:2}[alert4(a).s])-({danger:0,risk:1,ok:2}[alert4(b).s]));
+  document.getElementById('dash-jobs').innerHTML=jobs.length
+    ?sorted.map(j=>jobCard(j,true)).join('')
+    :`<div style="text-align:center;padding:32px;color:var(--muted);font-size:16px">Aucun job. Touche "Créer" en bas pour ajouter!</div>`;
+}
+
+function renderList(){
+  document.getElementById('jobs-list').innerHTML=jobs.length
+    ?jobs.map(j=>jobCard(j,false)).join('')
+    :`<div style="text-align:center;padding:32px;color:var(--muted);font-size:16px">Aucun job.</div>`;
+}
+
+// ════════════════════════════════════════════
+// CALENDAR — VIEW MANAGEMENT
+// ════════════════════════════════════════════
+function setView(v){
+  calView=v;
+  ['day','week','month'].forEach(x=>document.getElementById('vt-'+x).classList.toggle('active',x===v));
+  document.getElementById('view-day-content').style.display=(v==='day'||v==='week')?'block':'none';
+  document.getElementById('view-month-content').style.display=v==='month'?'block':'none';
+  document.getElementById('day-strip').style.display=v==='day'?'flex':'none';
+  renderCal();
+}
+
+function navDate(dir){
+  if(dir===0){calDate=today();}
+  else if(calView==='month'){
+    calDate=new Date(calDate);calDate.setMonth(calDate.getMonth()+dir);calDate.setDate(1);
+  } else if(calView==='week'){
+    calDate=new Date(calDate);calDate.setDate(calDate.getDate()+dir*7);
+  } else {
+    calDate=new Date(calDate);calDate.setDate(calDate.getDate()+dir);
+  }
+  renderCal();
+}
+
+function renderCal(){
+  if(calView==='month'){renderMonthView();}
+  else if(calView==='week'){renderWeekView();}
+  else{renderDayView();}
+  renderUnscheduled();
+}
+
+// ── DAY VIEW ──
+function renderDayView(){
+  const dateStr=ds(calDate);
+  const di=calDate.getDay();
+  document.getElementById('cal-day-lbl').textContent=`${DAYS_F[di]} ${calDate.getDate()} ${MONTHS[calDate.getMonth()]} ${calDate.getFullYear()}`;
+
+  // Day strip
+  renderDayStrip();
+
+  // Build 24h timeline
+  const tl=document.getElementById('timeline');
+  let html='';
+  for(let h=0;h<24;h++){
+    const isNight=h<6||h>=21;
+    html+=`<div class="tl-label ${isNight?'night':''}">${String(h).padStart(2,'0')}h</div>`;
+    html+=`<div class="tl-slot ${isNight?'night-slot':''}" id="slot-${h}" data-hour="${h}" onclick="openQuickCreate('${dateStr}',${h})">
+      <div class="slot-hint">+ Créer un job ici</div>
+    </div>`;
+  }
+  tl.innerHTML=html;
+
+  // Place events
+  schedule.filter(e=>e.date===dateStr).forEach(ev=>{
+    const job=jobs.find(j=>j.id===ev.jobId);if(!job)return;
+    const al=alert4(job,fxFor(dateStr));
+    const slotEl=document.getElementById(`slot-${Math.floor(ev.startHour)}`);
+    if(!slotEl)return;
+    const topOffset=((ev.startHour-Math.floor(ev.startHour))*HOUR_H);
+    const height=Math.max(HOUR_H*.5,job.dur*HOUR_H-2);
+    const endH=ev.startHour+job.dur;
+
+    const evEl=document.createElement('div');
+    evEl.className=`cal-event ${al.s}`;
+    evEl.dataset.jobId=job.id;
+    evEl.style.cssText=`top:${topOffset}px;height:${height}px;`;
+    evEl.innerHTML=`
+      <button class="ev-delete" onclick="event.stopPropagation();confirmDelete(${job.id})" title="Supprimer">×</button>
+      <div class="ev-name">${job.name}</div>
+      <div class="ev-meta">${fmtH(ev.startHour)}–${fmtH(endH)} · ${job.dur}h</div>
+      <div class="ev-resize" onmousedown="startResize(event,${job.id})" ontouchstart="startResize(event,${job.id})"></div>`;
+    evEl.onclick=(e)=>{if(e.target.closest('.ev-delete')||e.target.closest('.ev-resize')||e._fromDrag)return;openDetail(job.id);};
+    evEl.onmousedown=(e)=>{if(e.target.closest('.ev-resize')||e.target.closest('.ev-delete'))return;startDrag(e,job.id,ev.startHour);};
+    evEl.ontouchstart=(e)=>{if(e.target.closest('.ev-resize')||e.target.closest('.ev-delete'))return;startDrag(e,job.id,ev.startHour);};
+    slotEl.appendChild(evEl);
+  });
+
+  // Now line
+  const now=new Date();
+  if(ds(now)===dateStr){
+    const line=document.getElementById('now-line');
+    const frac=(now.getHours()*60+now.getMinutes())/60;
+    line.style.top=(frac*HOUR_H+1)+'px';
+    line.style.left='48px';
+    line.style.display='block';
+  } else document.getElementById('now-line').style.display='none';
+}
+
+function renderDayStrip(){
+  const t0=today();
+  const strip=document.getElementById('day-strip');
+  let html='';
+  for(let i=0;i<7;i++){
+    const dd=new Date(calDate);dd.setDate(calDate.getDate()-3+i);
+    const dStr=ds(dd);
+    const f=fxFor(dStr);
+    const isT=dStr===ds(t0);
+    const isA=dStr===ds(calDate);
+    const hasE=schedule.some(e=>e.date===dStr);
+    const di=dd.getDay();
+    html+=`<div class="ds-btn ${isT?'today':''} ${isA?'active':''}" onclick="gotoDay('${dStr}')">
+      <div class="ds-day">${DAYS_S[di]} ${dd.getDate()}</div>
+      <div class="ds-icon">${f.icon}</div>
+      <div class="ds-temp">${f.temp}°</div>
+      ${hasE&&!isA?'<div class="ds-dot"></div>':''}
+    </div>`;
+  }
+  strip.innerHTML=html;
+}
+
+function gotoDay(dateStr){calDate=sd(dateStr);if(calView==='month')setView('day');else renderCal();}
+
+// ── WEEK VIEW (compact) ──
+function renderWeekView(){
+  // Use day strip showing the week
+  const day=calDate.getDay();
+  const offset=day===0?-6:1-day; // monday start
+  const monday=new Date(calDate);monday.setDate(calDate.getDate()+offset);
+
+  document.getElementById('cal-day-lbl').textContent=`Sem. du ${monday.getDate()} ${MONTHS[monday.getMonth()]}`;
+
+  // Show week as compact list of days with events
+  let html='<div style="display:flex;flex-direction:column;gap:8px">';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const dateStr=ds(d);
+    const f=fxFor(dateStr);
+    const events=schedule.filter(e=>e.date===dateStr).sort((a,b)=>a.startHour-b.startHour);
+    const isT=dateStr===ds(today());
+    html+=`<div style="background:var(--s1);border:1px solid ${isT?'rgba(0,212,170,.4)':'var(--border)'};border-radius:10px;padding:14px;cursor:pointer" onclick="gotoDay('${dateStr}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:17px;font-weight:800${isT?';color:var(--accent)':''}">${DAYS_F[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}</div>
+        <div style="display:flex;align-items:center;gap:8px;font-family:var(--fm);font-size:14px;color:var(--muted)">${f.icon} ${f.temp}°C · 💨${f.wind}</div>
+      </div>`;
+    if(!events.length){
+      html+=`<div style="font-size:14px;color:var(--muted);font-family:var(--fm)">Aucun job</div>`;
+    } else {
+      events.forEach(e=>{
+        const job=jobs.find(j=>j.id===e.jobId);if(!job)return;
+        const al=alert4(job,f);
+        html+=`<div class="month-event ${al.s}" style="font-size:13px;padding:6px 10px;margin-bottom:4px;border-radius:6px" onclick="event.stopPropagation();openDetail(${job.id})">
+          ${fmtH(e.startHour)} · ${job.name} · ${job.dur}h
+        </div>`;
+      });
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  document.getElementById('view-day-content').innerHTML=`<div>${html}</div>`;
+}
+
+// ── MONTH VIEW ──
+function renderMonthView(){
+  const year=calDate.getFullYear();
+  const month=calDate.getMonth();
+  document.getElementById('cal-day-lbl').textContent=`${MONTHS_FULL[month]} ${year}`;
+
+  const firstDay=new Date(year,month,1);
+  const startWeekday=firstDay.getDay()===0?6:firstDay.getDay()-1; // Monday=0
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const daysInPrevMonth=new Date(year,month,0).getDate();
+  const todayStr=ds(today());
+
+  let html='<div class="month-grid">';
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d=>html+=`<div class="month-day-hdr">${d}</div>`);
+
+  // Total cells = 42 (6 weeks)
+  for(let i=0;i<42;i++){
+    let dayNum,cellMonth,cellYear;
+    if(i<startWeekday){
+      dayNum=daysInPrevMonth-startWeekday+i+1;
+      cellMonth=month-1;cellYear=year;
+      if(cellMonth<0){cellMonth=11;cellYear--;}
+    } else if(i>=startWeekday+daysInMonth){
+      dayNum=i-startWeekday-daysInMonth+1;
+      cellMonth=month+1;cellYear=year;
+      if(cellMonth>11){cellMonth=0;cellYear++;}
+    } else {
+      dayNum=i-startWeekday+1;cellMonth=month;cellYear=year;
+    }
+    const cellDate=new Date(cellYear,cellMonth,dayNum);
+    const cellStr=ds(cellDate);
+    const isOther=cellMonth!==month;
+    const isToday=cellStr===todayStr;
+    const events=schedule.filter(e=>e.date===cellStr).sort((a,b)=>a.startHour-b.startHour);
+
+    html+=`<div class="month-cell ${isOther?'other-month':''} ${isToday?'today':''}" onclick="gotoDay('${cellStr}')">
+      <div class="month-day-num">${dayNum}</div>`;
+
+    const visible=events.slice(0,2);
+    visible.forEach(e=>{
+      const job=jobs.find(j=>j.id===e.jobId);if(!job)return;
+      const al=alert4(job,fxFor(cellStr));
+      html+=`<div class="month-event ${al.s}" title="${job.name}">${job.name}</div>`;
+    });
+    if(events.length>2) html+=`<div class="month-more">+${events.length-2} autres</div>`;
+    html+='</div>';
+  }
+  html+='</div>';
+  document.getElementById('view-month-content').innerHTML=html;
+}
+
+function renderUnscheduled(){
+  const unsched=jobs.filter(j=>!isScheduled(j.id));
+  const box=document.getElementById('unsched-box');
+  if(!unsched.length){box.style.display='none';return;}
+  box.style.display='block';
+  document.getElementById('unsched-list').innerHTML=unsched.map(j=>{
+    const slot=findBestSlot(j);
+    let sug='Aucun créneau trouvé dans les 14 prochains jours.';
+    if(slot){
+      const sd2=sd(slot.date).toLocaleDateString('fr-CA',{weekday:'long',month:'short',day:'numeric'});
+      const icon=slot.alert.s==='ok'?'✅':slot.alert.s==='risk'?'⚠️':'🚨';
+      sug=`${icon} Meilleure option : ${sd2} à ${fmtH(slot.startHour)}`;
+    }
+    return `<div class="unsched-item">
+      <div class="unsched-name">${j.name} ${prioLabel(j.prio)}</div>
+      <div class="unsched-sug">💡 ${sug}</div>
+      ${slot?`<button class="btn-xs" style="margin-top:8px" onclick="placeNow(${j.id})">📌 Placer ce créneau</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function placeNow(jobId){autoSchedule(jobs.find(j=>j.id===jobId));renderAll();}
+
+function renderWxTab(){
+  const t0=today();
+  document.getElementById('fx-list').innerHTML=FX.slice(0,7).map((f,i)=>{
+    const d=new Date(t0);d.setDate(t0.getDate()+i);
+    return `<div class="fx-row"><span class="fx-day">${i===0?'Auj.':DAYS_S[d.getDay()]} ${d.getDate()}</span><span>${f.icon}</span><span style="font-family:var(--fm);font-weight:700">${f.temp}°C</span><span style="font-size:13px;color:var(--muted);font-family:var(--fm)">${f.wind}km/h</span></div>`;
+  }).join('');
+  document.getElementById('fx-impact').innerHTML=jobs.map(j=>{
+    const a=alert4(j);
+    return `<div class="fx-row"><span style="font-size:14px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.name}</span><span>${a.s==='ok'?'✅':a.s==='risk'?'⚠️':'🚨'}</span></div>`;
+  }).join('')||`<div style="font-size:14px;color:var(--muted);padding:8px 0">Aucun job</div>`;
+}
+
+function renderAll(){renderDash();renderList();renderCal();renderWxTab();}
+
+// ════════════════════════════════════════════
+// QUICK CREATE (clic sur plage horaire)
+// ════════════════════════════════════════════
+let quickPrio='med';
+function setQuickPrio(v,el){
+  quickPrio=v;document.getElementById('qc-prio').value=v;
+  document.querySelectorAll('#sh-quick .prio-opt').forEach(o=>o.className='prio-opt');
+  el.classList.add('sel-'+v);
+}
+
+function openQuickCreate(dateStr,hour){
+  // Check if slot is occupied — if so, do nothing (user clicked on the empty area between jobs ideally)
+  if(!isSlotFree(dateStr,hour,1)){
+    // Slot might overlap — check if it's actually free for at least 1h
+    const occupied=slotsForDate(dateStr);
+    const blocking=occupied.find(b=>hour<b.end&&hour+1>b.start);
+    if(blocking) return; // existing job, ignore click
+  }
+
+  quickCreateContext={date:dateStr,startHour:hour};
+  const d=sd(dateStr);
+  document.getElementById('qc-when').textContent=`📅 ${DAYS_F[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} à ${hour}h`;
+  document.getElementById('qc-name').value='';
+  document.getElementById('qc-dur').value='2';
+  document.getElementById('qc-type').value='';
+  setQuickPrio('med',document.querySelectorAll('#sh-quick .prio-opt')[1]);
+  openSheet('sh-quick');
+  setTimeout(()=>document.getElementById('qc-name').focus(),200);
+}
+
+function doQuickCreate(){
+  const name=document.getElementById('qc-name').value.trim();
+  if(!name){toast('⚠️ Nom obligatoire','var(--danger)');return;}
+  const dur=+document.getElementById('qc-dur').value||2;
+  const type=document.getElementById('qc-type').value.trim()||'Autre';
+  const prio=document.getElementById('qc-prio').value;
+
+  const job={
+    id:Date.now(),name,client:'',place:'',type,dur,prio,
+    deadline:'',prefer:'',
+    maxWind:50,maxRain:5,minTemp:-5,maxTemp:35,notes:''
+  };
+  jobs.push(job);
+  schedule.push({jobId:job.id,date:quickCreateContext.date,startHour:quickCreateContext.startHour});
+  closeSheet('sh-quick');
+  renderAll();
+  toast(`✅ "${name}" créé à ${quickCreateContext.startHour}h`,'var(--accent)');
+}
+
+// ════════════════════════════════════════════
+// DRAG & DROP
+// ════════════════════════════════════════════
+let drag={active:false,jobId:null,origHour:null,startY:0,el:null,moved:false};
+
+function startDrag(e,jobId,origHour){
+  e.preventDefault();
+  drag={active:true,jobId,origHour,startY:e.touches?e.touches[0].clientY:e.clientY,el:e.currentTarget,moved:false};
+  drag.el.classList.add('dragging');
+  document.getElementById('drag-ghost').style.display='block';
+  document.addEventListener('mousemove',onDrag);
+  document.addEventListener('mouseup',endDrag);
+  document.addEventListener('touchmove',onDrag,{passive:false});
+  document.addEventListener('touchend',endDrag);
+}
+function onDrag(e){
+  if(!drag.active)return;
+  e.preventDefault();
+  const y=e.touches?e.touches[0].clientY:e.clientY;
+  const dy=y-drag.startY;
+  if(Math.abs(dy)>5) drag.moved=true;
+  const dHours=dy/HOUR_H;
+  const newHour=Math.max(0,Math.min(23.5,drag.origHour+dHours));
+  const snapped=Math.round(newHour*2)/2;
+  const ghost=document.getElementById('drag-ghost');
+  ghost.style.left=(e.touches?e.touches[0].clientX:e.clientX)+'px';
+  ghost.style.top=(y-30)+'px';
+  ghost.textContent=fmtH(snapped);
+}
+function endDrag(e){
+  if(!drag.active)return;
+  const y=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
+  const dy=y-drag.startY;
+  const dHours=dy/HOUR_H;
+  let newHour=Math.max(0,Math.min(23.5,drag.origHour+dHours));
+  newHour=Math.round(newHour*2)/2;
+  const job=jobs.find(j=>j.id===drag.jobId);
+  if(job&&drag.moved){
+    newHour=Math.min(newHour,24-job.dur);
+    const entry=schedule.find(e=>e.jobId===drag.jobId&&e.date===ds(calDate));
+    if(entry){entry.startHour=newHour;toast(`📍 Déplacé à ${fmtH(newHour)}`,'var(--accent)');}
+    if(drag.el) drag.el._fromDrag=true;
+    setTimeout(()=>{if(drag.el)delete drag.el._fromDrag;},200);
+  }
+  drag.active=false;
+  if(drag.el) drag.el.classList.remove('dragging');
+  document.getElementById('drag-ghost').style.display='none';
+  document.removeEventListener('mousemove',onDrag);
+  document.removeEventListener('mouseup',endDrag);
+  document.removeEventListener('touchmove',onDrag);
+  document.removeEventListener('touchend',endDrag);
+  renderAll();
+}
+
+// RESIZE
+let resz={active:false,jobId:null,origDur:0,startY:0};
+function startResize(e,jobId){
+  e.stopPropagation();e.preventDefault();
+  const job=jobs.find(j=>j.id===jobId);if(!job)return;
+  resz={active:true,jobId,origDur:job.dur,startY:e.touches?e.touches[0].clientY:e.clientY};
+  document.addEventListener('mousemove',onResize);
+  document.addEventListener('mouseup',endResize);
+  document.addEventListener('touchmove',onResize,{passive:false});
+  document.addEventListener('touchend',endResize);
+}
+function onResize(e){
+  if(!resz.active)return;e.preventDefault();
+  const y=e.touches?e.touches[0].clientY:e.clientY;
+  const dy=(y-resz.startY)/HOUR_H;
+  const newDur=Math.max(.5,Math.round((resz.origDur+dy)*2)/2);
+  const ghost=document.getElementById('drag-ghost');
+  ghost.style.display='block';ghost.style.left='50%';ghost.style.top=(y-30)+'px';
+  ghost.textContent=newDur+'h';
+}
+function endResize(e){
+  if(!resz.active)return;
+  const y=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
+  const dy=(y-resz.startY)/HOUR_H;
+  const newDur=Math.max(.5,Math.round((resz.origDur+dy)*2)/2);
+  const job=jobs.find(j=>j.id===resz.jobId);
+  if(job){job.dur=newDur;toast(`⏱ Durée → ${newDur}h`,'var(--accent)');}
+  resz.active=false;
+  document.getElementById('drag-ghost').style.display='none';
+  document.removeEventListener('mousemove',onResize);
+  document.removeEventListener('mouseup',endResize);
+  document.removeEventListener('touchmove',onResize);
+  document.removeEventListener('touchend',endResize);
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+// FORM
+// ════════════════════════════════════════════
+function setPrio(v,el){
+  document.getElementById('f-prio').value=v;
+  document.querySelectorAll('#tab-add .prio-opt').forEach(o=>o.className='prio-opt');
+  el.classList.add('sel-'+v);
+}
+function resetForm(){
+  ['f-name','f-client','f-place','f-notes','f-deadline','f-prefer','f-type'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-dur').value='';
+  document.getElementById('f-wind').value='50';
+  document.getElementById('f-rain').value='5';
+  document.getElementById('f-tmin').value='-5';
+  document.getElementById('f-tmax').value='35';
+  setPrio('med',document.querySelectorAll('#tab-add .prio-opt')[1]);
+}
+function createJob(autoPlan){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('⚠️ Nom obligatoire','var(--danger)');return;}
+  const job={
+    id:Date.now(),name,
+    client:document.getElementById('f-client').value.trim()||'N/A',
+    place:document.getElementById('f-place').value.trim(),
+    type:document.getElementById('f-type').value.trim()||'Autre',
+    dur:+document.getElementById('f-dur').value||4,
+    prio:document.getElementById('f-prio').value||'med',
+    deadline:document.getElementById('f-deadline').value,
+    prefer:document.getElementById('f-prefer').value,
+    maxWind:+document.getElementById('f-wind').value||50,
+    maxRain:+document.getElementById('f-rain').value||5,
+    minTemp:+document.getElementById('f-tmin').value||(-5),
+    maxTemp:+document.getElementById('f-tmax').value||35,
+    notes:document.getElementById('f-notes').value.trim(),
+  };
+  jobs.push(job);
+  if(autoPlan){
+    autoSchedule(job,true);
+    setTimeout(()=>goTab('cal'),1400);
+  } else {
+    toast(`✅ "${name}" créé. À planifier.`,'var(--accent)');
+  }
+  resetForm();
+  renderAll();
+}
+
+function prefillEdit(id){
+  const j=jobs.find(jj=>jj.id===id);
+  document.getElementById('f-name').value=j.name;
+  document.getElementById('f-client').value=j.client;
+  document.getElementById('f-place').value=j.place||'';
+  document.getElementById('f-type').value=j.type;
+  document.getElementById('f-dur').value=j.dur;
+  document.getElementById('f-deadline').value=j.deadline||'';
+  document.getElementById('f-prefer').value=j.prefer||'';
+  document.getElementById('f-wind').value=j.maxWind;
+  document.getElementById('f-rain').value=j.maxRain;
+  document.getElementById('f-tmin').value=j.minTemp;
+  document.getElementById('f-tmax').value=j.maxTemp;
+  document.getElementById('f-notes').value=j.notes||'';
+  const pIdx={urgent:3,high:2,med:1,low:0};
+  setPrio(j.prio,document.querySelectorAll('#tab-add .prio-opt')[pIdx[j.prio]||1]);
+  jobs=jobs.filter(jj=>jj.id!==id);
+  schedule=schedule.filter(e=>e.jobId!==id);
+  goTab('add');
+}
+
+function confirmDelete(id){
+  const j=jobs.find(jj=>jj.id===id);if(!j)return;
+  if(!confirm(`Supprimer "${j.name}"?`))return;
+  jobs=jobs.filter(jj=>jj.id!==id);
+  schedule=schedule.filter(e=>e.jobId!==id);
+  closeSheet('sh-detail');
+  renderAll();
+  toast(`🗑 "${j.name}" supprimé`,'var(--danger)');
+}
+
+function reschedule(id){schedule=schedule.filter(e=>e.jobId!==id);autoSchedule(jobs.find(j=>j.id===id),true);renderAll();}
+
+// EDIT TIME
+function openEditTime(jobId){
+  editJobId=jobId;
+  const j=jobs.find(jj=>jj.id===jobId);
+  const ev=schedule.find(e=>e.jobId===jobId);
+  document.getElementById('ed-name').textContent=j.name;
+  document.getElementById('ed-hour').value=ev?ev.startHour:7;
+  document.getElementById('ed-dur').value=j.dur;
+  openSheet('sh-edit');
+}
+function saveEdit(){
+  const j=jobs.find(jj=>jj.id===editJobId);
+  const ev=schedule.find(e=>e.jobId===editJobId);
+  const newH=+document.getElementById('ed-hour').value;
+  const newD=+document.getElementById('ed-dur').value;
+  if(j) j.dur=newD;
+  if(ev) ev.startHour=Math.max(0,Math.min(23.5,newH));
+  else if(j) schedule.push({jobId:editJobId,date:ds(calDate),startHour:Math.max(0,Math.min(23,newH))});
+  closeSheet('sh-edit');renderAll();
+  toast('💾 Heure et durée modifiées','var(--accent)');
+}
+
+// DETAIL
+function openDetail(jobId){
+  const j=jobs.find(jj=>jj.id===jobId);if(!j)return;
+  const al=alert4(j);
+  const ev=schedule.find(e=>e.jobId===jobId);
+  document.getElementById('dt-name').textContent=j.name;
+  document.getElementById('dt-status').textContent=`${al.s==='ok'?'✅ OK':al.s==='risk'?'⚠️ Risque':'🚨 Danger'} · ${j.client||'—'}`;
+  let si='Non planifié';
+  if(ev){const sd2=sd(ev.date).toLocaleDateString('fr-CA',{weekday:'long',month:'long',day:'numeric'});si=`${sd2} · ${fmtH(ev.startHour)}–${fmtH(ev.startHour+j.dur)}`;}
+  document.getElementById('dt-body').innerHTML=`
+    <div class="det-row"><span class="det-l">📅 Planifié</span><span>${si}</span></div>
+    <div class="det-row"><span class="det-l">⏱ Durée</span><span>${j.dur}h</span></div>
+    <div class="det-row"><span class="det-l">🔧 Type</span><span>${j.type}</span></div>
+    <div class="det-row"><span class="det-l">📍 Lieu</span><span>${j.place||'—'}</span></div>
+    <div class="det-row"><span class="det-l">🎯 Priorité</span><span>${prioLabel(j.prio)}</span></div>
+    <div class="det-row"><span class="det-l">📅 Échéance</span><span>${fmtDeadline(j.deadline)}</span></div>
+    <div class="det-row"><span class="det-l">💨 Vent max</span><span>${j.maxWind} km/h</span></div>
+    <div class="det-row"><span class="det-l">🌧 Pluie max</span><span>${j.maxRain} mm</span></div>
+    <div class="det-row"><span class="det-l">🌡 Temp</span><span>${j.minTemp}°→${j.maxTemp}°C</span></div>
+    ${j.notes?`<div class="det-row"><span class="det-l">📝 Notes</span><span>${j.notes}</span></div>`:''}
+    ${al.v.length?`<div style="margin-top:10px" class="conf-warn">⚠️ ${al.v.join(' · ')}</div>`:''}
+  `;
+  document.getElementById('dt-acts').innerHTML=`
+    <button class="act-btn ab-blue" onclick="closeSheet('sh-detail');openEditTime(${j.id})"><span class="ai">⏱</span>Heure</button>
+    <button class="act-btn ab-green" onclick="closeSheet('sh-detail');reschedule(${j.id})"><span class="ai">🔄</span>Replanifier</button>
+    <button class="act-btn ab-yellow" onclick="downloadICS(${j.id})"><span class="ai">📲</span>Calendrier</button>
+    <button class="act-btn ab-red" onclick="confirmDelete(${j.id})"><span class="ai">🗑</span>Supprimer</button>
+  `;
+  openSheet('sh-detail');
+}
+
+// ════════════════════════════════════════════
+// SHEETS
+// ════════════════════════════════════════════
+function openSheet(id){document.getElementById(id).classList.add('open');}
+function closeSheet(id){document.getElementById(id).classList.remove('open');}
+function closeOv(e,id){if(e.target===document.getElementById(id))closeSheet(id);}
+
+function openReport(jobId){
+  activeJobId=jobId;selReportDate=null;
+  document.getElementById('rp-name').textContent=jobs.find(j=>j.id===jobId).name;
+  document.getElementById('rp-note').value='';
+  const t1=new Date();t1.setDate(t1.getDate()+1);
+  const t2=new Date();t2.setDate(t2.getDate()+2);
+  document.getElementById('dt-d1').textContent=t1.toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('dt-d2').textContent=t2.toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+  document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));
+  openSheet('sh-report');
+}
+function selRepDate(v){selReportDate=v;document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));event.currentTarget.classList.add('sel');}
+function doReport(){
+  if(!selReportDate){toast('⚠️ Choisis une date','var(--risk)');return;}
+  const j=jobs.find(jj=>jj.id===activeJobId);
+  const lbls={d1:'demain',d2:'après-demain',wk:'sem. prochaine',nd:'indéfini'};
+  j.reportedTo=lbls[selReportDate];j.confirmed=false;
+  const note=document.getElementById('rp-note').value;if(note)j.reportNote=note;
+  closeSheet('sh-report');renderAll();
+  toast(`📅 Reporté → ${lbls[selReportDate]}`,'var(--blue)');
+}
+
+function openReplace(jobId){
+  activeJobId=jobId;
+  document.getElementById('repl-name').textContent=jobs.find(j=>j.id===jobId).name;
+  const cands=jobs.filter(j=>j.id!==jobId&&!j.reportedTo&&alert4(j).s==='ok');
+  document.getElementById('repl-cands').innerHTML=cands.length
+    ?cands.map(c=>`<div class="repl-item" onclick="doReplace(${c.id})"><div><div style="font-size:15px;font-weight:700">${c.name}</div><div style="font-size:13px;color:var(--muted);font-family:var(--fm)">${c.client} · ${c.dur}h</div></div><span>✅</span></div>`).join('')
+    :`<div style="text-align:center;padding:20px;color:var(--muted);font-size:15px">😔 Aucun job météo OK disponible.</div>`;
+  openSheet('sh-replace');
+}
+function doReplace(replacementId){
+  const orig=jobs.find(j=>j.id===activeJobId);const repl=jobs.find(j=>j.id===replacementId);
+  orig.reportedTo='remplacé';orig.confirmed=false;
+  closeSheet('sh-replace');renderAll();
+  toast(`🔄 "${repl.name}" prend la place`,'var(--accent)');
+}
+
+const CF_CHECKS=[
+  {id:'epi',l:'🦺 EPI adaptés disponibles'},
+  {id:'brief',l:'📢 Équipe briefée sur les conditions'},
+  {id:'proc',l:'📋 Procédures de sécurité révisées'},
+  {id:'evac',l:"🚨 Plan d'évacuation connu"},
+];
+function openConfirm(jobId){
+  activeJobId=jobId;cfChecks={};
+  const j=jobs.find(jj=>jj.id===jobId);const al=alert4(j);
+  document.getElementById('cf-name').textContent=j.name;
+  document.getElementById('cf-sub').textContent=al.s==='danger'?'🚨 Conditions dangereuses':'⚠️ Confirmer malgré le risque';
+  document.getElementById('cf-warn').innerHTML=`<strong>Conditions hors limites :</strong><br>${al.v.map(v=>`• ${v}`).join('<br>')}`;
+  document.getElementById('cf-checks').innerHTML=CF_CHECKS.map(i=>`
+    <div class="chk-item" id="chk-${i.id}" onclick="togChk('${i.id}')">
+      <div class="chk-box" id="cbox-${i.id}"></div><span>${i.l}</span>
+    </div>`).join('');
+  updateCfBtn();openSheet('sh-confirm');
+}
+function togChk(id){
+  cfChecks[id]=!cfChecks[id];
+  document.getElementById(`chk-${id}`).classList.toggle('chked',cfChecks[id]);
+  document.getElementById(`cbox-${id}`).textContent=cfChecks[id]?'✓':'';
+  updateCfBtn();
+}
+function updateCfBtn(){
+  const ok=CF_CHECKS.every(i=>cfChecks[i.id]);
+  const btn=document.getElementById('cf-go');
+  btn.style.opacity=ok?'1':'.4';btn.style.pointerEvents=ok?'all':'none';
+}
+function doConfirm(){
+  const j=jobs.find(jj=>jj.id===activeJobId);j.confirmed=true;j.reportedTo=null;
+  closeSheet('sh-confirm');renderAll();
+  toast('✅ Job confirmé — soyez prudents!','var(--risk)');
+}
+
+
+// ════════════════════════════════════════════
+// CALENDAR EXPORT (.ICS) — Apple / Google / Outlook
+// ════════════════════════════════════════════
+function pad2(n){return String(n).padStart(2,'0');}
+function icsEscape(s){
+  return String(s||'')
+    .replace(/\\/g,'\\\\')
+    .replace(/\n/g,'\\n')
+    .replace(/,/g,'\\,')
+    .replace(/;/g,'\\;');
+}
+function toICSDateLocal(dateStr, hour){
+  const d = sd(dateStr || ds(today()));
+  const h = Math.floor(hour || 8);
+  const m = Math.round(((hour || 8) - h) * 60);
+  return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}T${pad2(h)}${pad2(m)}00`;
+}
+function toICSStampUTC(d=new Date()){
+  return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+}
+function safeFileName(s){
+  return String(s||'smartplan-job').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'smartplan-job';
+}
+function downloadICS(jobId){
+  const job = jobs.find(j=>j.id===jobId);
+  if(!job){toast('Job introuvable','var(--danger)');return;}
+  const ev = schedule.find(e=>e.jobId===jobId);
+  const dateStr = ev?.date || (job.prefer ? job.prefer.split('T')[0] : ds(today()));
+  const startHour = ev?.startHour ?? (job.prefer && job.prefer.includes('T') ? Number(job.prefer.split('T')[1].split(':')[0]) : 8);
+  const endHour = startHour + (Number(job.dur)||1);
+  const title = `SmartPlan - ${job.name}`;
+  const location = job.place || '';
+  const description = [
+    job.client ? `Client: ${job.client}` : '',
+    job.type ? `Type: ${job.type}` : '',
+    job.prio ? `Priorité: ${job.prio}` : '',
+    `Durée: ${job.dur || 1}h`,
+    job.notes ? `Notes: ${job.notes}` : '',
+    `Créé avec SmartPlan Météo`
+  ].filter(Boolean).join('\\n');
+
+  const uid = `smartplan-${job.id}-${Date.now()}@smartplan-meteo`;
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//SmartPlan Meteo//FR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${toICSStampUTC()}`,
+    `DTSTART:${toICSDateLocal(dateStr,startHour)}`,
+    `DTEND:${toICSDateLocal(dateStr,endHour)}`,
+    `SUMMARY:${icsEscape(title)}`,
+    `LOCATION:${icsEscape(location)}`,
+    `DESCRIPTION:${icsEscape(description)}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeFileName(job.name)}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('📲 Fichier calendrier créé (.ics)','var(--accent)');
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+let toastTimer=null;
+function toast(msg,color='var(--accent)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=color;
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ════════════════════════════════════════════
+// TABS / NAV
+// ════════════════════════════════════════════
+function goTab(name){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const navMap={dash:0,cal:1,add:2,list:3,wx:4};
+  document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+initSchedule();
+renderAll();
+setInterval(()=>{if(document.getElementById('tab-cal').classList.contains('active')&&calView==='day')renderDayView();},60000);
 </script>
 </body>
 </html>

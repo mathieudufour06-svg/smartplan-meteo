@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SmartPlan Météo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   TOKENS — mobile-first, terrain-ready
+══════════════════════════════════════════ */
+:root{
+  --bg:#0d0f14; --s1:#161920; --s2:#1e222d; --s3:#252a38;
+  --border:#2e3447; --text:#eceef5; --muted:#7a8499;
+  --ok:#22c55e; --ok2:rgba(34,197,94,.18); --ok3:rgba(34,197,94,.09);
+  --risk:#f59e0b; --risk2:rgba(245,158,11,.18); --risk3:rgba(245,158,11,.09);
+  --danger:#ef4444; --danger2:rgba(239,68,68,.18); --danger3:rgba(239,68,68,.09);
+  --blue:#3b82f6; --accent:#00d4aa; --purple:#7c3aed;
+  --fd:'Syne',sans-serif; --fm:'Space Mono',monospace;
+  --hour-h:72px;   /* taller rows → easier to tap */
+  --r:12px;        /* base radius */
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--fd);min-height:100vh;font-size:20px;line-height:1.5;}
+
+/* ── HEADER ── */
+.hdr{
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+}
+.logo{font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px;}
+.logo-ic{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+#clock{font-family:var(--fm);font-size:16px;color:var(--muted);}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;gap:3px;padding:9px 14px;
+  background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto;
+}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{
+  padding:11px 18px;border-radius:8px;font-size:16px;font-weight:700;
+  cursor:pointer;border:none;background:transparent;color:var(--muted);
+  white-space:nowrap;transition:all .15s;font-family:var(--fd);
+  min-height:50px;
+}
+.tab.active{background:var(--accent);color:#000;}
+.tab:hover:not(.active){background:var(--s2);color:var(--text);}
+
+/* ── MAIN ── */
+.main{padding:16px;max-width:860px;margin:0 auto;}
+.sec{display:none;}.sec.active{display:block;}
+
+/* ── WEATHER BAR ── */
+.wx-bar{
+  background:var(--s2);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.wx-temp{font-size:44px;font-weight:800;font-family:var(--fm);color:var(--accent);line-height:1;}
+.wx-icon{font-size:46px;}
+.wx-stats{display:flex;gap:10px;flex-wrap:wrap;flex:1;}
+.wx-stat{background:var(--s1);border-radius:9px;padding:9px 13px;border:1px solid var(--border);min-width:72px;}
+.wx-stat-l{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;letter-spacing:.4px;}
+.wx-stat-v{font-size:26px;font-weight:700;font-family:var(--fm);margin-top:2px;}
+.wx-desc{font-size:16px;color:var(--muted);margin-top:4px;}
+
+/* ── SUMMARY CARDS ── */
+.sum-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;}
+.sum-card{
+  background:var(--s1);border-radius:var(--r);padding:14px 10px;
+  text-align:center;border:1px solid var(--border);position:relative;overflow:hidden;
+}
+.sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.sum-card.ok::before{background:var(--ok);}
+.sum-card.risk::before{background:var(--risk);}
+.sum-card.dng::before{background:var(--danger);}
+.sum-n{font-size:34px;font-weight:800;font-family:var(--fm);}
+.sum-card.ok .sum-n{color:var(--ok);}
+.sum-card.risk .sum-n{color:var(--risk);}
+.sum-card.dng .sum-n{color:var(--danger);}
+.sum-l{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;margin-top:3px;letter-spacing:.3px;}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.sec-title{font-size:22px;font-weight:800;}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:13px 20px;border-radius:10px;font-size:18px;font-weight:700;
+  cursor:pointer;font-family:var(--fd);transition:all .15s;border:1px solid transparent;
+  min-height:54px;
+}
+.btn-accent{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-accent:hover{opacity:.85;}
+.btn-ghost{background:var(--s2);color:var(--text);border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-optimize{
+  width:100%;padding:16px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  color:#fff;font-family:var(--fd);font-size:18px;font-weight:800;
+  cursor:pointer;margin-bottom:16px;transition:opacity .15s;min-height:56px;
+}
+.btn-optimize:hover{opacity:.88;}
+.btn-full{width:100%;}
+
+/* ── FORM ── */
+.form-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.fl{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;letter-spacing:.6px;}
+.fc{
+  background:var(--s2);border:1px solid var(--border);border-radius:9px;
+  padding:13px 14px;color:var(--text);font-family:var(--fd);font-size:18px;
+  outline:none;transition:border-color .15s;width:100%;min-height:52px;
+}
+.fc:focus{border-color:var(--accent);}
+textarea.fc{resize:vertical;min-height:72px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-sep{
+  font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;
+  letter-spacing:.8px;margin:16px 0 10px;display:flex;align-items:center;gap:8px;
+}
+.form-sep::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.prio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px;}
+.prio-opt{
+  padding:11px 4px;border-radius:9px;border:1px solid var(--border);
+  background:var(--s2);text-align:center;cursor:pointer;font-size:15px;
+  font-weight:700;transition:all .15s;min-height:66px;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:3px;
+}
+.prio-opt.sel-low{border-color:var(--muted);color:var(--muted);background:rgba(107,114,128,.15);}
+.prio-opt.sel-med{border-color:#fcd34d;color:#fcd34d;background:rgba(252,211,77,.08);}
+.prio-opt.sel-high{border-color:var(--risk);color:var(--risk);background:var(--risk3);}
+.prio-opt.sel-urgent{border-color:var(--danger);color:var(--danger);background:var(--danger3);}
+
+.form-actions{display:flex;gap:10px;margin-top:18px;}
+
+/* ── BADGE ── */
+.badge{padding:4px 11px;border-radius:20px;font-size:14px;font-weight:700;font-family:var(--fm);text-transform:uppercase;}
+.badge.ok{background:var(--ok2);color:var(--ok);}
+.badge.risk{background:var(--risk2);color:var(--risk);}
+.badge.danger{background:var(--danger2);color:var(--danger);}
+.badge.blue{background:rgba(59,130,246,.15);color:#93c5fd;}
+.badge.muted{background:var(--s3);color:var(--muted);}
+
+.ubadge{font-size:13px;padding:3px 8px;border-radius:4px;font-family:var(--fm);text-transform:uppercase;font-weight:700;}
+.ubadge.urgent{background:var(--danger2);color:var(--danger);}
+.ubadge.high{background:var(--risk2);color:var(--risk);}
+.ubadge.med{background:rgba(252,211,77,.1);color:#fcd34d;}
+.ubadge.low{background:var(--s3);color:var(--muted);}
+
+/* ══════════════════════════════════════════
+   CALENDAR 24H
+══════════════════════════════════════════ */
+.cal-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;}
+.cal-nav{display:flex;align-items:center;gap:8px;}
+.cal-day-label{font-size:17px;font-weight:800;font-family:var(--fm);min-width:160px;text-align:center;}
+.nav-btn{
+  background:var(--s2);border:1px solid var(--border);color:var(--text);
+  padding:11px 16px;border-radius:9px;font-size:18px;cursor:pointer;
+  font-family:var(--fd);min-height:52px;min-width:52px;
+}
+.nav-btn:hover{border-color:var(--accent);}
+
+/* Forecast strip */
+.day-strip{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.day-strip::-webkit-scrollbar{display:none;}
+.ds-btn{
+  flex-shrink:0;padding:9px 10px;border-radius:10px;border:1px solid var(--border);
+  background:var(--s2);color:var(--muted);cursor:pointer;text-align:center;
+  font-family:var(--fd);transition:all .15s;position:relative;min-width:60px;
+}
+.ds-btn.today{border-color:rgba(0,212,170,.5);color:var(--accent);}
+.ds-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
+.ds-btn .ds-day{font-size:14px;font-weight:800;}
+.ds-btn .ds-icon{font-size:22px;margin:3px 0;}
+.ds-btn .ds-temp{font-size:13px;font-family:var(--fm);font-weight:700;}
+.ds-btn .ds-dot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--ok);}
+
+/* Main timeline */
+.timeline-wrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);}
+.timeline{display:grid;grid-template-columns:48px 1fr;background:var(--border);gap:1px;}
+
+.tl-label{
+  background:var(--s2);padding:5px 8px 0;text-align:right;
+  font-size:13px;font-family:var(--fm);color:var(--muted);
+  height:var(--hour-h);display:flex;align-items:flex-start;justify-content:flex-end;
+  font-weight:700;
+}
+.tl-label.night{background:rgba(10,12,20,.7);}
+.tl-label.work{background:var(--s2);}
+
+.tl-slot{background:var(--s1);height:var(--hour-h);position:relative;cursor:pointer;transition:background .1s;}
+.tl-slot:hover{background:var(--s3);}
+.tl-slot.night-slot{background:rgba(10,12,20,.6);}
+.tl-slot.night-slot:hover{background:rgba(22,26,40,.7);}
+.tl-slot.work-slot{background:var(--s1);}
+/* Half-hour line */
+.tl-slot::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);opacity:.5;}
+
+/* Current time line */
+.time-now-line{position:absolute;left:0;right:0;height:2px;background:var(--accent);z-index:10;pointer-events:none;}
+.time-now-dot{position:absolute;left:48px;width:10px;height:10px;background:var(--accent);border-radius:50%;top:-4px;margin-left:-5px;}
+
+/* Event blocks */
+.cal-event{
+  position:absolute;left:5px;right:5px;border-radius:8px;
+  padding:6px 9px;cursor:grab;overflow:hidden;z-index:5;
+  border-left:4px solid;transition:opacity .15s,box-shadow .15s;
+  user-select:none;touch-action:none;
+}
+.cal-event:active{cursor:grabbing;opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;}
+.cal-event.ok{background:var(--ok2);border-left-color:var(--ok);}
+.cal-event.risk{background:var(--risk2);border-left-color:var(--risk);}
+.cal-event.danger{background:var(--danger2);border-left-color:var(--danger);}
+.cal-event.unscheduled{background:var(--s3);border-left-color:var(--muted);opacity:.6;}
+.cal-event.dragging{opacity:.5;box-shadow:0 12px 32px rgba(0,0,0,.5);z-index:100;}
+
+.ev-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ev-meta{font-size:12px;font-family:var(--fm);color:inherit;opacity:.85;margin-top:2px;}
+.ev-resize{
+  position:absolute;bottom:0;left:0;right:0;height:12px;cursor:ns-resize;
+  display:flex;align-items:center;justify-content:center;
+}
+.ev-resize::after{content:'';width:24px;height:3px;background:currentColor;opacity:.45;border-radius:2px;}
+
+/* Drag ghost */
+.drag-ghost{
+  position:fixed;background:var(--accent);color:#000;padding:6px 12px;
+  border-radius:8px;font-size:13px;font-weight:700;pointer-events:none;
+  z-index:999;display:none;font-family:var(--fm);
+}
+
+/* ── UNSCHEDULED ── */
+.unsched-box{background:var(--s1);border:1px dashed var(--border);border-radius:var(--r);padding:16px;margin-top:16px;}
+.unsched-title{font-size:17px;font-weight:700;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.unsched-item{background:var(--s2);border-radius:10px;padding:15px 16px;margin-bottom:10px;border:1px solid var(--border);}
+.unsched-name{font-size:17px;font-weight:700;}
+.unsched-sug{font-size:15px;color:var(--accent);font-family:var(--fm);margin-top:6px;line-height:1.4;}
+
+/* ── JOB CARDS ── */
+.job-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px 18px 16px;margin-bottom:16px;position:relative;overflow:hidden;
+  transition:transform .1s;
+}
+.job-card:hover{transform:translateY(-1px);}
+.job-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;}
+.job-card.ok::before{background:var(--ok);}
+.job-card.risk::before{background:var(--risk);}
+.job-card.danger::before{background:var(--danger);}
+.job-card.reported{opacity:.5;}
+
+.jc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:10px;}
+.jc-name{font-size:22px;font-weight:800;line-height:1.3;}
+.jc-sub{font-size:16px;color:var(--muted);margin-top:5px;line-height:1.4;}
+
+.jc-conds{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.cond-tag{
+  background:var(--s2);border:1px solid var(--border);border-radius:6px;
+  padding:5px 11px;font-size:14px;color:var(--muted);font-family:var(--fm);
+}
+.cond-tag.viol{background:var(--danger3);border-color:rgba(239,68,68,.35);color:var(--danger);}
+
+.jc-sug{
+  background:var(--s2);border-radius:8px;padding:11px 14px;
+  font-size:16px;color:var(--muted);border-left:3px solid;line-height:1.5;
+}
+.jc-sug.ok{border-color:var(--ok);color:#a7f3d0;}
+.jc-sug.risk{border-color:var(--risk);color:#fde68a;}
+.jc-sug.danger{border-color:var(--danger);color:#fca5a5;}
+
+.jc-meta{
+  display:flex;gap:14px;font-size:14px;color:var(--muted);
+  font-family:var(--fm);margin-top:11px;flex-wrap:wrap;line-height:1.5;
+}
+.jc-sched-tag{
+  display:inline-flex;align-items:center;gap:4px;font-size:14px;font-family:var(--fm);
+  padding:5px 12px;border-radius:20px;margin-top:8px;
+  background:rgba(0,212,170,.12);color:var(--accent);border:1px solid rgba(0,212,170,.25);
+}
+
+.act-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;}
+.act-btn{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:13px 4px;border-radius:10px;border:1px solid var(--border);
+  background:var(--s2);color:var(--text);font-family:var(--fd);
+  font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;
+  text-align:center;min-height:70px;
+}
+.act-btn:active{transform:scale(.96);}
+.act-btn .ai{font-size:24px;}
+.act-btn.ab-blue{border-color:rgba(59,130,246,.35);color:#93c5fd;}
+.act-btn.ab-blue:hover{background:rgba(59,130,246,.1);}
+.act-btn.ab-green{border-color:rgba(0,212,170,.35);color:var(--accent);}
+.act-btn.ab-green:hover{background:rgba(0,212,170,.08);}
+.act-btn.ab-yellow{border-color:rgba(245,158,11,.35);color:var(--risk);}
+.act-btn.ab-yellow:hover{background:var(--risk3);}
+
+/* Edit row (list tab only) */
+.edit-row{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+.btn-xs{
+  padding:9px 14px;border-radius:7px;font-size:15px;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--s2);
+  color:var(--text);font-family:var(--fd);min-height:44px;
+}
+.btn-xs:hover{border-color:var(--accent);color:var(--accent);}
+.btn-xs.del{border-color:rgba(239,68,68,.35);color:var(--danger);}
+
+/* ── MÉTÉO TAB ── */
+.wx-sliders{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:18px;}
+.wx-sl-title{font-size:18px;font-weight:700;margin-bottom:16px;}
+.sl-g{margin-bottom:18px;}
+.sl-l{
+  display:flex;justify-content:space-between;font-size:16px;
+  color:var(--muted);font-family:var(--fm);margin-bottom:8px;
+}
+.sl{width:100%;appearance:none;height:5px;background:var(--s3);border-radius:3px;outline:none;}
+.sl::-webkit-slider-thumb{appearance:none;width:22px;height:22px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 0 3px rgba(0,212,170,.2);}
+.fx-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fx-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.fx-title{font-size:14px;color:var(--muted);font-family:var(--fm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;}
+.fx-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--border);font-size:16px;
+}
+.fx-row:last-child{border-bottom:none;}
+.fx-day{color:var(--muted);font-family:var(--fm);font-size:14px;}
+
+/* ── SHEETS ── */
+.sheet-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:400;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.sheet-ov.open{opacity:1;pointer-events:all;}
+.sheet{
+  background:var(--s1);border-radius:20px 20px 0 0;padding:20px 18px;
+  width:100%;max-width:860px;border:1px solid var(--border);border-bottom:none;
+  transform:translateY(30px);transition:transform .25s cubic-bezier(.22,.68,0,1.2);
+  max-height:88vh;overflow-y:auto;
+}
+.sheet-ov.open .sheet{transform:translateY(0);}
+.sh-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.sh-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.sh-sub{font-size:16px;color:var(--muted);font-family:var(--fm);margin-bottom:16px;}
+
+/* Edit time sheet */
+.time-picker{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.time-picker .fg{margin-bottom:0;}
+
+/* Detail rows */
+.det-row{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border);font-size:16px;}
+.det-row:last-child{border-bottom:none;}
+.det-l{color:var(--muted);font-size:14px;font-family:var(--fm);}
+
+/* Date options */
+.dt-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;}
+.dt-opt{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:14px 10px;text-align:center;cursor:pointer;transition:all .15s;min-height:80px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.dt-opt:hover,.dt-opt.sel{border-color:var(--blue);background:rgba(59,130,246,.1);color:#93c5fd;}
+.dt-opt .dti{font-size:26px;margin-bottom:4px;}
+.dt-opt .dtl{font-size:16px;font-weight:700;}
+.dt-opt .dts{font-size:13px;color:var(--muted);font-family:var(--fm);margin-top:2px;}
+
+.repl-item{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;
+  display:flex;justify-content:space-between;align-items:center;min-height:54px;
+}
+.repl-item:hover{border-color:var(--accent);}
+
+.chk-item{
+  display:flex;align-items:center;gap:14px;padding:14px 0;
+  border-bottom:1px solid var(--border);font-size:16px;cursor:pointer;min-height:54px;
+}
+.chk-item:last-child{border-bottom:none;}
+.chk-box{
+  width:28px;height:28px;border-radius:6px;border:2px solid var(--border);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:all .15s;
+}
+.chk-item.chked .chk-box{background:var(--risk);border-color:var(--risk);}
+.conf-warn{
+  background:var(--risk3);border:1px solid rgba(245,158,11,.3);border-radius:10px;
+  padding:14px 16px;margin-bottom:14px;font-size:16px;line-height:1.55;color:#fde68a;
+}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--s1);border:1px solid var(--border);border-radius:12px;
+  padding:14px 22px;font-size:16px;font-weight:700;z-index:999;
+  opacity:0;transition:all .3s cubic-bezier(.22,.68,0,1.2);
+  white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.55);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.live-dot{display:inline-block;width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 2s infinite;margin-right:5px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:520px){
+  .form-row{grid-template-columns:1fr;}
+  .fx-grid{grid-template-columns:1fr;}
+  .prio-grid{grid-template-columns:1fr 1fr;}
+  .wx-bar{gap:12px;}
+  .wx-temp{font-size:38px;}
+  .wx-icon{font-size:40px;}
+  .cal-day-label{font-size:14px;min-width:120px;}
+  .act-btn{font-size:12px;padding:11px 3px;}
+  .act-btn .ai{font-size:22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo"><div class="logo-ic">⚡</div>SmartPlan Météo</div>
+  <div id="clock">--:--</div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="goTab('dash',this)">Dashboard</button>
+  <button class="tab" onclick="goTab('cal',this)">📅 Calendrier</button>
+  <button class="tab" onclick="goTab('add',this)">+ Job</button>
+  <button class="tab" onclick="goTab('list',this)">Liste</button>
+  <button class="tab" onclick="goTab('wx',this)">Météo</button>
+</div>
+
+<div class="main">
+
+<!-- ═══════ DASHBOARD ═══════ -->
+<div id="tab-dash" class="sec active">
+  <div class="wx-bar">
+    <div class="wx-icon" id="wi">⛅</div>
+    <div><div class="wx-temp" id="wt">14°C</div><div class="wx-desc" id="wd">Partiellement nuageux</div><div style="font-size:9px;color:var(--muted);font-family:var(--fm);margin-top:4px"><span class="live-dot"></span>SIMULÉ</div></div>
+    <div class="wx-stats">
+      <div class="wx-stat"><div class="wx-stat-l">💨 Vent</div><div class="wx-stat-v" id="ww">32 km/h</div></div>
+      <div class="wx-stat"><div class="wx-stat-l">🌧 Pluie</div><div class="wx-stat-v" id="wr">4 mm</div></div>
+      <div class="wx-stat"><div class="wx-stat-l">🌡 Ressenti</div><div class="wx-stat-v" id="wf">9°C</div></div>
+    </div>
+  </div>
+  <div class="sum-row">
+    <div class="sum-card ok"><div class="sum-n" id="cnt-ok">0</div><div class="sum-l">✅ OK</div></div>
+    <div class="sum-card risk"><div class="sum-n" id="cnt-risk">0</div><div class="sum-l">⚠️ Risque</div></div>
+    <div class="sum-card dng"><div class="sum-n" id="cnt-dng">0</div><div class="sum-l">🚨 Danger</div></div>
+  </div>
+  <div class="sec-hdr">
+    <span class="sec-title">Jobs du jour</span>
+    <button class="btn btn-accent" onclick="goTab('add',document.querySelectorAll('.tab')[2])">+ Job</button>
+  </div>
+  <div id="dash-jobs"></div>
+</div>
+
+<!-- ═══════ CALENDRIER 24H ═══════ -->
+<div id="tab-cal" class="sec">
+  <button class="btn-optimize" onclick="optimizeAll()">🔮 Optimiser mon calendrier</button>
+
+  <div class="cal-toolbar">
+    <div class="cal-nav">
+      <button class="nav-btn" onclick="navDay(-1)">‹</button>
+      <span class="cal-day-label" id="cal-day-lbl">—</span>
+      <button class="nav-btn" onclick="navDay(1)">›</button>
+    </div>
+    <button class="nav-btn" onclick="navDay(0)">Auj.</button>
+  </div>
+
+  <!-- 7-day forecast strip -->
+  <div class="day-strip" id="day-strip"></div>
+
+  <!-- 24h timeline -->
+  <div class="timeline-wrap">
+    <div class="timeline" id="timeline"></div>
+    <div class="time-now-line" id="now-line" style="display:none">
+      <div class="time-now-dot"></div>
+    </div>
+  </div>
+
+  <!-- Unscheduled -->
+  <div class="unsched-box" id="unsched-box" style="display:none">
+    <div class="unsched-title">⏳ À planifier</div>
+    <div id="unsched-list"></div>
+  </div>
+</div>
+
+<!-- ═══════ AJOUTER JOB ═══════ -->
+<div id="tab-add" class="sec">
+  <div class="form-card">
+    <div class="sec-title" style="margin-bottom:14px">📋 Nouveau job</div>
+    <div class="fg"><label class="fl">Nom du job *</label><input class="fc" id="f-name" placeholder="ex: Remplacement poteaux Sect. 4"></div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Client</label><input class="fc" id="f-client" placeholder="Hydro-Québec"></div>
+      <div class="fg"><label class="fl">Lieu / Zone</label><input class="fc" id="f-place" placeholder="Route 117 Nord"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fc" id="f-type">
+          <option value="ligne">Montage lignes</option>
+          <option value="paysage">Paysagement</option>
+          <option value="construction">Construction</option>
+          <option value="toiture">Toiture</option>
+          <option value="excavation">Excavation</option>
+          <option value="elec">Électricité</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Durée (h)</label><input class="fc" id="f-dur" type="number" placeholder="4" min=".5" step=".5"></div>
+    </div>
+
+    <div class="form-sep">Priorité</div>
+    <div class="prio-grid">
+      <div class="prio-opt" onclick="setPrio('low',this)">🟢<br>Basse</div>
+      <div class="prio-opt sel-med" onclick="setPrio('med',this)">🟡<br>Moyenne</div>
+      <div class="prio-opt" onclick="setPrio('high',this)">🟠<br>Haute</div>
+      <div class="prio-opt" onclick="setPrio('urgent',this)">🔴<br>Urgente</div>
+    </div>
+    <input type="hidden" id="f-prio" value="med">
+
+    <div class="form-row">
+      <div class="fg"><label class="fl">Date limite</label><input class="fc" id="f-deadline" type="date"></div>
+      <div class="fg"><label class="fl">Date préférée</label><input class="fc" id="f-prefer" type="date"></div>
+    </div>
+
+    <div class="form-sep">Tolérance météo</div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">💨 Vent max (km/h)</label><input class="fc" id="f-wind" type="number" placeholder="50"></div>
+      <div class="fg"><label class="fl">🌧 Pluie max (mm)</label><input class="fc" id="f-rain" type="number" placeholder="5"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">🌡 Temp min (°C)</label><input class="fc" id="f-tmin" type="number" placeholder="-5"></div>
+      <div class="fg"><label class="fl">🌡 Temp max (°C)</label><input class="fc" id="f-tmax" type="number" placeholder="35"></div>
+    </div>
+    <div class="fg"><label class="fl">Notes terrain</label><textarea class="fc" id="f-notes" placeholder="Accès restreint, équipement spécial..."></textarea></div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="resetForm()">Réinitialiser</button>
+      <button class="btn btn-accent btn-full" onclick="createJob()">✅ Créer + Planifier auto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ LISTE ═══════ -->
+<div id="tab-list" class="sec">
+  <div class="sec-hdr">
+    <span class="sec-title">Tous les jobs</span>
+    <button class="btn btn-accent" onclick="goTab('add',document.querySelectorAll('.tab')[2])">+ Job</button>
+  </div>
+  <div id="jobs-list"></div>
+</div>
+
+<!-- ═══════ MÉTÉO ═══════ -->
+<div id="tab-wx" class="sec">
+  <div class="wx-sliders">
+    <div class="wx-sl-title">🎛 Simuler la météo</div>
+    <div class="sl-g"><div class="sl-l"><span>💨 Vent</span><span id="sl-wv">32 km/h</span></div><input type="range" class="sl" id="sl-w" min="0" max="120" value="32" oninput="updateWx()"></div>
+    <div class="sl-g"><div class="sl-l"><span>🌧 Pluie</span><span id="sl-rv">4 mm</span></div><input type="range" class="sl" id="sl-r" min="0" max="50" value="4" oninput="updateWx()"></div>
+    <div class="sl-g"><div class="sl-l"><span>🌡 Température</span><span id="sl-tv">14°C</span></div><input type="range" class="sl" id="sl-t" min="-20" max="40" value="14" oninput="updateWx()"></div>
+  </div>
+  <div class="fx-grid">
+    <div class="fx-card"><div class="fx-title">📅 Prévisions 7 jours</div><div id="fx-list"></div></div>
+    <div class="fx-card"><div class="fx-title">📊 Impact sur les jobs</div><div id="fx-impact"></div></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- DRAG GHOST -->
+<div class="drag-ghost" id="drag-ghost">12h</div>
+
+<!-- SHEET: REPORTER -->
+<div class="sheet-ov" id="sh-report" onclick="closeOv(event,'sh-report')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="rp-name">—</div><div class="sh-sub">📅 Reporter le job</div>
+    <div class="dt-opts">
+      <div class="dt-opt" onclick="selRepDate('d1')"><div class="dti">📅</div><div class="dtl">Demain</div><div class="dts" id="dt-d1">—</div></div>
+      <div class="dt-opt" onclick="selRepDate('d2')"><div class="dti">📆</div><div class="dtl">Après-demain</div><div class="dts" id="dt-d2">—</div></div>
+      <div class="dt-opt" onclick="selRepDate('wk')"><div class="dti">🗓</div><div class="dtl">Sem. prochaine</div><div class="dts">Lundi prochain</div></div>
+      <div class="dt-opt" onclick="selRepDate('nd')"><div class="dti">⏸</div><div class="dtl">Indéfini</div><div class="dts">En attente</div></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label class="fl">Note</label><input class="fc" id="rp-note" placeholder="Raison du report..."></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="closeSheet('sh-report')">Annuler</button>
+      <button class="btn btn-full" onclick="doReport()" style="background:var(--blue);color:#fff;border-color:var(--blue);font-family:var(--fd);font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;">📅 Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: REMPLACER -->
+<div class="sheet-ov" id="sh-replace" onclick="closeOv(event,'sh-replace')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="repl-name">—</div><div class="sh-sub">🔄 Choisir un job de remplacement</div>
+    <div id="repl-cands"></div>
+    <div style="font-size:9px;color:var(--muted);font-family:var(--fm);margin:6px 0 12px">Jobs avec météo OK uniquement.</div>
+    <button class="btn btn-ghost btn-full" onclick="closeSheet('sh-replace')">Annuler</button>
+  </div>
+</div>
+
+<!-- SHEET: CONFIRMER RISQUE -->
+<div class="sheet-ov" id="sh-confirm" onclick="closeOv(event,'sh-confirm')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="cf-name">—</div><div class="sh-sub" id="cf-sub">⚠️ Confirmer malgré le risque</div>
+    <div class="conf-warn" id="cf-warn">—</div>
+    <div id="cf-checks"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeSheet('sh-confirm')">Annuler</button>
+      <button id="cf-go" class="btn btn-full" onclick="doConfirm()" style="background:var(--risk);color:#000;font-family:var(--fd);font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;opacity:.4;pointer-events:none">✅ On y va quand même</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: EDIT TIME -->
+<div class="sheet-ov" id="sh-edit" onclick="closeOv(event,'sh-edit')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="ed-name">—</div><div class="sh-sub">✏️ Modifier heure et durée</div>
+    <div class="time-picker">
+      <div class="fg"><label class="fl">Heure de début</label><input class="fc" id="ed-hour" type="number" min="0" max="23" step="0.5"></div>
+      <div class="fg"><label class="fl">Durée (h)</label><input class="fc" id="ed-dur" type="number" min="0.5" max="24" step="0.5"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="closeSheet('sh-edit')">Annuler</button>
+      <button class="btn btn-accent btn-full" onclick="saveEdit()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: DÉTAIL -->
+<div class="sheet-ov" id="sh-detail" onclick="closeOv(event,'sh-detail')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="dt-name">—</div><div class="sh-sub" id="dt-status">—</div>
+    <div id="dt-body"></div>
+    <div class="act-bar" style="margin-top:12px" id="dt-acts"></div>
+    <button class="btn btn-ghost btn-full" style="margin-top:9px" onclick="closeSheet('sh-detail')">Fermer</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+const DAYS_S=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const DAYS_F=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const HOUR_H = 64; // px per hour — must match CSS --hour-h
+
+let wx = {wind:32, rain:4, temp:14};
+let calDate = new Date(); calDate.setHours(0,0,0,0);
+let activePrio = 'med';
+let activeJobId = null;
+let selReportDate = null;
+let cfChecks = {};
+let editJobId = null;
+
+// 14-day forecast (index 0 = today)
+const FX = [
+  {wind:32,rain:4, temp:14,icon:'⛅'},
+  {wind:55,rain:18,temp:10,icon:'🌧'},
+  {wind:70,rain:30,temp:8, icon:'⛈'},
+  {wind:20,rain:0, temp:17,icon:'🌤'},
+  {wind:12,rain:0, temp:22,icon:'☀️'},
+  {wind:25,rain:2, temp:19,icon:'🌤'},
+  {wind:40,rain:8, temp:13,icon:'🌦'},
+  {wind:15,rain:0, temp:20,icon:'☀️'},
+  {wind:50,rain:12,temp:11,icon:'🌧'},
+  {wind:35,rain:5, temp:16,icon:'🌦'},
+  {wind:18,rain:0, temp:21,icon:'☀️'},
+  {wind:60,rain:20,temp:9, icon:'⛈'},
+  {wind:22,rain:0, temp:18,icon:'🌤'},
+  {wind:30,rain:3, temp:15,icon:'⛅'},
+];
+
+// schedule: {jobId, date:'YYYY-MM-DD', startHour:0..23.5}
+let schedule = [];
+
+let jobs = [
+  {id:1,name:"Remplacement poteaux Sect.4",client:"Hydro-Québec",place:"Secteur Nord",type:"ligne",dur:6,prio:"urgent",deadline:"2026-05-02",prefer:"",maxWind:40,maxRain:0,minTemp:-10,maxTemp:35,notes:""},
+  {id:2,name:"Émondage route 117",client:"MTQ",place:"Route 117",type:"paysage",dur:4,prio:"med",deadline:"2026-05-10",prefer:"",maxWind:60,maxRain:10,minTemp:0,maxTemp:38,notes:""},
+  {id:3,name:"Coulée béton fondation",client:"Constructions Martel",place:"Laval",type:"construction",dur:8,prio:"high",deadline:"2026-04-30",prefer:"",maxWind:50,maxRain:2,minTemp:5,maxTemp:35,notes:""},
+  {id:4,name:"Panneaux solaires",client:"EcoSoleil",place:"Montréal",type:"toiture",dur:5,prio:"low",deadline:"2026-05-20",prefer:"",maxWind:25,maxRain:0,minTemp:0,maxTemp:40,notes:""},
+];
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function ds(d){return d.toISOString().split('T')[0];}
+function sd(s){const[y,m,day]=s.split('-').map(Number);return new Date(y,m-1,day);}
+function today(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function fxFor(dateStr){
+  const diff=Math.round((sd(dateStr)-today())/86400000);
+  return FX[Math.max(0,Math.min(13,diff))];
+}
+function alert4(job,w){
+  w=w||wx;
+  const v=[];
+  if(w.wind>job.maxWind) v.push(`Vent ${w.wind}>${job.maxWind}km/h`);
+  if(w.rain>job.maxRain) v.push(`Pluie ${w.rain}>${job.maxRain}mm`);
+  if(w.temp<job.minTemp) v.push(`Temp ${w.temp}<${job.minTemp}°C`);
+  if(w.temp>job.maxTemp) v.push(`Temp ${w.temp}>${job.maxTemp}°C`);
+  if(!v.length) return{s:'ok',v:[],msg:'✅ Conditions parfaites.'};
+  const crit=v.length>=2||(w.wind>job.maxWind*1.5)||(w.rain>job.maxRain*3&&job.maxRain>0);
+  return crit?{s:'danger',v,msg:'🚨 Trop risqué. Reporter ce job.'}:{s:'risk',v,msg:'⚠️ À surveiller.'};
+}
+
+// ════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════
+function tic(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'});}
+setInterval(tic,1000);tic();
+
+// ════════════════════════════════════════════
+// WEATHER
+// ════════════════════════════════════════════
+function wxIcon(w,r,t){if(r>20)return'⛈';if(r>5)return'🌧';if(w>60)return'🌪';if(t<0)return'❄️';if(r>0)return'🌦';return w>40?'🌬':'⛅';}
+function wxDesc(w,r,t){
+  if(r>20&&w>50)return'Tempête — DANGER';if(r>10)return'Pluie forte';if(r>3)return'Pluie modérée';
+  if(w>70)return'Vents violents';if(w>50)return'Vents forts';if(t<-10)return'Grand froid';
+  if(t<0)return'Gel';if(r===0&&w<20)return'Idéal ✓';return'Partiellement nuageux';
+}
+function updateWx(){
+  wx.wind=+document.getElementById('sl-w').value;
+  wx.rain=+document.getElementById('sl-r').value;
+  wx.temp=+document.getElementById('sl-t').value;
+  document.getElementById('sl-wv').textContent=wx.wind+' km/h';
+  document.getElementById('sl-rv').textContent=wx.rain+' mm';
+  document.getElementById('sl-tv').textContent=wx.temp+'°C';
+  document.getElementById('wi').textContent=wxIcon(wx.wind,wx.rain,wx.temp);
+  document.getElementById('wt').textContent=wx.temp+'°C';
+  document.getElementById('ww').textContent=wx.wind+' km/h';
+  document.getElementById('wr').textContent=wx.rain+' mm';
+  document.getElementById('wf').textContent=Math.round(wx.temp-wx.wind*.15)+'°C';
+  document.getElementById('wd').textContent=wxDesc(wx.wind,wx.rain,wx.temp);
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+// SCHEDULING ENGINE
+// ════════════════════════════════════════════
+const PRIO_W={urgent:4,high:3,med:2,low:1};
+const PREF_START=6, PREF_END=18; // preferred work window
+
+function usedHours(dateStr){
+  return schedule.filter(e=>e.date===dateStr).reduce((s,e)=>{
+    const j=jobs.find(jj=>jj.id===e.jobId);return s+(j?j.dur:0);
+  },0);
+}
+function slotsForDate(dateStr){
+  // Returns sorted occupied intervals [{start,end}]
+  return schedule.filter(e=>e.date===dateStr).map(e=>{
+    const j=jobs.find(jj=>jj.id===e.jobId);
+    return{start:e.startHour,end:e.startHour+(j?j.dur:0)};
+  }).sort((a,b)=>a.start-b.start);
+}
+function firstFreeSlot(dateStr,dur,allowNight=false){
+  const occupied=slotsForDate(dateStr);
+  const start=allowNight?0:PREF_START;
+  const end=(allowNight?24:PREF_END)-dur;
+  // Try start of work window first
+  let candidate=start;
+  for(const blk of occupied){
+    if(candidate+dur<=blk.start) return candidate;
+    candidate=Math.max(candidate,blk.end);
+  }
+  if(candidate+dur<=end+dur) return Math.min(candidate,end);
+  return null;
+}
+function isScheduled(jobId){return schedule.some(e=>e.jobId===jobId);}
+
+function findBestSlot(job){
+  const t0=today();
+  const deadline=job.deadline?sd(job.deadline):new Date(t0.getTime()+14*86400000);
+  const allowNight=job.prio==='urgent';
+
+  // 1. Preferred date
+  if(job.prefer){
+    const f=fxFor(job.prefer);const al=alert4(job,f);
+    const slot=firstFreeSlot(job.prefer,job.dur,allowNight);
+    if(al.s==='ok'&&slot!==null) return{date:job.prefer,startHour:slot,alert:al};
+  }
+
+  let best=null,bestScore=-Infinity;
+  for(let i=0;i<14;i++){
+    const d=new Date(t0);d.setDate(t0.getDate()+i);
+    const dateStr=ds(d);
+    const f=fxFor(dateStr);const al=alert4(job,f);
+    // night allowed for urgent only
+    const slot=firstFreeSlot(dateStr,job.dur,allowNight);
+    if(slot===null) continue;
+
+    let score=0;
+    if(al.s==='ok') score+=100;
+    else if(al.s==='risk') score+=35;
+    else score-=50;
+    score+=(PRIO_W[job.prio]||1)*(14-i)*2;
+    const dtd=Math.max(1,(deadline-d)/86400000);
+    score-=dtd*.4;
+    // Prefer daytime
+    if(slot>=PREF_START&&slot+job.dur<=PREF_END) score+=10;
+
+    if(score>bestScore){bestScore=score;best={date:dateStr,startHour:slot,alert:al};}
+  }
+  return best;
+}
+
+function autoSchedule(job,notify=true){
+  if(isScheduled(job.id))return;
+  const slot=findBestSlot(job);
+  if(slot){
+    schedule.push({jobId:job.id,date:slot.date,startHour:slot.startHour});
+    if(notify){
+      const dl=sd(slot.date).toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+      const icon=slot.alert.s==='ok'?'✅':slot.alert.s==='risk'?'⚠️':'🚨';
+      toast(`${icon} Planifié : ${dl} à ${fmtH(slot.startHour)}`,slot.alert.s==='ok'?'var(--ok)':'var(--risk)');
+    }
+  } else {
+    if(notify) toast(`⏳ "${job.name}" → À planifier`,'var(--muted)');
+  }
+}
+
+function optimizeAll(){
+  schedule=[];
+  [...jobs].sort((a,b)=>(PRIO_W[b.prio]||1)-(PRIO_W[a.prio]||1)).forEach(j=>autoSchedule(j,false));
+  renderAll();
+  toast('🔮 Calendrier optimisé — priorité + météo + échéances!','#7c3aed');
+}
+
+function initSchedule(){jobs.forEach(j=>autoSchedule(j,false));}
+
+function fmtH(h){
+  const hr=Math.floor(h);const mn=Math.round((h-hr)*60);
+  return `${String(hr).padStart(2,'0')}h${mn?String(mn).padStart(2,'0'):''}`;
+}
+
+// ════════════════════════════════════════════
+// RENDER — DASHBOARD
+// ════════════════════════════════════════════
+function renderDash(){
+  const counts={ok:0,risk:0,danger:0};
+  jobs.forEach(j=>counts[alert4(j).s]++);
+  document.getElementById('cnt-ok').textContent=counts.ok;
+  document.getElementById('cnt-risk').textContent=counts.risk;
+  document.getElementById('cnt-dng').textContent=counts.danger;
+  const sorted=[...jobs].sort((a,b)=>({danger:0,risk:1,ok:2}[alert4(a).s])-({danger:0,risk:1,ok:2}[alert4(b).s]));
+  document.getElementById('dash-jobs').innerHTML=jobs.length
+    ?sorted.map(j=>jobCard(j,true)).join('')
+    :`<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px">Aucun job. Clique "+ Job"!</div>`;
+}
+
+// ════════════════════════════════════════════
+// RENDER — JOB CARD
+// ════════════════════════════════════════════
+function prioLabel(p){const m={urgent:'urgent',high:'high',med:'med',low:'low'};const t={urgent:'🔴 Urgente',high:'🟠 Haute',med:'🟡 Moyenne',low:'🟢 Basse'};return `<span class="ubadge ${m[p]||'low'}">${t[p]||p}</span>`;}
+
+function jobCard(job,compact=false){
+  const al=alert4(job);
+  const sched=schedule.find(e=>e.jobId===job.id);
+  const dead=job.deadline?sd(job.deadline).toLocaleDateString('fr-CA'):'—';
+
+  const conds=[
+    {l:`💨 ≤${job.maxWind}km/h`,v:wx.wind>job.maxWind},
+    {l:`🌧 ≤${job.maxRain}mm`,v:wx.rain>job.maxRain},
+    {l:`🌡 ${job.minTemp}→${job.maxTemp}°`,v:wx.temp<job.minTemp||wx.temp>job.maxTemp},
+  ].map(c=>`<span class="cond-tag ${c.v?'viol':''}">${c.l}</span>`).join('');
+
+  let ovTag='';
+  if(job.reportedTo) ovTag=`<span class="badge blue" style="margin-top:4px">📅 Reporté → ${job.reportedTo}</span>`;
+  else if(job.confirmed) ovTag=`<span class="badge risk" style="margin-top:4px">✅ Confirmé</span>`;
+
+  let schedTag='';
+  if(sched){const sd2=sd(sched.date).toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});schedTag=`<span class="jc-sched-tag">📅 ${sd2} · ${fmtH(sched.startHour)}–${fmtH(sched.startHour+job.dur)}</span>`;}
+
+  const canCf=al.s==='risk'||al.s==='danger';
+  const actBar=`<div class="act-bar">
+    <button class="act-btn ab-blue" onclick="openReport(${job.id})"><span class="ai">📅</span>Reporter</button>
+    <button class="act-btn ab-green" onclick="openReplace(${job.id})"><span class="ai">🔄</span>Remplacer</button>
+    <button class="act-btn ab-yellow" onclick="${canCf?`openConfirm(${job.id})`:''}" style="${!canCf?'opacity:.3;cursor:default':''}"><span class="ai">${al.s==='danger'?'⚡':'✅'}</span>${al.s==='danger'?'Forcer':'Confirmer'}</button>
+  </div>`;
+
+  const editRow=compact?'':` <div class="edit-row">
+    <button class="btn-xs" onclick="prefillEdit(${job.id})">✏️ Modifier</button>
+    <button class="btn-xs" onclick="openEditTime(${job.id})">⏱ Heure</button>
+    <button class="btn-xs" onclick="reschedule(${job.id})">📅 Replanifier</button>
+    <button class="btn-xs del" onclick="delJob(${job.id})">🗑</button>
+  </div>`;
+
+  const isRep=job.reportedTo,isCf=job.confirmed;
+  const cls=['job-card',isRep?'reported':isCf?'confirmed':al.s].join(' ');
+  const badgeCls=isRep?'blue':isCf?'ok':al.s;
+  const badgeTxt=isRep?'📅 Reporté':isCf?'✅ Confirmé':al.s==='ok'?'✅ OK':al.s==='risk'?'⚠️ Risque':'🚨 Danger';
+
+  return `<div class="${cls}">
+    <div class="jc-top">
+      <div><div class="jc-name">${job.name}</div><div class="jc-sub">${job.client}${job.place?' · '+job.place:''} · ${prioLabel(job.prio)}</div></div>
+      <span class="badge ${badgeCls}">${badgeTxt}</span>
+    </div>
+    <div class="jc-conds">${conds}</div>
+    <div class="jc-sug ${al.s}">${al.msg}</div>
+    ${ovTag}${schedTag}
+    <div class="jc-meta"><span>⏱ ${job.dur}h</span><span>📅 Éch: ${dead}</span><span>🔧 ${job.type}</span>${job.place?`<span>📍 ${job.place}</span>`:''}</div>
+    ${actBar}${editRow}
+  </div>`;
+}
+
+function renderList(){
+  document.getElementById('jobs-list').innerHTML=jobs.length
+    ?jobs.map(j=>jobCard(j,false)).join('')
+    :`<div style="text-align:center;padding:32px;color:var(--muted)">Aucun job.</div>`;
+}
+
+// ════════════════════════════════════════════
+// RENDER — CALENDAR 24H
+// ════════════════════════════════════════════
+function renderCal(){
+  const dateStr=ds(calDate);
+  const f=fxFor(dateStr);
+  // Day label
+  const di=calDate.getDay();
+  document.getElementById('cal-day-lbl').textContent=
+    `${DAYS_F[di]} ${calDate.getDate()} ${MONTHS[calDate.getMonth()]} ${calDate.getFullYear()}`;
+
+  // Day strip (7 days centered on today)
+  renderDayStrip();
+
+  // 24h timeline
+  const tl=document.getElementById('timeline');
+  let html='';
+  for(let h=0;h<24;h++){
+    const isNight=h<6||h>=21;
+    const labelCls=isNight?'night':'work';
+    const slotCls=isNight?'night-slot':'work-slot';
+    html+=`<div class="tl-label ${labelCls}">${String(h).padStart(2,'0')}h</div>`;
+    html+=`<div class="tl-slot ${slotCls}" id="slot-${h}" data-hour="${h}" onclick="clickSlot(${h})"></div>`;
+  }
+  tl.innerHTML=html;
+
+  // Place events
+  const eventsToday=schedule.filter(e=>e.date===dateStr);
+  const slotCol=document.getElementById('slot-0')?.parentElement;
+
+  eventsToday.forEach(ev=>{
+    const job=jobs.find(j=>j.id===ev.jobId);if(!job)return;
+    const al=alert4(job,f);
+    const slotEl=document.getElementById(`slot-${Math.floor(ev.startHour)}`);
+    if(!slotEl)return;
+
+    const topOffset=((ev.startHour-Math.floor(ev.startHour))*HOUR_H);
+    const height=Math.max(HOUR_H*.5, job.dur*HOUR_H - 2);
+    const endH=ev.startHour+job.dur;
+
+    const evEl=document.createElement('div');
+    evEl.className=`cal-event ${al.s}`;
+    evEl.dataset.jobId=job.id;
+    evEl.style.cssText=`top:${topOffset}px;height:${height}px;`;
+    evEl.innerHTML=`
+      <div class="ev-name">${job.name}</div>
+      <div class="ev-meta">${fmtH(ev.startHour)}–${fmtH(endH)} · ${job.dur}h</div>
+      <div class="ev-resize" data-job-id="${job.id}" onmousedown="startResize(event,${job.id})" ontouchstart="startResize(event,${job.id})">
+      </div>`;
+    evEl.onclick=(e)=>{if(!e._fromDrag)openDetail(job.id);};
+    // Drag
+    evEl.onmousedown=(e)=>{if(e.target.closest('.ev-resize'))return;startDrag(e,job.id,ev.startHour);};
+    evEl.ontouchstart=(e)=>{if(e.target.closest('.ev-resize'))return;startDrag(e,job.id,ev.startHour);};
+    slotEl.appendChild(evEl);
+    // Adjust top within slot
+    evEl.style.top=topOffset+'px';
+  });
+
+  // "Now" line
+  const now=new Date();
+  if(ds(now)===dateStr){
+    const line=document.getElementById('now-line');
+    const tlWrap=document.querySelector('.timeline-wrap');
+    if(tlWrap){
+      const frac=(now.getHours()*60+now.getMinutes())/60;
+      const topPx=frac*HOUR_H + 1; // +1 for border gap
+      // position relative to timeline-wrap; account for label col (40px)
+      line.style.top=topPx+'px';
+      line.style.left='48px';
+      line.style.display='block';
+    }
+  } else {
+    document.getElementById('now-line').style.display='none';
+  }
+
+  renderUnscheduled();
+}
+
+function renderDayStrip(){
+  const t0=today();
+  const strip=document.getElementById('day-strip');
+  let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(t0);d.setDate(t0.getDate()+i-0);// start from today
+    // Actually show 3 before + today + 3 after
+    const dd=new Date(calDate);dd.setDate(calDate.getDate()-3+i);
+    const dStr=ds(dd);
+    const f=fxFor(dStr);
+    const isT=dStr===ds(t0);
+    const isA=dStr===ds(calDate);
+    const hasE=schedule.some(e=>e.date===dStr);
+    const di=dd.getDay();
+    html+=`<div class="ds-btn ${isT?'today':''} ${isA?'active':''}" onclick="gotoDay('${dStr}')">
+      <div class="ds-day">${DAYS_S[di]} ${dd.getDate()}</div>
+      <div class="ds-icon">${f.icon}</div>
+      <div class="ds-temp">${f.temp}°</div>
+      ${hasE&&!isA?'<div class="ds-dot"></div>':''}
+    </div>`;
+  }
+  strip.innerHTML=html;
+}
+
+function renderUnscheduled(){
+  const unsched=jobs.filter(j=>!isScheduled(j.id));
+  const box=document.getElementById('unsched-box');
+  if(!unsched.length){box.style.display='none';return;}
+  box.style.display='block';
+  document.getElementById('unsched-list').innerHTML=unsched.map(j=>{
+    const slot=findBestSlot(j);
+    let sug='Aucun créneau trouvé dans les 14 prochains jours.';
+    if(slot){
+      const sd2=sd(slot.date).toLocaleDateString('fr-CA',{weekday:'long',month:'short',day:'numeric'});
+      const icon=slot.alert.s==='ok'?'✅':slot.alert.s==='risk'?'⚠️':'🚨';
+      sug=`${icon} Meilleure option : ${sd2} à ${fmtH(slot.startHour)}`;
+    }
+    return `<div class="unsched-item">
+      <div class="unsched-name">${j.name} ${prioLabel(j.prio)}</div>
+      <div class="unsched-sug">💡 ${sug}</div>
+      ${slot?`<button class="btn-xs" style="margin-top:6px" onclick="placeNow(${j.id})">📌 Placer ce créneau</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function placeNow(jobId){autoSchedule(jobs.find(j=>j.id===jobId));renderAll();}
+
+function renderWx(){
+  const t0=today();
+  document.getElementById('fx-list').innerHTML=FX.slice(0,7).map((f,i)=>{
+    const d=new Date(t0);d.setDate(t0.getDate()+i);
+    return `<div class="fx-row"><span class="fx-day">${i===0?'Auj.':DAYS_S[d.getDay()]} ${d.getDate()}</span><span>${f.icon}</span><span style="font-family:var(--fm);font-weight:700">${f.temp}°C</span><span style="font-size:9px;color:var(--muted);font-family:var(--fm)">${f.wind}km/h</span></div>`;
+  }).join('');
+  document.getElementById('fx-impact').innerHTML=jobs.map(j=>{
+    const a=alert4(j);
+    return `<div class="fx-row"><span style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.name}</span><span>${a.s==='ok'?'✅':a.s==='risk'?'⚠️':'🚨'}</span></div>`;
+  }).join('')||`<div style="font-size:10px;color:var(--muted);padding:6px 0">Aucun job</div>`;
+}
+
+function renderAll(){renderDash();renderList();renderCal();renderWx();}
+
+// ════════════════════════════════════════════
+// DRAG & DROP
+// ════════════════════════════════════════════
+let drag={active:false,jobId:null,origHour:null,startY:0,el:null};
+
+function startDrag(e,jobId,origHour){
+  e.preventDefault();
+  drag={active:true,jobId,origHour,startY:e.touches?e.touches[0].clientY:e.clientY,el:e.currentTarget};
+  drag.el.classList.add('dragging');
+  document.getElementById('drag-ghost').style.display='block';
+  document.addEventListener('mousemove',onDrag);
+  document.addEventListener('mouseup',endDrag);
+  document.addEventListener('touchmove',onDrag,{passive:false});
+  document.addEventListener('touchend',endDrag);
+}
+
+function onDrag(e){
+  if(!drag.active)return;
+  e.preventDefault();
+  const y=e.touches?e.touches[0].clientY:e.clientY;
+  const dy=y-drag.startY;
+  const dHours=dy/HOUR_H;
+  const newHour=Math.max(0,Math.min(23.5,drag.origHour+dHours));
+  const snapped=Math.round(newHour*2)/2; // snap to 30min
+  document.getElementById('drag-ghost').style.cssText=`display:block;left:${e.touches?e.touches[0].clientX:e.clientX}px;top:${y-20}px;`;
+  document.getElementById('drag-ghost').textContent=fmtH(snapped);
+}
+
+function endDrag(e){
+  if(!drag.active)return;
+  const y=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
+  const dy=y-drag.startY;
+  const dHours=dy/HOUR_H;
+  let newHour=Math.max(0,Math.min(23.5,drag.origHour+dHours));
+  newHour=Math.round(newHour*2)/2;
+
+  const job=jobs.find(j=>j.id===drag.jobId);
+  if(job&&Math.abs(dy)>5){
+    // clamp so job doesn't go past midnight
+    newHour=Math.min(newHour,24-job.dur);
+    const entry=schedule.find(e=>e.jobId===drag.jobId&&e.date===ds(calDate));
+    if(entry){
+      entry.startHour=newHour;
+      toast(`📍 "${job.name}" déplacé à ${fmtH(newHour)}`,'var(--accent)');
+    }
+    if(e.type==='mouseup'&&e.target.closest('.cal-event')) e.target._fromDrag=true;
+  }
+
+  drag.active=false;
+  if(drag.el) drag.el.classList.remove('dragging');
+  document.getElementById('drag-ghost').style.display='none';
+  document.removeEventListener('mousemove',onDrag);
+  document.removeEventListener('mouseup',endDrag);
+  document.removeEventListener('touchmove',onDrag);
+  document.removeEventListener('touchend',endDrag);
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+// RESIZE
+// ════════════════════════════════════════════
+let resz={active:false,jobId:null,origDur:0,startY:0};
+
+function startResize(e,jobId){
+  e.stopPropagation();e.preventDefault();
+  const job=jobs.find(j=>j.id===jobId);if(!job)return;
+  resz={active:true,jobId,origDur:job.dur,startY:e.touches?e.touches[0].clientY:e.clientY};
+  document.addEventListener('mousemove',onResize);
+  document.addEventListener('mouseup',endResize);
+  document.addEventListener('touchmove',onResize,{passive:false});
+  document.addEventListener('touchend',endResize);
+}
+function onResize(e){
+  if(!resz.active)return;e.preventDefault();
+  const y=e.touches?e.touches[0].clientY:e.clientY;
+  const dy=(y-resz.startY)/HOUR_H;
+  const newDur=Math.max(.5,Math.round((resz.origDur+dy)*2)/2);
+  const ghost=document.getElementById('drag-ghost');
+  ghost.style.display='block';ghost.style.left='50%';ghost.style.top=(y-20)+'px';
+  ghost.textContent=newDur+'h';
+}
+function endResize(e){
+  if(!resz.active)return;
+  const y=e.changedTouches?e.changedTouches[0].clientY:e.clientY;
+  const dy=(y-resz.startY)/HOUR_H;
+  const newDur=Math.max(.5,Math.round((resz.origDur+dy)*2)/2);
+  const job=jobs.find(j=>j.id===resz.jobId);
+  if(job){job.dur=newDur;toast(`⏱ Durée → ${newDur}h`,'var(--accent)');}
+  resz.active=false;
+  document.getElementById('drag-ghost').style.display='none';
+  document.removeEventListener('mousemove',onResize);
+  document.removeEventListener('mouseup',endResize);
+  document.removeEventListener('touchmove',onResize);
+  document.removeEventListener('touchend',endResize);
+  renderAll();
+}
+
+// Click on empty slot
+function clickSlot(h){
+  // Quick-add: just navigate to add form with hour pre-noted
+  toast(`💡 Heure ${fmtH(h)} sélectionnée — crée un job et il sera placé ici`,'var(--blue)');
+}
+
+// ════════════════════════════════════════════
+// CALENDAR NAV
+// ════════════════════════════════════════════
+function navDay(dir){
+  if(dir===0){calDate=today();}
+  else{calDate=new Date(calDate);calDate.setDate(calDate.getDate()+dir);}
+  renderCal();
+}
+function gotoDay(dateStr){calDate=sd(dateStr);renderCal();}
+
+// ════════════════════════════════════════════
+// FORM
+// ════════════════════════════════════════════
+function setPrio(v,el){
+  activePrio=v;document.getElementById('f-prio').value=v;
+  document.querySelectorAll('.prio-opt').forEach(o=>o.className='prio-opt');
+  el.classList.add('sel-'+v);
+}
+function resetForm(){
+  ['f-name','f-client','f-place','f-notes','f-deadline','f-prefer'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-dur').value='';
+  document.getElementById('f-type').value='ligne';
+  document.getElementById('f-wind').value='50';
+  document.getElementById('f-rain').value='5';
+  document.getElementById('f-tmin').value='-5';
+  document.getElementById('f-tmax').value='35';
+  setPrio('med',document.querySelectorAll('.prio-opt')[1]);
+}
+function createJob(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('⚠️ Nom obligatoire','var(--danger)');return;}
+  const job={
+    id:Date.now(),name,
+    client:document.getElementById('f-client').value.trim()||'N/A',
+    place:document.getElementById('f-place').value.trim(),
+    type:document.getElementById('f-type').value,
+    dur:+document.getElementById('f-dur').value||4,
+    prio:document.getElementById('f-prio').value||'med',
+    deadline:document.getElementById('f-deadline').value,
+    prefer:document.getElementById('f-prefer').value,
+    maxWind:+document.getElementById('f-wind').value||50,
+    maxRain:+document.getElementById('f-rain').value||5,
+    minTemp:+document.getElementById('f-tmin').value||(-5),
+    maxTemp:+document.getElementById('f-tmax').value||35,
+    notes:document.getElementById('f-notes').value.trim(),
+  };
+  jobs.push(job);
+  autoSchedule(job,true);
+  resetForm();
+  renderAll();
+  setTimeout(()=>goTab('cal',document.querySelectorAll('.tab')[1]),1400);
+}
+
+function prefillEdit(id){
+  const j=jobs.find(jj=>jj.id===id);
+  document.getElementById('f-name').value=j.name;
+  document.getElementById('f-client').value=j.client;
+  document.getElementById('f-place').value=j.place||'';
+  document.getElementById('f-type').value=j.type;
+  document.getElementById('f-dur').value=j.dur;
+  document.getElementById('f-deadline').value=j.deadline||'';
+  document.getElementById('f-prefer').value=j.prefer||'';
+  document.getElementById('f-wind').value=j.maxWind;
+  document.getElementById('f-rain').value=j.maxRain;
+  document.getElementById('f-tmin').value=j.minTemp;
+  document.getElementById('f-tmax').value=j.maxTemp;
+  document.getElementById('f-notes').value=j.notes||'';
+  const pIdx={urgent:3,high:2,med:1,low:0};
+  setPrio(j.prio,document.querySelectorAll('.prio-opt')[pIdx[j.prio]||1]);
+  jobs=jobs.filter(jj=>jj.id!==id);
+  schedule=schedule.filter(e=>e.jobId!==id);
+  goTab('add',document.querySelectorAll('.tab')[2]);
+}
+function delJob(id){if(!confirm('Supprimer ce job?'))return;jobs=jobs.filter(j=>j.id!==id);schedule=schedule.filter(e=>e.jobId!==id);renderAll();}
+function reschedule(id){schedule=schedule.filter(e=>e.jobId!==id);autoSchedule(jobs.find(j=>j.id===id),true);renderAll();}
+
+// Edit time sheet
+function openEditTime(jobId){
+  editJobId=jobId;
+  const j=jobs.find(jj=>jj.id===jobId);
+  const ev=schedule.find(e=>e.jobId===jobId);
+  document.getElementById('ed-name').textContent=j.name;
+  document.getElementById('ed-hour').value=ev?ev.startHour:7;
+  document.getElementById('ed-dur').value=j.dur;
+  openSheet('sh-edit');
+}
+function saveEdit(){
+  const j=jobs.find(jj=>jj.id===editJobId);
+  const ev=schedule.find(e=>e.jobId===editJobId);
+  const newH=+document.getElementById('ed-hour').value;
+  const newD=+document.getElementById('ed-dur').value;
+  if(j) j.dur=newD;
+  if(ev) ev.startHour=Math.max(0,Math.min(23.5,newH));
+  else if(j){
+    // create entry for calDate
+    schedule.push({jobId:editJobId,date:ds(calDate),startHour:Math.max(0,Math.min(23,newH))});
+  }
+  closeSheet('sh-edit');renderAll();
+  toast('💾 Heure et durée mises à jour','var(--accent)');
+}
+
+// Detail sheet
+function openDetail(jobId){
+  const j=jobs.find(jj=>jj.id===jobId);
+  const al=alert4(j);
+  const ev=schedule.find(e=>e.jobId===jobId);
+  document.getElementById('dt-name').textContent=j.name;
+  document.getElementById('dt-status').textContent=`${al.s==='ok'?'✅ OK':al.s==='risk'?'⚠️ Risque':'🚨 Danger'} · ${j.client}`;
+  let si='Non planifié';
+  if(ev){const sd2=sd(ev.date).toLocaleDateString('fr-CA',{weekday:'long',month:'long',day:'numeric'});si=`${sd2} · ${fmtH(ev.startHour)}–${fmtH(ev.startHour+j.dur)}`;}
+  document.getElementById('dt-body').innerHTML=`
+    <div class="det-row"><span class="det-l">📅 Planifié</span><span>${si}</span></div>
+    <div class="det-row"><span class="det-l">⏱ Durée</span><span>${j.dur}h</span></div>
+    <div class="det-row"><span class="det-l">🔧 Type</span><span>${j.type}</span></div>
+    <div class="det-row"><span class="det-l">📍 Lieu</span><span>${j.place||'—'}</span></div>
+    <div class="det-row"><span class="det-l">🎯 Priorité</span><span>${prioLabel(j.prio)}</span></div>
+    <div class="det-row"><span class="det-l">📅 Échéance</span><span>${j.deadline||'—'}</span></div>
+    <div class="det-row"><span class="det-l">💨 Vent max</span><span>${j.maxWind} km/h</span></div>
+    <div class="det-row"><span class="det-l">🌧 Pluie max</span><span>${j.maxRain} mm</span></div>
+    <div class="det-row"><span class="det-l">🌡 Temp</span><span>${j.minTemp}°→${j.maxTemp}°C</span></div>
+    ${j.notes?`<div class="det-row"><span class="det-l">📝 Notes</span><span>${j.notes}</span></div>`:''}
+    ${al.v.length?`<div style="margin-top:8px" class="conf-warn">⚠️ ${al.v.join(' · ')}</div>`:''}
+  `;
+  document.getElementById('dt-acts').innerHTML=`
+    <button class="act-btn ab-blue" onclick="closeSheet('sh-detail');openReport(${j.id})"><span class="ai">📅</span>Reporter</button>
+    <button class="act-btn ab-green" onclick="closeSheet('sh-detail');openEditTime(${j.id})"><span class="ai">⏱</span>Modifier heure</button>
+    <button class="act-btn ab-yellow" onclick="closeSheet('sh-detail');reschedule(${j.id})"><span class="ai">🔄</span>Replanifier</button>
+  `;
+  openSheet('sh-detail');
+}
+
+// ════════════════════════════════════════════
+// ACTION SHEETS
+// ════════════════════════════════════════════
+function openSheet(id){document.getElementById(id).classList.add('open');}
+function closeSheet(id){document.getElementById(id).classList.remove('open');}
+function closeOv(e,id){if(e.target===document.getElementById(id))closeSheet(id);}
+
+// REPORTER
+function openReport(jobId){
+  activeJobId=jobId;selReportDate=null;
+  document.getElementById('rp-name').textContent=jobs.find(j=>j.id===jobId).name;
+  document.getElementById('rp-note').value='';
+  const t1=new Date();t1.setDate(t1.getDate()+1);
+  const t2=new Date();t2.setDate(t2.getDate()+2);
+  document.getElementById('dt-d1').textContent=t1.toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('dt-d2').textContent=t2.toLocaleDateString('fr-CA',{weekday:'short',month:'short',day:'numeric'});
+  document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));
+  openSheet('sh-report');
+}
+function selRepDate(v){selReportDate=v;document.querySelectorAll('#sh-report .dt-opt').forEach(d=>d.classList.remove('sel'));event.currentTarget.classList.add('sel');}
+function doReport(){
+  if(!selReportDate){toast('⚠️ Choisis une date','var(--risk)');return;}
+  const j=jobs.find(jj=>jj.id===activeJobId);
+  const lbls={d1:'demain',d2:'après-demain',wk:'sem. prochaine',nd:'indéfini'};
+  j.reportedTo=lbls[selReportDate];j.confirmed=false;
+  const note=document.getElementById('rp-note').value;if(note)j.reportNote=note;
+  closeSheet('sh-report');renderAll();
+  toast(`📅 Reporté → ${lbls[selReportDate]}`,'var(--blue)');
+}
+
+// REMPLACER
+function openReplace(jobId){
+  activeJobId=jobId;
+  document.getElementById('repl-name').textContent=jobs.find(j=>j.id===jobId).name;
+  const cands=jobs.filter(j=>j.id!==jobId&&!j.reportedTo&&alert4(j).s==='ok');
+  document.getElementById('repl-cands').innerHTML=cands.length
+    ?cands.map(c=>`<div class="repl-item" onclick="doReplace(${c.id})"><div><div style="font-size:12px;font-weight:700">${c.name}</div><div style="font-size:9px;color:var(--muted);font-family:var(--fm)">${c.client} · ${c.dur}h</div></div><span>✅</span></div>`).join('')
+    :`<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px">😔 Aucun job météo OK disponible.</div>`;
+  openSheet('sh-replace');
+}
+function doReplace(replacementId){
+  const orig=jobs.find(j=>j.id===activeJobId);const repl=jobs.find(j=>j.id===replacementId);
+  orig.reportedTo='remplacé';orig.confirmed=false;
+  closeSheet('sh-replace');renderAll();
+  toast(`🔄 "${repl.name}" prend la place`,'var(--accent)');
+}
+
+// CONFIRMER RISQUE
+const CF_CHECKS=[
+  {id:'epi',l:'🦺 EPI adaptés disponibles'},
+  {id:'brief',l:'📢 Équipe briefée sur les conditions'},
+  {id:'proc',l:'📋 Procédures de sécurité révisées'},
+  {id:'evac',l:"🚨 Plan d'évacuation connu de tous"},
+];
+function openConfirm(jobId){
+  activeJobId=jobId;cfChecks={};
+  const j=jobs.find(jj=>jj.id===jobId);const al=alert4(j);
+  document.getElementById('cf-name').textContent=j.name;
+  document.getElementById('cf-sub').textContent=al.s==='danger'?'🚨 Conditions dangereuses':'⚠️ Confirmer malgré le risque';
+  document.getElementById('cf-warn').innerHTML=`<strong>Conditions hors limites :</strong><br>${al.v.map(v=>`• ${v}`).join('<br>')}`;
+  document.getElementById('cf-checks').innerHTML=CF_CHECKS.map(i=>`
+    <div class="chk-item" id="chk-${i.id}" onclick="togChk('${i.id}')">
+      <div class="chk-box" id="cbox-${i.id}"></div><span>${i.l}</span>
+    </div>`).join('');
+  updateCfBtn();openSheet('sh-confirm');
+}
+function togChk(id){
+  cfChecks[id]=!cfChecks[id];
+  document.getElementById(`chk-${id}`).classList.toggle('chked',cfChecks[id]);
+  document.getElementById(`cbox-${id}`).textContent=cfChecks[id]?'✓':'';
+  updateCfBtn();
+}
+function updateCfBtn(){
+  const ok=CF_CHECKS.every(i=>cfChecks[i.id]);
+  const btn=document.getElementById('cf-go');
+  btn.style.opacity=ok?'1':'.4';btn.style.pointerEvents=ok?'all':'none';
+}
+function doConfirm(){
+  const j=jobs.find(jj=>jj.id===activeJobId);j.confirmed=true;j.reportedTo=null;
+  closeSheet('sh-confirm');renderAll();
+  toast('✅ Job confirmé — soyez prudents!','var(--risk)');
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+let toastTimer=null;
+function toast(msg,color='var(--accent)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=color;
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function goTab(name,btn){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+// AUTO-SCROLL CAL TO WORK HOURS
+// ════════════════════════════════════════════
+function scrollCalToWork(){
+  const wrap=document.querySelector('.timeline-wrap');
+  if(wrap){const now=new Date();const startHr=Math.max(0,now.getHours()-1);wrap.scrollTop=startHr*HOUR_H;}
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+initSchedule();
+renderAll();
+setTimeout(scrollCalToWork,200);
+
+// Update now-line every minute
+setInterval(()=>{if(document.getElementById('tab-cal').classList.contains('active'))renderCal();},60000);
+</script>
+</body>
+</html>

@@ -1,61 +1,41 @@
-/**
- * weatherConfig.js
- *
- * Configuration externe du moteur météo SmartPlan.
- * Modifie ce fichier (ou utilise setConfig dans weatherScheduler) pour ajuster :
- *   - les seuils par type de travail (rules)
- *   - les pondérations par type de travail (weights)
- *
- * Les pondérations doivent sommer à 100 pour rester comparables d'un type à l'autre.
- */
+// === API OpenWeather ===
+const API_KEY = "PASTE_OPENWEATHER_KEY_HERE";
+const DEFAULT_LAT = 45.5017;
+const DEFAULT_LON = -73.5673;
+const WANTED_HOURS = [7, 8, 9, 10, 11, 13, 14, 15];
 
-const DEFAULT_WEIGHTS = {
-  rain: 40,
-  wind: 25,
-  temperature: 20,
-  humidity: 15,
-};
-
+// === Règles météo par type de travail ===
 const JOB_RULES = {
-  pose_tourbe: {
-    maxRainProbability: 30,
-    maxWindKmh: 40,
-    minTemperature: 5,
-    maxTemperature: 30,
-    maxHumidity: 90,
-  },
-  peinture: {
-    maxRainProbability: 10,
-    maxWindKmh: 25,
-    minTemperature: 10,
-    maxTemperature: 32,
-    maxHumidity: 70,
-  },
-  pavage: {
-    maxRainProbability: 20,
-    maxWindKmh: 50,
-    minTemperature: 5,
-    maxTemperature: 35,
-    maxHumidity: 95,
-  },
-  excavation: {
-    maxRainProbability: 50,
-    maxWindKmh: 60,
-    minTemperature: -5,
-    maxTemperature: 35,
-    maxHumidity: 100,
-  },
+  pose_tourbe: { maxRain: 30, maxWind: 40, minTemp: 5,  maxTemp: 30, maxHum: 90 },
+  peinture:    { maxRain: 10, maxWind: 25, minTemp: 10, maxTemp: 32, maxHum: 70 },
+  pavage:      { maxRain: 20, maxWind: 50, minTemp: 5,  maxTemp: 35, maxHum: 95 },
+  excavation:  { maxRain: 50, maxWind: 60, minTemp: -5, maxTemp: 35, maxHum: 100 },
 };
 
+// === Pondérations par type de travail (somme = 100) ===
 const JOB_WEIGHTS = {
-  pose_tourbe: { rain: 35, wind: 20, temperature: 25, humidity: 20 },
-  peinture:    { rain: 30, wind: 15, temperature: 20, humidity: 35 },
-  pavage:      { rain: 35, wind: 20, temperature: 30, humidity: 15 },
-  excavation:  { rain: 15, wind: 30, temperature: 25, humidity: 30 },
+  pose_tourbe: { rain: 35, wind: 20, temp: 25, hum: 20 },
+  peinture:    { rain: 30, wind: 15, temp: 20, hum: 35 },
+  pavage:      { rain: 35, wind: 20, temp: 30, hum: 15 },
+  excavation:  { rain: 15, wind: 30, temp: 25, hum: 30 },
 };
 
-module.exports = {
-  DEFAULT_WEIGHTS,
-  JOB_RULES,
-  JOB_WEIGHTS,
+// === Pondérations du score final ===
+const FINAL_WEIGHTS = { weather: 0.7, priority: 0.2, deadline: 0.1 };
+
+// === Libellés et icônes UI ===
+const TYPE_LABELS = {
+  pose_tourbe: 'pose de tourbe',
+  peinture:    'peinture',
+  pavage:      'pavage',
+  excavation:  'excavation',
 };
+const ACTION_ICONS = { maintain: '✅', risky: '⚠️', reschedule: '🌧️' };
+
+// === Liste des chantiers à planifier ===
+const JOBS = [
+  { id: 1, client: 'Tremblay', type: 'pose_tourbe', priority: 'high',   deadline: '2026-06-10' },
+  { id: 2, client: 'Gagnon',   type: 'peinture',    priority: 'urgent', deadline: '2026-06-05' },
+  { id: 3, client: 'Roy',      type: 'excavation',  priority: 'medium', deadline: '2026-06-15' },
+  { id: 4, client: 'Bouchard', type: 'pavage',      priority: 'low',    deadline: '2026-06-20' },
+];

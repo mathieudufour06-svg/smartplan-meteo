@@ -1,121 +1,44 @@
-/**
- * weatherScheduler.js
- *
- * Moteur météo pour SmartPlan MVP.
- * Évalue si un travail extérieur peut être exécuté selon les conditions météo
- * et propose la meilleure heure d'exécution.
- *
- * Les règles et pondérations sont chargées depuis weatherConfig.js
- * et peuvent être surchargées à l'exécution via setConfig().
- */
-
-const defaultConfig = require('./weatherConfig');
-
-// Config active (modifiable via setConfig)
-let config = {
-  rules: { ...defaultConfig.JOB_RULES },
-  weights: { ...defaultConfig.JOB_WEIGHTS },
-  defaultWeights: { ...defaultConfig.DEFAULT_WEIGHTS },
-};
-
-function setConfig(newConfig = {}) {
-  if (newConfig.rules) config.rules = { ...config.rules, ...newConfig.rules };
-  if (newConfig.weights) config.weights = { ...config.weights, ...newConfig.weights };
-  if (newConfig.defaultWeights) config.defaultWeights = { ...config.defaultWeights, ...newConfig.defaultWeights };
-}
-
-function getRules(type) {
-  return config.rules[type];
-}
-
-function getWeights(type) {
-  return config.weights[type] || config.defaultWeights;
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+// === Helpers de scoring ===
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
 function scoreUnderMax(value, max) {
   if (value <= 0) return 1;
-  if (value >= max) {
-    const over = (value - max) / max;
-    return clamp(1 - over - 1, 0, 1);
-  }
+  if (value >= max) return 0;
   return clamp(1 - value / max, 0, 1);
 }
 
-function scoreTemperature(temp, min, max) {
-  if (temp >= min && temp <= max) return 1;
-  const distance = temp < min ? min - temp : temp - max;
-  return clamp(1 - distance / 10, 0, 1);
+function scoreTemp(t, min, max) {
+  if (t >= min && t <= max) return 1;
+  const d = t < min ? min - t : t - max;
+  return clamp(1 - d / 10, 0, 1);
 }
 
-function evaluateJobWeather(job, weather) {
-  const rules = getRules(job.type);
-  if (!rules) {
-    return { status: 'bad', score: 0, reason: `Type de travail inconnu : ${job.type}` };
-  }
-
-  const weights = getWeights(job.type);
-
-  const rainScore = scoreUnderMax(weather.rainProbability, rules.maxRainProbability);
-  const windScore = scoreUnderMax(weather.windKmh, rules.maxWindKmh);
-  const tempScore = scoreTemperature(weather.temperature, rules.minTemperature, rules.maxTemperature);
-  const humidityScore = scoreUnderMax(weather.humidity, rules.maxHumidity);
-
-  const score = Math.round(
-    rainScore * weights.rain +
-    windScore * weights.wind +
-    tempScore * weights.temperature +
-    humidityScore * weights.humidity
-  );
-
-  const reasons = [];
-  if (weather.rainProbability > rules.maxRainProbability) reasons.push(`pluie ${weather.rainProbability}% > ${rules.maxRainProbability}%`);
-  if (weather.windKmh > rules.maxWindKmh) reasons.push(`vent ${weather.windKmh}km/h > ${rules.maxWindKmh}km/h`);
-  if (weather.temperature < rules.minTemperature || weather.temperature > rules.maxTemperature) reasons.push(`température ${weather.temperature}°C hors plage ${rules.minTemperature}–${rules.maxTemperature}°C`);
-  if (weather.humidity > rules.maxHumidity) reasons.push(`humidité ${weather.humidity}% > ${rules.maxHumidity}%`);
-
+// === Évaluation météo d'un job pour un créneau ===
+function evaluateJobWeather(job, w) {
+  const r = JOB_RULES[job.type];
+  const wt = JOB_WEIGHTS[job.type];
+  const rainS = scoreUnderMax(w.rainProbability, r.maxRain);
+  const windS = scoreUnderMax(w.windKmh, r.maxWind);
+  const tempS = scoreTemp(w.temperature, r.minTemp, r.maxTemp);
+  const humS  = scoreUnderMax(w.humidity, r.maxHum);
+  const score = Math.round(rainS * wt.rain + windS * wt.wind + tempS * wt.temp + humS * wt.hum);
   let status;
   if (score >= 75) status = 'ok';
   else if (score >= 50) status = 'risk';
   else status = 'bad';
-
-  return { status, score, reason: reasons.length === 0 ? 'Conditions favorables' : reasons.join(', ') };
+  const breakdown = { pluie: rainS, vent: windS, 'température': tempS, 'humidité': humS };
+  return { status, score, breakdown };
 }
 
-function suggestSchedule(jobs, weatherByHour) {
-  const hours = Object.keys(weatherByHour);
-  return jobs.map((job) => {
-    let best = null;
-    for (const hour of hours) {
-      const evaluation = evaluateJobWeather(job, weatherByHour[hour]);
-      if (!best || evaluation.score > best.score) best = { hour, ...evaluation };
-    }
-    return {
-      jobId: job.id, client: job.client, type: job.type,
-      bestHour: best ? best.hour : null,
-      status: best ? best.status : 'bad',
-      score: best ? best.score : 0,
-      reason: best ? best.reason : 'Aucune donnée météo disponible',
-    };
-  });
+function getMainIssue(breakdown) {
+  let worstKey = 'pluie', worstVal = Infinity;
+  for (const [k, v] of Object.entries(breakdown)) {
+    if (v < worstVal) { worstVal = v; worstKey = k; }
+  }
+  return worstKey;
 }
 
-function getWeatherScoreBreakdown(job, weather) {
-  const rules = getRules(job.type);
-  if (!rules) return { rainScore: 0, windScore: 0, temperatureScore: 0, humidityScore: 0, totalScore: 0 };
-
-  const weights = getWeights(job.type);
-  const rainScore = Math.round(scoreUnderMax(weather.rainProbability, rules.maxRainProbability) * weights.rain);
-  const windScore = Math.round(scoreUnderMax(weather.windKmh, rules.maxWindKmh) * weights.wind);
-  const temperatureScore = Math.round(scoreTemperature(weather.temperature, rules.minTemperature, rules.maxTemperature) * weights.temperature);
-  const humidityScore = Math.round(scoreUnderMax(weather.humidity, rules.maxHumidity) * weights.humidity);
-
-  return { rainScore, windScore, temperatureScore, humidityScore, totalScore: rainScore + windScore + temperatureScore + humidityScore };
-}
-
+// === Boosts priorité et deadline ===
 function getPriorityScore(job) {
   return ({ urgent: 30, high: 20, medium: 10, low: 0 })[job.priority] || 0;
 }
@@ -123,88 +46,85 @@ function getPriorityScore(job) {
 function getDeadlineUrgency(job) {
   if (!job.deadline) return 0;
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const deadline = new Date(job.deadline); deadline.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-  if (diffDays <= 1) return 30;
-  if (diffDays <= 3) return 20;
-  if (diffDays <= 7) return 10;
+  const d = new Date(job.deadline); d.setHours(0, 0, 0, 0);
+  const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+  if (diff <= 1) return 30;
+  if (diff <= 3) return 20;
+  if (diff <= 7) return 10;
   return 0;
 }
 
-const FINAL_WEIGHTS = { weather: 0.7, priority: 0.2, deadline: 0.1 };
-
-function computeAdjustedScore(weatherScore, priorityBoost, deadlineBoost) {
-  return (
-    weatherScore * FINAL_WEIGHTS.weather +
-    (priorityBoost / 30) * 100 * FINAL_WEIGHTS.priority +
-    (deadlineBoost / 30) * 100 * FINAL_WEIGHTS.deadline
-  );
+function computeAdjustedScore(weatherScore, pBoost, dBoost) {
+  return weatherScore * FINAL_WEIGHTS.weather
+    + (pBoost / 30) * 100 * FINAL_WEIGHTS.priority
+    + (dBoost / 30) * 100 * FINAL_WEIGHTS.deadline;
 }
 
-function getMainWeatherIssue(job, weather) {
-  const breakdown = getWeatherScoreBreakdown(job, weather);
-  const weights = getWeights(job.type);
-  const ratios = {
-    pluie: breakdown.rainScore / weights.rain,
-    vent: breakdown.windScore / weights.wind,
-    température: breakdown.temperatureScore / weights.temperature,
-    humidité: breakdown.humidityScore / weights.humidity,
-  };
-  let worstKey = 'pluie', worstRatio = Infinity;
-  for (const [key, ratio] of Object.entries(ratios)) {
-    if (ratio < worstRatio) { worstRatio = ratio; worstKey = key; }
-  }
-  return worstKey;
-}
-
+// === Décision automatique : maintain / risky / reschedule ===
 function rescheduleJobs(jobs, weatherByHour) {
   const hours = Object.keys(weatherByHour);
-  const results = jobs.map((job) => {
-    const priorityBoost = getPriorityScore(job);
-    const deadlineBoost = getDeadlineUrgency(job);
+  const results = jobs.map(job => {
+    const pBoost = getPriorityScore(job);
+    const dBoost = getDeadlineUrgency(job);
     const isUrgent = job.priority === 'urgent';
     let bestOk = null, bestRisk = null, bestAny = null;
 
-    for (const hour of hours) {
-      const evaluation = evaluateJobWeather(job, weatherByHour[hour]);
-      const adjustedScore = computeAdjustedScore(evaluation.score, priorityBoost, deadlineBoost);
-      const candidate = { hour, ...evaluation, adjustedScore };
-      if (evaluation.status === 'ok' && (!bestOk || adjustedScore > bestOk.adjustedScore)) bestOk = candidate;
-      if (evaluation.status === 'risk' && (!bestRisk || adjustedScore > bestRisk.adjustedScore)) bestRisk = candidate;
-      if (!bestAny || adjustedScore > bestAny.adjustedScore) bestAny = candidate;
+    for (const h of hours) {
+      const e = evaluateJobWeather(job, weatherByHour[h]);
+      const adj = computeAdjustedScore(e.score, pBoost, dBoost);
+      const cand = { hour: h, ...e, adj };
+      if (e.status === 'ok'   && (!bestOk   || adj > bestOk.adj))   bestOk   = cand;
+      if (e.status === 'risk' && (!bestRisk || adj > bestRisk.adj)) bestRisk = cand;
+      if (!bestAny || adj > bestAny.adj) bestAny = cand;
     }
 
-    if (bestOk) return { jobId: job.id, client: job.client, action: 'maintain', suggestedTime: bestOk.hour, message: `Conditions favorables à ${bestOk.hour}`, priorityBoost, deadlineBoost };
+    if (bestOk) return {
+      jobId: job.id, client: job.client, action: 'maintain',
+      suggestedTime: bestOk.hour,
+      message: `Conditions favorables à ${bestOk.hour}`,
+      pBoost, dBoost,
+    };
     if (bestRisk && isUrgent) {
-      const cause = getMainWeatherIssue(job, weatherByHour[bestRisk.hour]);
-      return { jobId: job.id, client: job.client, action: 'maintain', suggestedTime: bestRisk.hour, message: `Job urgente maintenue malgré conditions risquées (${cause}) à ${bestRisk.hour}`, priorityBoost, deadlineBoost };
+      const cause = getMainIssue(bestRisk.breakdown);
+      return {
+        jobId: job.id, client: job.client, action: 'maintain',
+        suggestedTime: bestRisk.hour,
+        message: `Job urgente maintenue malgré conditions risquées (${cause}) à ${bestRisk.hour}`,
+        pBoost, dBoost,
+      };
     }
     if (bestRisk) {
-      const cause = getMainWeatherIssue(job, weatherByHour[bestRisk.hour]);
-      return { jobId: job.id, client: job.client, action: 'risky', suggestedTime: bestRisk.hour, message: `Conditions risquées (${cause}) à ${bestRisk.hour}`, priorityBoost, deadlineBoost };
+      const cause = getMainIssue(bestRisk.breakdown);
+      return {
+        jobId: job.id, client: job.client, action: 'risky',
+        suggestedTime: bestRisk.hour,
+        message: `Conditions risquées (${cause}) à ${bestRisk.hour}`,
+        pBoost, dBoost,
+      };
     }
-    return { jobId: job.id, client: job.client, action: 'reschedule', suggestedTime: bestAny ? bestAny.hour : null, message: bestAny ? `Conditions mauvaises, meilleur créneau disponible à ${bestAny.hour}` : 'Aucune donnée météo disponible', priorityBoost, deadlineBoost };
+    return {
+      jobId: job.id, client: job.client, action: 'reschedule',
+      suggestedTime: bestAny ? bestAny.hour : null,
+      message: bestAny
+        ? `Conditions mauvaises, meilleur créneau disponible à ${bestAny.hour}`
+        : 'Aucune donnée météo disponible',
+      pBoost, dBoost,
+    };
   });
-
-  results.sort((a, b) => (b.priorityBoost + b.deadlineBoost) - (a.priorityBoost + a.deadlineBoost));
+  results.sort((a, b) => (b.pBoost + b.dBoost) - (a.pBoost + a.dBoost));
   return results;
 }
 
-const JOB_TYPE_LABELS = {
-  pose_tourbe: 'pose de tourbe', peinture: 'peinture', pavage: 'pavage', excavation: 'excavation',
-};
-
+// === Génération du message client ===
 function extractReason(message) {
-  if (!message) return null;
-  const match = message.match(/\(([^)]+)\)/);
-  return match ? match[1] : null;
+  const m = message && message.match(/\(([^)]+)\)/);
+  return m ? m[1] : null;
 }
 
 function generateClientMessage(job, decision) {
-  const typeLabel = JOB_TYPE_LABELS[job.type] || job.type;
+  const typeLabel = TYPE_LABELS[job.type] || job.type;
   const heure = decision.suggestedTime || 'à confirmer';
   const reason = extractReason(decision.message);
-
   if (decision.action === 'maintain') {
     return `Bonjour M. ${job.client},\nVotre chantier de ${typeLabel} est maintenu à ${heure} comme prévu.\nCordialement,\nL'équipe SmartPlan`;
   }
@@ -219,11 +139,5 @@ function generateClientMessage(job, decision) {
       : `nous vous proposons de reporter votre chantier à une date ultérieure.`;
     return `Bonjour M. ${job.client},\nEn raison des conditions météo${detail},\n${slot}\nCordialement,\nL'équipe SmartPlan`;
   }
-  return `Bonjour M. ${job.client},\nNous reviendrons vers vous concernant votre chantier de ${typeLabel}.\nCordialement,\nL'équipe SmartPlan`;
+  return '';
 }
-
-module.exports = {
-  evaluateJobWeather, suggestSchedule, getWeatherScoreBreakdown,
-  rescheduleJobs, getPriorityScore, getDeadlineUrgency,
-  generateClientMessage, setConfig, config,
-};

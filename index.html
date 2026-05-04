@@ -1,4 +1,3 @@
-<!-- update trigger -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -216,9 +215,8 @@
       border-radius: 16px;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      transition: border-color 0.2s ease, transform 0.2s ease;
+      transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease;
     }
-    .how-step { transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease; }
     .how-step:hover {
       border-color: rgba(99,102,241,0.45); transform: translateY(-2px);
       box-shadow: 0 14px 30px rgba(0,0,0,0.3);
@@ -247,9 +245,8 @@
       border-radius: 16px;
       backdrop-filter: blur(14px) saturate(130%);
       -webkit-backdrop-filter: blur(14px) saturate(130%);
-      transition: border-color 0.2s ease, transform 0.2s ease;
+      transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease;
     }
-    .stat { transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease; }
     .stat:hover {
       border-color: rgba(99,102,241,0.45); transform: translateY(-2px);
       box-shadow: 0 14px 30px rgba(0,0,0,0.35);
@@ -413,9 +410,7 @@
       font-weight: 700; margin-bottom: 10px;
       display: flex; align-items: center; gap: 8px;
     }
-    .client-msg-label::before {
-      content: '✉'; font-size: 0.85rem;
-    }
+    .client-msg-label::before { content: '✉'; font-size: 0.85rem; }
     .client-msg {
       background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.08));
       border-left: 3px solid var(--accent);
@@ -557,327 +552,9 @@
     <footer><span>SmartPlan Météo</span> · Aide les équipes terrain à décider rapidement, malgré la météo.</footer>
   </div>
 
-  <script>
-    // === OpenWeather API (à remplacer par ta vraie clé) ===
-    const API_KEY = "PASTE_OPENWEATHER_KEY_HERE";
-    // Coordonnées par défaut (Montréal, QC)
-    const DEFAULT_LAT = 45.5017;
-    const DEFAULT_LON = -73.5673;
-    const WANTED_HOURS = [7, 8, 9, 10, 11, 13, 14, 15];
-
-    const jobs = [
-      { id: 1, client: 'Tremblay', type: 'pose_tourbe', priority: 'high',   deadline: '2026-06-10' },
-      { id: 2, client: 'Gagnon',   type: 'peinture',    priority: 'urgent', deadline: '2026-06-05' },
-      { id: 3, client: 'Roy',      type: 'excavation',  priority: 'medium', deadline: '2026-06-15' },
-      { id: 4, client: 'Bouchard', type: 'pavage',      priority: 'low',    deadline: '2026-06-20' },
-    ];
-
-    async function fetchRealWeather(lat, lon) {
-      if (!API_KEY || API_KEY === 'PASTE_OPENWEATHER_KEY_HERE') {
-        throw new Error('Clé API manquante');
-      }
-      const url = `https://api.openweathermap.org/data/3.0/onecall`
-        + `?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
-        + `&exclude=current,minutely,daily,alerts&units=metric`
-        + `&appid=${encodeURIComponent(API_KEY)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('OpenWeather: HTTP ' + res.status);
-      const data = await res.json();
-      if (!Array.isArray(data.hourly) || data.hourly.length === 0) {
-        throw new Error('OpenWeather: pas de données horaires');
-      }
-      const seen = new Set();
-      const slots = [];
-      for (const h of data.hourly) {
-        const date = new Date(h.dt * 1000);
-        const hour = date.getHours();
-        if (!WANTED_HOURS.includes(hour) || seen.has(hour)) continue;
-        seen.add(hour);
-        slots.push({
-          hour,
-          time: String(hour).padStart(2, '0') + ':00',
-          rainProbability: Math.round((h.pop || 0) * 100),
-          windKmh: Math.round((h.wind_speed || 0) * 3.6),
-          temperature: Math.round(h.temp ?? 0),
-          humidity: Math.round(h.humidity ?? 0),
-        });
-        if (slots.length === WANTED_HOURS.length) break;
-      }
-      if (!slots.length) throw new Error('OpenWeather: aucun créneau utile');
-      slots.sort((a, b) => a.hour - b.hour);
-      return slots.map(({ hour, ...rest }) => rest);
-    }
-
-    function getMockWeather() {
-      return [
-        { time: '07:00', rainProbability: 5,  windKmh: 8,  temperature: 14, humidity: 55 },
-        { time: '08:00', rainProbability: 5,  windKmh: 10, temperature: 16, humidity: 58 },
-        { time: '09:00', rainProbability: 10, windKmh: 12, temperature: 18, humidity: 62 },
-        { time: '10:00', rainProbability: 15, windKmh: 15, temperature: 20, humidity: 66 },
-        { time: '11:00', rainProbability: 25, windKmh: 18, temperature: 21, humidity: 72 },
-        { time: '13:00', rainProbability: 45, windKmh: 22, temperature: 20, humidity: 80 },
-        { time: '14:00', rainProbability: 60, windKmh: 28, temperature: 19, humidity: 87 },
-        { time: '15:00', rainProbability: 75, windKmh: 32, temperature: 18, humidity: 92 },
-      ];
-    }
-
-    const JOB_RULES = {
-      pose_tourbe: { maxRain: 30, maxWind: 40, minTemp: 5,  maxTemp: 30, maxHum: 90 },
-      peinture:    { maxRain: 10, maxWind: 25, minTemp: 10, maxTemp: 32, maxHum: 70 },
-      pavage:      { maxRain: 20, maxWind: 50, minTemp: 5,  maxTemp: 35, maxHum: 95 },
-      excavation:  { maxRain: 50, maxWind: 60, minTemp: -5, maxTemp: 35, maxHum: 100 },
-    };
-    const JOB_WEIGHTS = {
-      pose_tourbe: { rain: 35, wind: 20, temp: 25, hum: 20 },
-      peinture:    { rain: 30, wind: 15, temp: 20, hum: 35 },
-      pavage:      { rain: 35, wind: 20, temp: 30, hum: 15 },
-      excavation:  { rain: 15, wind: 30, temp: 25, hum: 30 },
-    };
-    const TYPE_LABELS = {
-      pose_tourbe: 'pose de tourbe',
-      peinture: 'peinture',
-      pavage: 'pavage',
-      excavation: 'excavation',
-    };
-    const ACTION_ICONS = { maintain: '✅', risky: '⚠️', reschedule: '🌧️' };
-
-    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-    function scoreUnderMax(value, max) {
-      if (value <= 0) return 1;
-      if (value >= max) return 0;
-      return clamp(1 - value / max, 0, 1);
-    }
-    function scoreTemp(t, min, max) {
-      if (t >= min && t <= max) return 1;
-      const d = t < min ? min - t : t - max;
-      return clamp(1 - d / 10, 0, 1);
-    }
-
-    function evaluateJobWeather(job, w) {
-      const r = JOB_RULES[job.type];
-      const wt = JOB_WEIGHTS[job.type];
-      const rainS = scoreUnderMax(w.rainProbability, r.maxRain);
-      const windS = scoreUnderMax(w.windKmh, r.maxWind);
-      const tempS = scoreTemp(w.temperature, r.minTemp, r.maxTemp);
-      const humS  = scoreUnderMax(w.humidity, r.maxHum);
-      const score = Math.round(rainS * wt.rain + windS * wt.wind + tempS * wt.temp + humS * wt.hum);
-      let status;
-      if (score >= 75) status = 'ok';
-      else if (score >= 50) status = 'risk';
-      else status = 'bad';
-      const breakdown = { pluie: rainS, vent: windS, 'température': tempS, 'humidité': humS };
-      return { status, score, breakdown };
-    }
-
-    function getMainIssue(breakdown) {
-      let worstKey = 'pluie', worstVal = Infinity;
-      for (const [k, v] of Object.entries(breakdown)) {
-        if (v < worstVal) { worstVal = v; worstKey = k; }
-      }
-      return worstKey;
-    }
-
-    function getPriorityScore(job) {
-      return ({ urgent: 30, high: 20, medium: 10, low: 0 })[job.priority] || 0;
-    }
-    function getDeadlineUrgency(job) {
-      if (!job.deadline) return 0;
-      const today = new Date(); today.setHours(0,0,0,0);
-      const d = new Date(job.deadline); d.setHours(0,0,0,0);
-      const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-      if (diff <= 1) return 30;
-      if (diff <= 3) return 20;
-      if (diff <= 7) return 10;
-      return 0;
-    }
-
-    function rescheduleJobs(jobs, weatherByHour) {
-      const hours = Object.keys(weatherByHour);
-      const results = jobs.map(job => {
-        const pBoost = getPriorityScore(job);
-        const dBoost = getDeadlineUrgency(job);
-        const isUrgent = job.priority === 'urgent';
-        let bestOk = null, bestRisk = null, bestAny = null;
-
-        for (const h of hours) {
-          const e = evaluateJobWeather(job, weatherByHour[h]);
-          const adj = e.score * 0.7 + (pBoost / 30) * 100 * 0.2 + (dBoost / 30) * 100 * 0.1;
-          const cand = { hour: h, ...e, adj };
-          if (e.status === 'ok' && (!bestOk || adj > bestOk.adj)) bestOk = cand;
-          if (e.status === 'risk' && (!bestRisk || adj > bestRisk.adj)) bestRisk = cand;
-          if (!bestAny || adj > bestAny.adj) bestAny = cand;
-        }
-
-        if (bestOk) return {
-          jobId: job.id, client: job.client, action: 'maintain',
-          suggestedTime: bestOk.hour,
-          message: `Conditions favorables à ${bestOk.hour}`,
-          pBoost, dBoost,
-        };
-        if (bestRisk && isUrgent) {
-          const cause = getMainIssue(bestRisk.breakdown);
-          return {
-            jobId: job.id, client: job.client, action: 'maintain',
-            suggestedTime: bestRisk.hour,
-            message: `Job urgente maintenue malgré conditions risquées (${cause}) à ${bestRisk.hour}`,
-            pBoost, dBoost,
-          };
-        }
-        if (bestRisk) {
-          const cause = getMainIssue(bestRisk.breakdown);
-          return {
-            jobId: job.id, client: job.client, action: 'risky',
-            suggestedTime: bestRisk.hour,
-            message: `Conditions risquées (${cause}) à ${bestRisk.hour}`,
-            pBoost, dBoost,
-          };
-        }
-        return {
-          jobId: job.id, client: job.client, action: 'reschedule',
-          suggestedTime: bestAny ? bestAny.hour : null,
-          message: bestAny
-            ? `Conditions mauvaises, meilleur créneau disponible à ${bestAny.hour}`
-            : 'Aucune donnée météo disponible',
-          pBoost, dBoost,
-        };
-      });
-      results.sort((a, b) => (b.pBoost + b.dBoost) - (a.pBoost + a.dBoost));
-      return results;
-    }
-
-    function extractReason(message) {
-      const m = message && message.match(/\(([^)]+)\)/);
-      return m ? m[1] : null;
-    }
-
-    function generateClientMessage(job, decision) {
-      const typeLabel = TYPE_LABELS[job.type] || job.type;
-      const heure = decision.suggestedTime || 'à confirmer';
-      const reason = extractReason(decision.message);
-      if (decision.action === 'maintain') {
-        return `Bonjour M. ${job.client},\nVotre chantier de ${typeLabel} est maintenu à ${heure} comme prévu.\nCordialement,\nL'équipe SmartPlan`;
-      }
-      if (decision.action === 'risky') {
-        const detail = reason ? ` (${reason})` : '';
-        return `Bonjour M. ${job.client},\nLes conditions météo présentent un risque${detail}.\nNous pouvons maintenir le chantier de ${typeLabel} à ${heure}, mais une confirmation de votre part sera nécessaire.\nCordialement,\nL'équipe SmartPlan`;
-      }
-      if (decision.action === 'reschedule') {
-        const detail = reason ? ` (${reason})` : '';
-        const slot = decision.suggestedTime
-          ? `nous vous proposons de déplacer votre chantier au meilleur créneau disponible : ${decision.suggestedTime}.`
-          : `nous vous proposons de reporter votre chantier à une date ultérieure.`;
-        return `Bonjour M. ${job.client},\nEn raison des conditions météo${detail},\n${slot}\nCordialement,\nL'équipe SmartPlan`;
-      }
-      return '';
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      })[c]);
-    }
-
-    function updateStats(decisions) {
-      const total = decisions.length;
-      const maintain = decisions.filter(d => d.action === 'maintain').length;
-      const risky = decisions.filter(d => d.action === 'risky').length;
-      const reschedule = decisions.filter(d => d.action === 'reschedule').length;
-      document.getElementById('statTotal').textContent = total;
-      document.getElementById('statMaintain').textContent = maintain;
-      document.getElementById('statRisky').textContent = risky;
-      document.getElementById('statReschedule').textContent = reschedule;
-    }
-
-    function renderWeatherSummary(weather) {
-      const w = weather || getMockWeather();
-      const temps = w.map(s => s.temperature);
-      const minT = Math.min(...temps);
-      const maxT = Math.max(...temps);
-      const maxRain = Math.max(...w.map(s => s.rainProbability));
-      const desc = maxRain >= 60
-        ? 'Matin clair · pluie probable PM'
-        : maxRain >= 30 ? 'Variable · averses possibles' : 'Journée stable';
-      document.getElementById('weatherTemp').textContent = `${minT}° → ${maxT}°C`;
-      document.getElementById('weatherDesc').textContent = desc;
-    }
-
-    function setWeatherSource(state) {
-      const tag = document.getElementById('weatherSource');
-      tag.classList.remove('real', 'mock', 'loading');
-      tag.classList.add(state);
-      tag.textContent = state === 'real'
-        ? 'Météo réelle'
-        : state === 'loading' ? 'Chargement…' : 'Météo simulée';
-    }
-
-    renderWeatherSummary();
-
-    function scoreBarClass(score) {
-      if (score >= 75) return 'good';
-      if (score >= 50) return 'mid';
-      return 'bad';
-    }
-
-    async function runSimulation() {
-      setWeatherSource('loading');
-      let weather;
-      try {
-        weather = await fetchRealWeather(DEFAULT_LAT, DEFAULT_LON);
-        setWeatherSource('real');
-      } catch (err) {
-        console.warn('Fallback météo simulée :', err.message);
-        weather = getMockWeather();
-        setWeatherSource('mock');
-      }
-      renderWeatherSummary(weather);
-      const weatherByHour = {};
-      for (const s of weather) weatherByHour[s.time] = s;
-
-      const decisions = rescheduleJobs(jobs, weatherByHour);
-      const root = document.getElementById('results');
-      root.innerHTML = '';
-
-      for (const d of decisions) {
-        const job = jobs.find(j => j.id === d.jobId);
-        const msg = generateClientMessage(job, d);
-
-        const slotWeather = d.suggestedTime ? weatherByHour[d.suggestedTime] : null;
-        const meteoScore = slotWeather ? evaluateJobWeather(job, slotWeather).score : 0;
-        const scoreCls = scoreBarClass(meteoScore);
-        const icon = ACTION_ICONS[d.action] || '•';
-
-        const card = document.createElement('div');
-        card.className = 'job-card';
-        card.innerHTML = `
-          <div class="job-header">
-            <div>
-              <h2>${escapeHtml(job.client)}</h2>
-              <div class="type">${escapeHtml(TYPE_LABELS[job.type] || job.type)} — priorité ${escapeHtml(job.priority)}</div>
-            </div>
-            <div class="job-icon ${d.action}">${icon}</div>
-          </div>
-          <div class="score-row">
-            <div class="score-label">Score météo</div>
-            <div class="score-bar"><div class="score-fill ${scoreCls}" style="width:${meteoScore}%"></div></div>
-            <div class="score-value">${meteoScore}/100</div>
-          </div>
-          <div class="decision">
-            <div>→ Action : <span class="badge ${d.action}">${escapeHtml(d.action)}</span></div>
-            <div>→ Heure : ${escapeHtml(d.suggestedTime || 'aucune')}</div>
-            <div>→ Message technique : ${escapeHtml(d.message)}</div>
-          </div>
-          <div class="client-msg-block">
-            <div class="client-msg-label">Message client prêt à envoyer</div>
-            <div class="client-msg">${escapeHtml(msg)}</div>
-          </div>
-        `;
-        root.appendChild(card);
-      }
-
-      updateStats(decisions);
-    }
-
-    document.getElementById('runBtn').addEventListener('click', runSimulation);
-  </script>
+  <script src="weatherConfig.js"></script>
+  <script src="mockWeather.js"></script>
+  <script src="weatherScheduler.js"></script>
+  <script src="runSimulation.js"></script>
 </body>
 </html>

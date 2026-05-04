@@ -1,883 +1,229 @@
-<!-- update trigger -->
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartPlan Météo · Assistant intelligent</title>
-  <style>
-    * { box-sizing: border-box; }
-    :root {
-      --bg-0: #05070e;
-      --bg-1: #0b1020;
-      --bg-2: #11172a;
-      --glass: rgba(255, 255, 255, 0.04);
-      --glass-strong: rgba(255, 255, 255, 0.07);
-      --border: rgba(255, 255, 255, 0.10);
-      --border-strong: rgba(255, 255, 255, 0.18);
-      --text-0: #f8fafc;
-      --text-1: #cbd5e1;
-      --text-2: #8e9bb5;
-      --text-3: #64748b;
-      --accent: #6366f1;
-      --accent-2: #8b5cf6;
-      --accent-3: #06b6d4;
-      --accent-soft: rgba(99,102,241,0.18);
-      --green: #10b981; --green-soft: rgba(16,185,129,0.16);
-      --amber: #f59e0b; --amber-soft: rgba(245,158,11,0.16);
-      --red: #ef4444;   --red-soft: rgba(239,68,68,0.16);
-    }
-    html, body { height: 100%; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
-      background:
-        radial-gradient(1500px 800px at 90% -10%, rgba(139,92,246,0.25), transparent 55%),
-        radial-gradient(1100px 600px at -10% 0%, rgba(6,182,212,0.20), transparent 50%),
-        radial-gradient(900px 500px at 50% 110%, rgba(99,102,241,0.16), transparent 60%),
-        var(--bg-0);
-      color: var(--text-0);
-      padding: 24px 20px 64px;
-      line-height: 1.55; min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      letter-spacing: -0.005em;
-    }
-    body::before {
-      content: ''; position: fixed; inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: radial-gradient(ellipse at 50% 25%, black 25%, transparent 80%);
-      pointer-events: none; z-index: 0;
-    }
-    .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+/**
+ * weatherScheduler.js
+ *
+ * Moteur météo pour SmartPlan MVP.
+ * Évalue si un travail extérieur peut être exécuté selon les conditions météo
+ * et propose la meilleure heure d'exécution.
+ *
+ * Les règles et pondérations sont chargées depuis weatherConfig.js
+ * et peuvent être surchargées à l'exécution via setConfig().
+ */
 
-    /* ============== TOP BAR ============== */
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
-      padding: 14px 20px;
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      backdrop-filter: blur(18px) saturate(140%);
-      -webkit-backdrop-filter: blur(18px) saturate(140%);
-      margin-bottom: 22px;
-      animation: fadeIn 0.4s ease both;
-    }
-    .brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 700; font-size: 0.95rem; }
-    .brand-mark {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      box-shadow: 0 8px 24px rgba(99,102,241,0.45),
-                  inset 0 1px 0 rgba(255,255,255,0.3);
-      position: relative;
-    }
-    .brand-mark::after {
-      content: ''; position: absolute; inset: 5px;
-      border: 2px solid rgba(255,255,255,0.92); border-radius: 4px;
-      border-bottom-color: transparent; border-right-color: transparent;
-      transform: rotate(45deg);
-    }
-    .brand-name { display: flex; flex-direction: column; line-height: 1.15; }
-    .brand-name b { color: var(--text-0); font-weight: 800; letter-spacing: -0.01em; }
-    .brand-name span { color: var(--text-3); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+const defaultConfig = require('./weatherConfig');
 
-    .weather-pill {
-      display: inline-flex; align-items: center; gap: 14px;
-      padding: 8px 16px;
-      background: var(--glass-strong);
-      border: 1px solid var(--border);
-      border-radius: 999px; font-size: 0.88rem;
-      backdrop-filter: blur(12px);
-    }
-    .weather-pill .icon {
-      width: 32px; height: 32px; display: grid; place-items: center;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      box-shadow: 0 0 18px rgba(251,191,36,0.5);
-    }
-    .weather-pill .meta { display: flex; flex-direction: column; line-height: 1.15; }
-    .weather-pill .meta b { color: var(--text-0); font-weight: 600; font-size: 0.92rem; }
-    .weather-pill .meta span { color: var(--text-2); font-size: 0.75rem; }
-    .source-tag {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.7rem; font-weight: 700;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      border: 1px solid transparent;
-      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    }
-    .source-tag::before {
-      content: ''; width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor; box-shadow: 0 0 8px currentColor;
-    }
-    .source-tag.real { background: rgba(16,185,129,0.14); color: #34d399; border-color: rgba(16,185,129,0.4); }
-    .source-tag.mock { background: rgba(148,163,184,0.14); color: #94a3b8; border-color: rgba(148,163,184,0.35); }
-    .source-tag.loading { background: rgba(99,102,241,0.14); color: #a5b4fc; border-color: rgba(99,102,241,0.4); }
+// Config active (modifiable via setConfig)
+let config = {
+  rules: { ...defaultConfig.JOB_RULES },
+  weights: { ...defaultConfig.JOB_WEIGHTS },
+  defaultWeights: { ...defaultConfig.DEFAULT_WEIGHTS },
+};
 
-    /* ============== HERO ============== */
-    .hero {
-      padding: 38px 36px 32px;
-      border-radius: 24px;
-      background:
-        radial-gradient(700px 350px at 100% 0%, rgba(139,92,246,0.20), transparent 60%),
-        linear-gradient(180deg, rgba(99,102,241,0.10), rgba(255,255,255,0.02));
-      border: 1px solid var(--border);
-      backdrop-filter: blur(14px) saturate(130%);
-      -webkit-backdrop-filter: blur(14px) saturate(130%);
-      margin-bottom: 22px;
-      position: relative; overflow: hidden;
-      animation: fadeUp 0.5s cubic-bezier(.2,.7,.3,1) both;
-    }
-    .hero::before {
-      content: ''; position: absolute; top: -140px; right: -140px;
-      width: 360px; height: 360px;
-      background: radial-gradient(circle, rgba(139,92,246,0.5), transparent 65%);
-      filter: blur(28px); pointer-events: none;
-    }
-    .pill {
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 6px 14px;
-      background: var(--accent-soft);
-      border: 1px solid rgba(99,102,241,0.4);
-      border-radius: 999px;
-      font-size: 0.74rem; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: #c7d2fe; margin-bottom: 18px;
-    }
-    .pill .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 12px var(--accent);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse { 50% { opacity: 0.55; transform: scale(0.8); } }
-    h1 {
-      font-size: clamp(2rem, 4.4vw, 3rem);
-      margin: 0 0 12px; letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 60%, #a5b4fc 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 800; line-height: 1.05;
-    }
-    p.subtitle {
-      color: var(--text-1);
-      margin: 0 0 8px;
-      font-size: 1.08rem;
-      max-width: 660px;
-    }
-    p.value { color: var(--text-2); margin: 0 0 28px; font-size: 0.95rem; max-width: 640px; }
-    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    button#runBtn {
-      position: relative; overflow: hidden;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      color: white; border: none;
-      padding: 15px 30px; font-size: 1rem; font-weight: 600;
-      border-radius: 14px; cursor: pointer;
-      box-shadow: 0 12px 32px rgba(99,102,241,0.5),
-                  inset 0 1px 0 rgba(255,255,255,0.28);
-      transition: transform 0.18s cubic-bezier(.2,.7,.3,1),
-                  box-shadow 0.25s ease, filter 0.2s ease;
-      display: inline-flex; align-items: center; gap: 10px;
-    }
-    button#runBtn::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform 0.6s ease;
-    }
-    button#runBtn:hover::before { transform: translateX(100%); }
-    button#runBtn:hover {
-      transform: translateY(-2px); filter: brightness(1.06);
-      box-shadow: 0 18px 46px rgba(99,102,241,0.6),
-                  inset 0 1px 0 rgba(255,255,255,0.28);
-    }
-    button#runBtn:active { transform: translateY(0); }
-    button#runBtn:focus-visible { outline: 2px solid #c7d2fe; outline-offset: 3px; }
-    button#runBtn::after { content: '→'; font-size: 1.1rem; transition: transform 0.2s ease; }
-    button#runBtn:hover::after { transform: translateX(4px); }
-    .hero-hint { color: var(--text-3); font-size: 0.85rem; }
+function setConfig(newConfig = {}) {
+  if (newConfig.rules) config.rules = { ...config.rules, ...newConfig.rules };
+  if (newConfig.weights) config.weights = { ...config.weights, ...newConfig.weights };
+  if (newConfig.defaultWeights) config.defaultWeights = { ...config.defaultWeights, ...newConfig.defaultWeights };
+}
 
-    /* ============== HOW IT WORKS ============== */
-    .how {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px; margin-bottom: 24px;
-    }
-    .how-step {
-      position: relative;
-      padding: 18px 18px 16px;
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .how-step { transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease; }
-    .how-step:hover {
-      border-color: rgba(99,102,241,0.45); transform: translateY(-2px);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.3);
-    }
-    .how-step .num {
-      width: 30px; height: 30px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      display: grid; place-items: center;
-      font-weight: 700; font-size: 0.85rem; color: white;
-      margin-bottom: 10px;
-      box-shadow: 0 6px 18px rgba(99,102,241,0.4);
-    }
-    .how-step h4 { margin: 0 0 4px; font-size: 0.98rem; font-weight: 700; }
-    .how-step p { margin: 0; font-size: 0.85rem; color: var(--text-2); }
+function getRules(type) {
+  return config.rules[type];
+}
 
-    /* ============== STATS ============== */
-    .stats {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 14px; margin-bottom: 26px;
-    }
-    .stat {
-      padding: 20px 20px 18px;
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      backdrop-filter: blur(14px) saturate(130%);
-      -webkit-backdrop-filter: blur(14px) saturate(130%);
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .stat { transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease; }
-    .stat:hover {
-      border-color: rgba(99,102,241,0.45); transform: translateY(-2px);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.35);
-    }
-    .stat-label {
-      font-size: 0.78rem; color: var(--text-2);
-      text-transform: uppercase; letter-spacing: 0.09em;
-      font-weight: 700; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .stat-label .ind { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
-    .stat-value {
-      font-size: 2.2rem; font-weight: 800;
-      letter-spacing: -0.025em; color: var(--text-0); line-height: 1;
-    }
-    .stat-sub { color: var(--text-3); font-size: 0.78rem; margin-top: 6px; }
-    .stat.total .ind     { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-    .stat.maintain .ind  { background: var(--green); box-shadow: 0 0 10px var(--green); }
-    .stat.risky .ind     { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
-    .stat.reschedule .ind{ background: var(--red); box-shadow: 0 0 10px var(--red); }
-    .stat.maintain  .stat-value { color: #6ee7b7; }
-    .stat.risky     .stat-value { color: #fcd34d; }
-    .stat.reschedule .stat-value { color: #fca5a5; }
+function getWeights(type) {
+  return config.weights[type] || config.defaultWeights;
+}
 
-    /* ============== SECTION HEADER ============== */
-    .section-head {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; margin: 8px 4px 14px; flex-wrap: wrap;
-    }
-    .section-head h3 { margin: 0; font-size: 1.08rem; font-weight: 700; letter-spacing: -0.01em; }
-    .section-head .sub { color: var(--text-3); font-size: 0.85rem; }
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
 
-    /* ============== CARDS ============== */
-    #results {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 20px;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .job-card {
-      position: relative;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 22px 22px 20px;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset,
-                  0 18px 44px rgba(0,0,0,0.45);
-      backdrop-filter: blur(20px) saturate(140%);
-      -webkit-backdrop-filter: blur(20px) saturate(140%);
-      transition: transform 0.22s cubic-bezier(.2,.7,.3,1),
-                  border-color 0.22s ease,
-                  box-shadow 0.22s ease;
-      overflow: hidden;
-      animation: fadeUp 0.45s cubic-bezier(.2,.7,.3,1) both;
-    }
-    .job-card:nth-child(1) { animation-delay: 0.04s; }
-    .job-card:nth-child(2) { animation-delay: 0.10s; }
-    .job-card:nth-child(3) { animation-delay: 0.16s; }
-    .job-card:nth-child(4) { animation-delay: 0.22s; }
-    .job-card:nth-child(5) { animation-delay: 0.28s; }
-    .job-card:nth-child(6) { animation-delay: 0.34s; }
-    .job-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
-      opacity: 0.75;
-    }
-    .job-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(99,102,241,0.55);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset,
-                  0 22px 54px rgba(0,0,0,0.55);
-    }
-    .job-header {
-      margin-bottom: 14px;
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-    }
-    .job-header h2 { margin: 0 0 4px; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; }
-    .job-header .type { color: var(--text-2); font-size: 0.86rem; text-transform: capitalize; }
+function scoreUnderMax(value, max) {
+  if (value <= 0) return 1;
+  if (value >= max) {
+    const over = (value - max) / max;
+    return clamp(1 - over - 1, 0, 1);
+  }
+  return clamp(1 - value / max, 0, 1);
+}
 
-    .job-icon {
-      width: 46px; height: 46px; border-radius: 14px;
-      display: grid; place-items: center;
-      font-size: 1.4rem;
-      flex-shrink: 0;
-      background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.18));
-      border: 1px solid rgba(99,102,241,0.35);
-    }
-    .job-icon.maintain   { background: linear-gradient(135deg, rgba(16,185,129,0.3), rgba(16,185,129,0.1)); border-color: rgba(16,185,129,0.4); }
-    .job-icon.risky      { background: linear-gradient(135deg, rgba(245,158,11,0.3), rgba(245,158,11,0.1)); border-color: rgba(245,158,11,0.4); }
-    .job-icon.reschedule { background: linear-gradient(135deg, rgba(239,68,68,0.3), rgba(239,68,68,0.1)); border-color: rgba(239,68,68,0.4); }
+function scoreTemperature(temp, min, max) {
+  if (temp >= min && temp <= max) return 1;
+  const distance = temp < min ? min - temp : temp - max;
+  return clamp(1 - distance / 10, 0, 1);
+}
 
-    .score-row {
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 14px;
-      padding: 10px 12px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-    }
-    .score-label {
-      font-size: 0.72rem; color: var(--text-2);
-      text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700;
-      flex-shrink: 0;
-    }
-    .score-bar {
-      flex: 1; height: 8px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 999px; overflow: hidden;
-      position: relative;
-    }
-    .score-fill {
-      position: absolute; top: 0; left: 0; bottom: 0;
-      border-radius: 999px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
-      transition: width 0.4s ease;
-    }
-    .score-fill.good { background: linear-gradient(90deg, #10b981, #34d399); }
-    .score-fill.mid  { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .score-fill.bad  { background: linear-gradient(90deg, #ef4444, #f87171); }
-    .score-value { font-weight: 700; font-size: 0.9rem; color: var(--text-0); flex-shrink: 0; }
+function evaluateJobWeather(job, weather) {
+  const rules = getRules(job.type);
+  if (!rules) {
+    return { status: 'bad', score: 0, reason: `Type de travail inconnu : ${job.type}` };
+  }
 
-    .decision {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      font-size: 0.88rem; color: var(--text-1);
+  const weights = getWeights(job.type);
+
+  const rainScore = scoreUnderMax(weather.rainProbability, rules.maxRainProbability);
+  const windScore = scoreUnderMax(weather.windKmh, rules.maxWindKmh);
+  const tempScore = scoreTemperature(weather.temperature, rules.minTemperature, rules.maxTemperature);
+  const humidityScore = scoreUnderMax(weather.humidity, rules.maxHumidity);
+
+  const score = Math.round(
+    rainScore * weights.rain +
+    windScore * weights.wind +
+    tempScore * weights.temperature +
+    humidityScore * weights.humidity
+  );
+
+  const reasons = [];
+  if (weather.rainProbability > rules.maxRainProbability) reasons.push(`pluie ${weather.rainProbability}% > ${rules.maxRainProbability}%`);
+  if (weather.windKmh > rules.maxWindKmh) reasons.push(`vent ${weather.windKmh}km/h > ${rules.maxWindKmh}km/h`);
+  if (weather.temperature < rules.minTemperature || weather.temperature > rules.maxTemperature) reasons.push(`température ${weather.temperature}°C hors plage ${rules.minTemperature}–${rules.maxTemperature}°C`);
+  if (weather.humidity > rules.maxHumidity) reasons.push(`humidité ${weather.humidity}% > ${rules.maxHumidity}%`);
+
+  let status;
+  if (score >= 75) status = 'ok';
+  else if (score >= 50) status = 'risk';
+  else status = 'bad';
+
+  return { status, score, reason: reasons.length === 0 ? 'Conditions favorables' : reasons.join(', ') };
+}
+
+function suggestSchedule(jobs, weatherByHour) {
+  const hours = Object.keys(weatherByHour);
+  return jobs.map((job) => {
+    let best = null;
+    for (const hour of hours) {
+      const evaluation = evaluateJobWeather(job, weatherByHour[hour]);
+      if (!best || evaluation.score > best.score) best = { hour, ...evaluation };
     }
-    .decision div { margin: 5px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 11px; border-radius: 999px;
-      font-size: 0.7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      border: 1px solid transparent;
-    }
-    .badge::before {
-      content: ''; width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor; box-shadow: 0 0 10px currentColor;
-    }
-    .badge.maintain   { background: var(--green-soft); color: #34d399; border-color: rgba(16,185,129,0.45); }
-    .badge.risky      { background: var(--amber-soft); color: #fbbf24; border-color: rgba(245,158,11,0.45); }
-    .badge.reschedule { background: var(--red-soft);   color: #f87171; border-color: rgba(239,68,68,0.45); }
-
-    .client-msg-block {
-      margin-top: 14px;
-      padding: 14px 14px 12px;
-      background: rgba(99,102,241,0.06);
-      border: 1px solid rgba(99,102,241,0.22);
-      border-radius: 14px;
-    }
-    .client-msg-label {
-      font-size: 0.7rem; color: #c7d2fe;
-      text-transform: uppercase; letter-spacing: 0.1em;
-      font-weight: 700; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .client-msg-label::before {
-      content: '✉'; font-size: 0.85rem;
-    }
-    .client-msg {
-      background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.08));
-      border-left: 3px solid var(--accent);
-      padding: 14px 16px;
-      border-radius: 10px;
-      font-weight: 500; white-space: pre-line;
-      font-size: 0.94rem; color: var(--text-0); line-height: 1.65;
-    }
-
-    /* ============== EMPTY STATE ============== */
-    .empty {
-      grid-column: 1 / -1; text-align: center; padding: 56px 20px;
-      color: var(--text-3);
-      border: 1px dashed var(--border-strong);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.02);
-      backdrop-filter: blur(12px);
-    }
-    .empty-icon {
-      width: 60px; height: 60px; border-radius: 16px;
-      background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(139,92,246,0.14));
-      border: 1px solid var(--border);
-      display: grid; place-items: center;
-      margin: 0 auto 14px; font-size: 1.6rem;
-    }
-    .empty h4 { color: var(--text-1); margin: 0 0 6px; font-weight: 600; }
-    .empty p { margin: 0; font-size: 0.92rem; }
-
-    footer { margin-top: 36px; padding: 18px; text-align: center; color: var(--text-3); font-size: 0.82rem; }
-    footer span { color: var(--text-2); }
-
-    /* ============== RESPONSIVE ============== */
-    @media (max-width: 900px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .how { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 600px) {
-      body { padding: 18px 14px 48px; }
-      .topbar { padding: 12px 14px; }
-      .hero { padding: 28px 22px; border-radius: 20px; }
-      h1 { font-size: 1.85rem; }
-      button#runBtn { width: 100%; justify-content: center; }
-      #results { grid-template-columns: 1fr; gap: 14px; }
-      .job-card { padding: 18px; border-radius: 18px; }
-      .stat-value { font-size: 1.7rem; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-
-    <div class="topbar">
-      <div class="brand">
-        <div class="brand-mark"></div>
-        <div class="brand-name">
-          <b>SmartPlan Météo</b>
-          <span>Outil terrain intelligent</span>
-        </div>
-      </div>
-      <div class="weather-pill" id="weatherPill">
-        <div class="icon">☀</div>
-        <div class="meta">
-          <b id="weatherTemp">— °C</b>
-          <span id="weatherDesc">Météo simulée du jour</span>
-        </div>
-        <span class="source-tag mock" id="weatherSource">Météo simulée</span>
-      </div>
-    </div>
-
-    <div class="hero">
-      <div class="pill"><span class="dot"></span>Démo · Simulation locale</div>
-      <h1>SmartPlan Météo</h1>
-      <p class="subtitle">Assistant intelligent pour planifier les travaux extérieurs selon la météo.</p>
-      <p class="value">Planification intelligente selon la météo, les priorités et les messages clients.</p>
-      <div class="hero-actions">
-        <button id="runBtn">Lancer la simulation</button>
-        <span class="hero-hint">Optimisé pour le terrain — fonctionne hors-ligne.</span>
-      </div>
-    </div>
-
-    <div class="section-head">
-      <h3>Comment ça marche</h3>
-      <span class="sub">3 étapes automatiques</span>
-    </div>
-    <div class="how">
-      <div class="how-step">
-        <div class="num">1</div>
-        <h4>Analyse météo</h4>
-        <p>Évalue chaque créneau horaire selon la pluie, le vent, la température et l'humidité.</p>
-      </div>
-      <div class="how-step">
-        <div class="num">2</div>
-        <h4>Priorise les jobs</h4>
-        <p>Croise la météo avec la priorité du chantier et la deadline pour décider la meilleure action.</p>
-      </div>
-      <div class="how-step">
-        <div class="num">3</div>
-        <h4>Génère le message client</h4>
-        <p>Produit un message professionnel prêt à envoyer pour confirmer, alerter ou reporter.</p>
-      </div>
-    </div>
-
-    <div class="stats">
-      <div class="stat total">
-        <div class="stat-label"><span class="ind"></span>Jobs analysés</div>
-        <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-sub">total à traiter</div>
-      </div>
-      <div class="stat maintain">
-        <div class="stat-label"><span class="ind"></span>Maintenus</div>
-        <div class="stat-value" id="statMaintain">—</div>
-        <div class="stat-sub">conditions favorables</div>
-      </div>
-      <div class="stat risky">
-        <div class="stat-label"><span class="ind"></span>À risque</div>
-        <div class="stat-value" id="statRisky">—</div>
-        <div class="stat-sub">à confirmer</div>
-      </div>
-      <div class="stat reschedule">
-        <div class="stat-label"><span class="ind"></span>Reportés</div>
-        <div class="stat-value" id="statReschedule">—</div>
-        <div class="stat-sub">à replanifier</div>
-      </div>
-    </div>
-
-    <div class="section-head">
-      <h3>Décisions par chantier</h3>
-      <span class="sub">Triées par priorité et urgence</span>
-    </div>
-
-    <div id="results">
-      <div class="empty" id="emptyState">
-        <div class="empty-icon">▶</div>
-        <h4>Aucune décision pour le moment</h4>
-        <p>Lancez la simulation pour analyser les chantiers du jour.</p>
-      </div>
-    </div>
-
-    <footer><span>SmartPlan Météo</span> · Aide les équipes terrain à décider rapidement, malgré la météo.</footer>
-  </div>
-
-  <script>
-    // === OpenWeather API (à remplacer par ta vraie clé) ===
-    const API_KEY = "PASTE_OPENWEATHER_KEY_HERE";
-    // Coordonnées par défaut (Montréal, QC)
-    const DEFAULT_LAT = 45.5017;
-    const DEFAULT_LON = -73.5673;
-    const WANTED_HOURS = [7, 8, 9, 10, 11, 13, 14, 15];
-
-    const jobs = [
-      { id: 1, client: 'Tremblay', type: 'pose_tourbe', priority: 'high',   deadline: '2026-06-10' },
-      { id: 2, client: 'Gagnon',   type: 'peinture',    priority: 'urgent', deadline: '2026-06-05' },
-      { id: 3, client: 'Roy',      type: 'excavation',  priority: 'medium', deadline: '2026-06-15' },
-      { id: 4, client: 'Bouchard', type: 'pavage',      priority: 'low',    deadline: '2026-06-20' },
-    ];
-
-    async function fetchRealWeather(lat, lon) {
-      if (!API_KEY || API_KEY === 'PASTE_OPENWEATHER_KEY_HERE') {
-        throw new Error('Clé API manquante');
-      }
-      const url = `https://api.openweathermap.org/data/3.0/onecall`
-        + `?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
-        + `&exclude=current,minutely,daily,alerts&units=metric`
-        + `&appid=${encodeURIComponent(API_KEY)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('OpenWeather: HTTP ' + res.status);
-      const data = await res.json();
-      if (!Array.isArray(data.hourly) || data.hourly.length === 0) {
-        throw new Error('OpenWeather: pas de données horaires');
-      }
-      const seen = new Set();
-      const slots = [];
-      for (const h of data.hourly) {
-        const date = new Date(h.dt * 1000);
-        const hour = date.getHours();
-        if (!WANTED_HOURS.includes(hour) || seen.has(hour)) continue;
-        seen.add(hour);
-        slots.push({
-          hour,
-          time: String(hour).padStart(2, '0') + ':00',
-          rainProbability: Math.round((h.pop || 0) * 100),
-          windKmh: Math.round((h.wind_speed || 0) * 3.6),
-          temperature: Math.round(h.temp ?? 0),
-          humidity: Math.round(h.humidity ?? 0),
-        });
-        if (slots.length === WANTED_HOURS.length) break;
-      }
-      if (!slots.length) throw new Error('OpenWeather: aucun créneau utile');
-      slots.sort((a, b) => a.hour - b.hour);
-      return slots.map(({ hour, ...rest }) => rest);
-    }
-
-    function getMockWeather() {
-      return [
-        { time: '07:00', rainProbability: 5,  windKmh: 8,  temperature: 14, humidity: 55 },
-        { time: '08:00', rainProbability: 5,  windKmh: 10, temperature: 16, humidity: 58 },
-        { time: '09:00', rainProbability: 10, windKmh: 12, temperature: 18, humidity: 62 },
-        { time: '10:00', rainProbability: 15, windKmh: 15, temperature: 20, humidity: 66 },
-        { time: '11:00', rainProbability: 25, windKmh: 18, temperature: 21, humidity: 72 },
-        { time: '13:00', rainProbability: 45, windKmh: 22, temperature: 20, humidity: 80 },
-        { time: '14:00', rainProbability: 60, windKmh: 28, temperature: 19, humidity: 87 },
-        { time: '15:00', rainProbability: 75, windKmh: 32, temperature: 18, humidity: 92 },
-      ];
-    }
-
-    const JOB_RULES = {
-      pose_tourbe: { maxRain: 30, maxWind: 40, minTemp: 5,  maxTemp: 30, maxHum: 90 },
-      peinture:    { maxRain: 10, maxWind: 25, minTemp: 10, maxTemp: 32, maxHum: 70 },
-      pavage:      { maxRain: 20, maxWind: 50, minTemp: 5,  maxTemp: 35, maxHum: 95 },
-      excavation:  { maxRain: 50, maxWind: 60, minTemp: -5, maxTemp: 35, maxHum: 100 },
+    return {
+      jobId: job.id, client: job.client, type: job.type,
+      bestHour: best ? best.hour : null,
+      status: best ? best.status : 'bad',
+      score: best ? best.score : 0,
+      reason: best ? best.reason : 'Aucune donnée météo disponible',
     };
-    const JOB_WEIGHTS = {
-      pose_tourbe: { rain: 35, wind: 20, temp: 25, hum: 20 },
-      peinture:    { rain: 30, wind: 15, temp: 20, hum: 35 },
-      pavage:      { rain: 35, wind: 20, temp: 30, hum: 15 },
-      excavation:  { rain: 15, wind: 30, temp: 25, hum: 30 },
-    };
-    const TYPE_LABELS = {
-      pose_tourbe: 'pose de tourbe',
-      peinture: 'peinture',
-      pavage: 'pavage',
-      excavation: 'excavation',
-    };
-    const ACTION_ICONS = { maintain: '✅', risky: '⚠️', reschedule: '🌧️' };
+  });
+}
 
-    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-    function scoreUnderMax(value, max) {
-      if (value <= 0) return 1;
-      if (value >= max) return 0;
-      return clamp(1 - value / max, 0, 1);
-    }
-    function scoreTemp(t, min, max) {
-      if (t >= min && t <= max) return 1;
-      const d = t < min ? min - t : t - max;
-      return clamp(1 - d / 10, 0, 1);
-    }
+function getWeatherScoreBreakdown(job, weather) {
+  const rules = getRules(job.type);
+  if (!rules) return { rainScore: 0, windScore: 0, temperatureScore: 0, humidityScore: 0, totalScore: 0 };
 
-    function evaluateJobWeather(job, w) {
-      const r = JOB_RULES[job.type];
-      const wt = JOB_WEIGHTS[job.type];
-      const rainS = scoreUnderMax(w.rainProbability, r.maxRain);
-      const windS = scoreUnderMax(w.windKmh, r.maxWind);
-      const tempS = scoreTemp(w.temperature, r.minTemp, r.maxTemp);
-      const humS  = scoreUnderMax(w.humidity, r.maxHum);
-      const score = Math.round(rainS * wt.rain + windS * wt.wind + tempS * wt.temp + humS * wt.hum);
-      let status;
-      if (score >= 75) status = 'ok';
-      else if (score >= 50) status = 'risk';
-      else status = 'bad';
-      const breakdown = { pluie: rainS, vent: windS, 'température': tempS, 'humidité': humS };
-      return { status, score, breakdown };
-    }
+  const weights = getWeights(job.type);
+  const rainScore = Math.round(scoreUnderMax(weather.rainProbability, rules.maxRainProbability) * weights.rain);
+  const windScore = Math.round(scoreUnderMax(weather.windKmh, rules.maxWindKmh) * weights.wind);
+  const temperatureScore = Math.round(scoreTemperature(weather.temperature, rules.minTemperature, rules.maxTemperature) * weights.temperature);
+  const humidityScore = Math.round(scoreUnderMax(weather.humidity, rules.maxHumidity) * weights.humidity);
 
-    function getMainIssue(breakdown) {
-      let worstKey = 'pluie', worstVal = Infinity;
-      for (const [k, v] of Object.entries(breakdown)) {
-        if (v < worstVal) { worstVal = v; worstKey = k; }
-      }
-      return worstKey;
-    }
+  return { rainScore, windScore, temperatureScore, humidityScore, totalScore: rainScore + windScore + temperatureScore + humidityScore };
+}
 
-    function getPriorityScore(job) {
-      return ({ urgent: 30, high: 20, medium: 10, low: 0 })[job.priority] || 0;
-    }
-    function getDeadlineUrgency(job) {
-      if (!job.deadline) return 0;
-      const today = new Date(); today.setHours(0,0,0,0);
-      const d = new Date(job.deadline); d.setHours(0,0,0,0);
-      const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-      if (diff <= 1) return 30;
-      if (diff <= 3) return 20;
-      if (diff <= 7) return 10;
-      return 0;
-    }
+function getPriorityScore(job) {
+  return ({ urgent: 30, high: 20, medium: 10, low: 0 })[job.priority] || 0;
+}
 
-    function rescheduleJobs(jobs, weatherByHour) {
-      const hours = Object.keys(weatherByHour);
-      const results = jobs.map(job => {
-        const pBoost = getPriorityScore(job);
-        const dBoost = getDeadlineUrgency(job);
-        const isUrgent = job.priority === 'urgent';
-        let bestOk = null, bestRisk = null, bestAny = null;
+function getDeadlineUrgency(job) {
+  if (!job.deadline) return 0;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const deadline = new Date(job.deadline); deadline.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 1) return 30;
+  if (diffDays <= 3) return 20;
+  if (diffDays <= 7) return 10;
+  return 0;
+}
 
-        for (const h of hours) {
-          const e = evaluateJobWeather(job, weatherByHour[h]);
-          const adj = e.score * 0.7 + (pBoost / 30) * 100 * 0.2 + (dBoost / 30) * 100 * 0.1;
-          const cand = { hour: h, ...e, adj };
-          if (e.status === 'ok' && (!bestOk || adj > bestOk.adj)) bestOk = cand;
-          if (e.status === 'risk' && (!bestRisk || adj > bestRisk.adj)) bestRisk = cand;
-          if (!bestAny || adj > bestAny.adj) bestAny = cand;
-        }
+const FINAL_WEIGHTS = { weather: 0.7, priority: 0.2, deadline: 0.1 };
 
-        if (bestOk) return {
-          jobId: job.id, client: job.client, action: 'maintain',
-          suggestedTime: bestOk.hour,
-          message: `Conditions favorables à ${bestOk.hour}`,
-          pBoost, dBoost,
-        };
-        if (bestRisk && isUrgent) {
-          const cause = getMainIssue(bestRisk.breakdown);
-          return {
-            jobId: job.id, client: job.client, action: 'maintain',
-            suggestedTime: bestRisk.hour,
-            message: `Job urgente maintenue malgré conditions risquées (${cause}) à ${bestRisk.hour}`,
-            pBoost, dBoost,
-          };
-        }
-        if (bestRisk) {
-          const cause = getMainIssue(bestRisk.breakdown);
-          return {
-            jobId: job.id, client: job.client, action: 'risky',
-            suggestedTime: bestRisk.hour,
-            message: `Conditions risquées (${cause}) à ${bestRisk.hour}`,
-            pBoost, dBoost,
-          };
-        }
-        return {
-          jobId: job.id, client: job.client, action: 'reschedule',
-          suggestedTime: bestAny ? bestAny.hour : null,
-          message: bestAny
-            ? `Conditions mauvaises, meilleur créneau disponible à ${bestAny.hour}`
-            : 'Aucune donnée météo disponible',
-          pBoost, dBoost,
-        };
-      });
-      results.sort((a, b) => (b.pBoost + b.dBoost) - (a.pBoost + a.dBoost));
-      return results;
+function computeAdjustedScore(weatherScore, priorityBoost, deadlineBoost) {
+  return (
+    weatherScore * FINAL_WEIGHTS.weather +
+    (priorityBoost / 30) * 100 * FINAL_WEIGHTS.priority +
+    (deadlineBoost / 30) * 100 * FINAL_WEIGHTS.deadline
+  );
+}
+
+function getMainWeatherIssue(job, weather) {
+  const breakdown = getWeatherScoreBreakdown(job, weather);
+  const weights = getWeights(job.type);
+  const ratios = {
+    pluie: breakdown.rainScore / weights.rain,
+    vent: breakdown.windScore / weights.wind,
+    température: breakdown.temperatureScore / weights.temperature,
+    humidité: breakdown.humidityScore / weights.humidity,
+  };
+  let worstKey = 'pluie', worstRatio = Infinity;
+  for (const [key, ratio] of Object.entries(ratios)) {
+    if (ratio < worstRatio) { worstRatio = ratio; worstKey = key; }
+  }
+  return worstKey;
+}
+
+function rescheduleJobs(jobs, weatherByHour) {
+  const hours = Object.keys(weatherByHour);
+  const results = jobs.map((job) => {
+    const priorityBoost = getPriorityScore(job);
+    const deadlineBoost = getDeadlineUrgency(job);
+    const isUrgent = job.priority === 'urgent';
+    let bestOk = null, bestRisk = null, bestAny = null;
+
+    for (const hour of hours) {
+      const evaluation = evaluateJobWeather(job, weatherByHour[hour]);
+      const adjustedScore = computeAdjustedScore(evaluation.score, priorityBoost, deadlineBoost);
+      const candidate = { hour, ...evaluation, adjustedScore };
+      if (evaluation.status === 'ok' && (!bestOk || adjustedScore > bestOk.adjustedScore)) bestOk = candidate;
+      if (evaluation.status === 'risk' && (!bestRisk || adjustedScore > bestRisk.adjustedScore)) bestRisk = candidate;
+      if (!bestAny || adjustedScore > bestAny.adjustedScore) bestAny = candidate;
     }
 
-    function extractReason(message) {
-      const m = message && message.match(/\(([^)]+)\)/);
-      return m ? m[1] : null;
+    if (bestOk) return { jobId: job.id, client: job.client, action: 'maintain', suggestedTime: bestOk.hour, message: `Conditions favorables à ${bestOk.hour}`, priorityBoost, deadlineBoost };
+    if (bestRisk && isUrgent) {
+      const cause = getMainWeatherIssue(job, weatherByHour[bestRisk.hour]);
+      return { jobId: job.id, client: job.client, action: 'maintain', suggestedTime: bestRisk.hour, message: `Job urgente maintenue malgré conditions risquées (${cause}) à ${bestRisk.hour}`, priorityBoost, deadlineBoost };
     }
-
-    function generateClientMessage(job, decision) {
-      const typeLabel = TYPE_LABELS[job.type] || job.type;
-      const heure = decision.suggestedTime || 'à confirmer';
-      const reason = extractReason(decision.message);
-      if (decision.action === 'maintain') {
-        return `Bonjour M. ${job.client},\nVotre chantier de ${typeLabel} est maintenu à ${heure} comme prévu.\nCordialement,\nL'équipe SmartPlan`;
-      }
-      if (decision.action === 'risky') {
-        const detail = reason ? ` (${reason})` : '';
-        return `Bonjour M. ${job.client},\nLes conditions météo présentent un risque${detail}.\nNous pouvons maintenir le chantier de ${typeLabel} à ${heure}, mais une confirmation de votre part sera nécessaire.\nCordialement,\nL'équipe SmartPlan`;
-      }
-      if (decision.action === 'reschedule') {
-        const detail = reason ? ` (${reason})` : '';
-        const slot = decision.suggestedTime
-          ? `nous vous proposons de déplacer votre chantier au meilleur créneau disponible : ${decision.suggestedTime}.`
-          : `nous vous proposons de reporter votre chantier à une date ultérieure.`;
-        return `Bonjour M. ${job.client},\nEn raison des conditions météo${detail},\n${slot}\nCordialement,\nL'équipe SmartPlan`;
-      }
-      return '';
+    if (bestRisk) {
+      const cause = getMainWeatherIssue(job, weatherByHour[bestRisk.hour]);
+      return { jobId: job.id, client: job.client, action: 'risky', suggestedTime: bestRisk.hour, message: `Conditions risquées (${cause}) à ${bestRisk.hour}`, priorityBoost, deadlineBoost };
     }
+    return { jobId: job.id, client: job.client, action: 'reschedule', suggestedTime: bestAny ? bestAny.hour : null, message: bestAny ? `Conditions mauvaises, meilleur créneau disponible à ${bestAny.hour}` : 'Aucune donnée météo disponible', priorityBoost, deadlineBoost };
+  });
 
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      })[c]);
-    }
+  results.sort((a, b) => (b.priorityBoost + b.deadlineBoost) - (a.priorityBoost + a.deadlineBoost));
+  return results;
+}
 
-    function updateStats(decisions) {
-      const total = decisions.length;
-      const maintain = decisions.filter(d => d.action === 'maintain').length;
-      const risky = decisions.filter(d => d.action === 'risky').length;
-      const reschedule = decisions.filter(d => d.action === 'reschedule').length;
-      document.getElementById('statTotal').textContent = total;
-      document.getElementById('statMaintain').textContent = maintain;
-      document.getElementById('statRisky').textContent = risky;
-      document.getElementById('statReschedule').textContent = reschedule;
-    }
+const JOB_TYPE_LABELS = {
+  pose_tourbe: 'pose de tourbe', peinture: 'peinture', pavage: 'pavage', excavation: 'excavation',
+};
 
-    function renderWeatherSummary(weather) {
-      const w = weather || getMockWeather();
-      const temps = w.map(s => s.temperature);
-      const minT = Math.min(...temps);
-      const maxT = Math.max(...temps);
-      const maxRain = Math.max(...w.map(s => s.rainProbability));
-      const desc = maxRain >= 60
-        ? 'Matin clair · pluie probable PM'
-        : maxRain >= 30 ? 'Variable · averses possibles' : 'Journée stable';
-      document.getElementById('weatherTemp').textContent = `${minT}° → ${maxT}°C`;
-      document.getElementById('weatherDesc').textContent = desc;
-    }
+function extractReason(message) {
+  if (!message) return null;
+  const match = message.match(/\(([^)]+)\)/);
+  return match ? match[1] : null;
+}
 
-    function setWeatherSource(state) {
-      const tag = document.getElementById('weatherSource');
-      tag.classList.remove('real', 'mock', 'loading');
-      tag.classList.add(state);
-      tag.textContent = state === 'real'
-        ? 'Météo réelle'
-        : state === 'loading' ? 'Chargement…' : 'Météo simulée';
-    }
+function generateClientMessage(job, decision) {
+  const typeLabel = JOB_TYPE_LABELS[job.type] || job.type;
+  const heure = decision.suggestedTime || 'à confirmer';
+  const reason = extractReason(decision.message);
 
-    renderWeatherSummary();
+  if (decision.action === 'maintain') {
+    return `Bonjour M. ${job.client},\nVotre chantier de ${typeLabel} est maintenu à ${heure} comme prévu.\nCordialement,\nL'équipe SmartPlan`;
+  }
+  if (decision.action === 'risky') {
+    const detail = reason ? ` (${reason})` : '';
+    return `Bonjour M. ${job.client},\nLes conditions météo présentent un risque${detail}.\nNous pouvons maintenir le chantier de ${typeLabel} à ${heure}, mais une confirmation de votre part sera nécessaire.\nCordialement,\nL'équipe SmartPlan`;
+  }
+  if (decision.action === 'reschedule') {
+    const detail = reason ? ` (${reason})` : '';
+    const slot = decision.suggestedTime
+      ? `nous vous proposons de déplacer votre chantier au meilleur créneau disponible : ${decision.suggestedTime}.`
+      : `nous vous proposons de reporter votre chantier à une date ultérieure.`;
+    return `Bonjour M. ${job.client},\nEn raison des conditions météo${detail},\n${slot}\nCordialement,\nL'équipe SmartPlan`;
+  }
+  return `Bonjour M. ${job.client},\nNous reviendrons vers vous concernant votre chantier de ${typeLabel}.\nCordialement,\nL'équipe SmartPlan`;
+}
 
-    function scoreBarClass(score) {
-      if (score >= 75) return 'good';
-      if (score >= 50) return 'mid';
-      return 'bad';
-    }
-
-    async function runSimulation() {
-      setWeatherSource('loading');
-      let weather;
-      try {
-        weather = await fetchRealWeather(DEFAULT_LAT, DEFAULT_LON);
-        setWeatherSource('real');
-      } catch (err) {
-        console.warn('Fallback météo simulée :', err.message);
-        weather = getMockWeather();
-        setWeatherSource('mock');
-      }
-      renderWeatherSummary(weather);
-      const weatherByHour = {};
-      for (const s of weather) weatherByHour[s.time] = s;
-
-      const decisions = rescheduleJobs(jobs, weatherByHour);
-      const root = document.getElementById('results');
-      root.innerHTML = '';
-
-      for (const d of decisions) {
-        const job = jobs.find(j => j.id === d.jobId);
-        const msg = generateClientMessage(job, d);
-
-        const slotWeather = d.suggestedTime ? weatherByHour[d.suggestedTime] : null;
-        const meteoScore = slotWeather ? evaluateJobWeather(job, slotWeather).score : 0;
-        const scoreCls = scoreBarClass(meteoScore);
-        const icon = ACTION_ICONS[d.action] || '•';
-
-        const card = document.createElement('div');
-        card.className = 'job-card';
-        card.innerHTML = `
-          <div class="job-header">
-            <div>
-              <h2>${escapeHtml(job.client)}</h2>
-              <div class="type">${escapeHtml(TYPE_LABELS[job.type] || job.type)} — priorité ${escapeHtml(job.priority)}</div>
-            </div>
-            <div class="job-icon ${d.action}">${icon}</div>
-          </div>
-          <div class="score-row">
-            <div class="score-label">Score météo</div>
-            <div class="score-bar"><div class="score-fill ${scoreCls}" style="width:${meteoScore}%"></div></div>
-            <div class="score-value">${meteoScore}/100</div>
-          </div>
-          <div class="decision">
-            <div>→ Action : <span class="badge ${d.action}">${escapeHtml(d.action)}</span></div>
-            <div>→ Heure : ${escapeHtml(d.suggestedTime || 'aucune')}</div>
-            <div>→ Message technique : ${escapeHtml(d.message)}</div>
-          </div>
-          <div class="client-msg-block">
-            <div class="client-msg-label">Message client prêt à envoyer</div>
-            <div class="client-msg">${escapeHtml(msg)}</div>
-          </div>
-        `;
-        root.appendChild(card);
-      }
-
-      updateStats(decisions);
-    }
-
-    document.getElementById('runBtn').addEventListener('click', runSimulation);
-  </script>
-</body>
-</html>
+module.exports = {
+  evaluateJobWeather, suggestSchedule, getWeatherScoreBreakdown,
+  rescheduleJobs, getPriorityScore, getDeadlineUrgency,
+  generateClientMessage, setConfig, config,
+};

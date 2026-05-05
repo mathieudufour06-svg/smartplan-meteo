@@ -229,6 +229,13 @@
     .task-card:hover .tc-del { opacity: 1; }
     .tc-del:hover { background: rgba(239,68,68,0.25); }
 
+    /* hint visible on the card when hoverable */
+    .tc-edit-hint {
+      font-size: 0.66rem; color: var(--text3); margin-top: 5px;
+      display: none;
+    }
+    .task-card:hover .tc-edit-hint { display: block; }
+
     .add-btn {
       width: 100%; padding: 10px;
       background: transparent; border: 1.5px dashed rgba(255,255,255,0.13);
@@ -274,6 +281,7 @@
       box-shadow: 0 28px 64px rgba(0,0,0,0.65);
       transform: translateY(14px) scale(.98);
       transition: transform .25s cubic-bezier(.2,.7,.3,1);
+      max-height: 90vh; overflow-y: auto;
     }
     .overlay.open .modal { transform: none; }
     .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 18px; letter-spacing: -.01em; }
@@ -325,6 +333,38 @@
     }
     .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
     .btn-primary:active { transform: none; }
+
+    /* ── DELETE CONFIRM (NEW) ────────────────────── */
+    .del-confirm {
+      display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+      padding: 10px 13px; border-radius: 10px; margin-bottom: 10px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.28);
+      font-size: 0.84rem; color: #fca5a5;
+    }
+    .del-confirm span { flex: 1; min-width: 0; }
+    .btn-del-yes {
+      padding: 6px 13px; border-radius: 8px; cursor: pointer;
+      background: rgba(239,68,68,0.22); border: 1px solid rgba(239,68,68,0.45);
+      color: #f87171; font-size: 0.8rem; font-weight: 700;
+      transition: background .15s; white-space: nowrap;
+    }
+    .btn-del-yes:hover { background: rgba(239,68,68,0.38); }
+    .btn-del-no {
+      padding: 6px 10px; border-radius: 8px; cursor: pointer;
+      background: var(--glass); border: 1px solid var(--border);
+      color: var(--text2); font-size: 0.8rem; font-weight: 600;
+      transition: background .15s; white-space: nowrap;
+    }
+    .btn-del-no:hover { background: rgba(255,255,255,0.08); }
+
+    /* ── DELETE BUTTON IN FOOTER (NEW) ──────────── */
+    .btn-del {
+      padding: 12px 14px; border-radius: 11px; cursor: pointer; flex-shrink: 0;
+      background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.22);
+      color: #f87171; font-size: 0.95rem;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-del:hover { background: rgba(239,68,68,0.20); border-color: rgba(239,68,68,0.45); }
 
     /* ── LOCATION MODAL EXTRAS ───────────────────── */
     .btn-geo {
@@ -407,10 +447,11 @@
   <div class="board" id="board"></div>
 </div>
 
-<!-- ADD TASK MODAL -->
+<!-- ADD / EDIT TASK MODAL -->
 <div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
     <h3 id="taskModalTitle">Nouveau chantier</h3>
+
     <div class="fg">
       <label>Type de travail</label>
       <div class="type-grid" id="typeGrid"></div>
@@ -424,6 +465,10 @@
       <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50">
     </div>
     <div class="fg">
+      <label>Jour</label>
+      <select id="tDay"></select>
+    </div>
+    <div class="fg">
       <label>Priorité</label>
       <select id="tPrio">
         <option value="urgent">🔴 Urgente</option>
@@ -432,9 +477,18 @@
         <option value="low">🟢 Basse</option>
       </select>
     </div>
+
+    <!-- Confirmation suppression (cachée par défaut) -->
+    <div class="del-confirm" id="delConfirm" style="display:none">
+      <span>⚠ Supprimer ce chantier définitivement ?</span>
+      <button class="btn-del-no"  onclick="hideDelConfirm()">Non</button>
+      <button class="btn-del-yes" onclick="confirmDelTask()">Oui, supprimer</button>
+    </div>
+
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('taskOverlay')">Annuler</button>
-      <button class="btn-primary" onclick="saveTask()">Ajouter →</button>
+      <button class="btn-del"    id="btnDel" style="display:none" onclick="showDelConfirm()" title="Supprimer ce chantier">🗑</button>
+      <button class="btn-primary" id="btnSave" onclick="saveTask()">Ajouter →</button>
     </div>
   </div>
 </div>
@@ -476,8 +530,6 @@ const JOB_TYPES = {
   peinture:   { name:'Peinture',    icon:'🎨', short:'Peinture'},
 };
 
-// w = { weathercode, temp_max, temp_min, precipitation, windspeed, rain_prob }
-// Rules evaluated in order; worst level collected for full context
 const RISK_RULES = {
   beton: [
     { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — bétonnage interdit' },
@@ -564,6 +616,10 @@ let ST = {
   forecast: null,
   tasks:    [],
 };
+
+// Modal mode: null = création, string = id du chantier édité
+let _editingId  = null;
+let _dayPending = 0;
 
 function loadST() {
   try {
@@ -659,7 +715,6 @@ function swapSuggestions() {
     if (!cur) continue;
     const { level: curLvl } = assess(task.type, cur);
     if (curLvl === 'ok') continue;
-    // Find best alternative
     let bestIdx = null;
     for (let i = 0; i < ST.forecast.length; i++) {
       if (i === task.dayIndex) continue;
@@ -734,14 +789,19 @@ function mkTaskCard(task, dayW) {
   const { level, msg } = assess(task.type, dayW);
   const card = document.createElement('div');
   card.className = `task-card ${level}`;
+  // Cliquer sur la carte ouvre le modal d'édition
+  card.addEventListener('click', () => openEditTask(task.id));
   card.innerHTML = `
-    <button class="tc-del" onclick="delTask('${esc(task.id)}',event)" aria-label="Supprimer">✕</button>
+    <button class="tc-del"
+      onclick="event.stopPropagation();openEditTaskDelete('${esc(task.id)')"
+      aria-label="Supprimer">✕</button>
     <div class="tc-icon">${jd.icon}</div>
     <div class="tc-name">${esc(task.name)}</div>
     ${task.client ? `<div class="tc-client">${esc(task.client)}</div>` : ''}
     <div class="tc-risk ${level}">
       ${level==='ok'?'✓':level==='risk'?'⚠':'✕'} ${esc(msg)}
     </div>
+    <div class="tc-edit-hint">Cliquer pour modifier</div>
   `;
   return card;
 }
@@ -778,49 +838,131 @@ function renderSwapBanner() {
 }
 
 /* ═══════════════════════════════════════════════════
-   TASK MODAL
+   TASK MODAL — CRÉATION
 ═══════════════════════════════════════════════════ */
-let _dayPending = 0;
-
 function openAddTask(dayIdx) {
+  _editingId  = null;
   _dayPending = dayIdx;
   document.getElementById('taskModalTitle').textContent = 'Nouveau chantier';
   document.getElementById('tName').value   = '';
   document.getElementById('tClient').value = '';
   document.getElementById('tPrio').value   = 'medium';
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('sel'));
-  // Default: first type
   const first = document.querySelector('.type-btn');
   if (first) first.classList.add('sel');
+  populateDaySelect(dayIdx);
+  document.getElementById('btnDel').style.display  = 'none';
+  document.getElementById('btnSave').textContent    = 'Ajouter →';
+  document.getElementById('delConfirm').style.display = 'none';
   openModal('taskOverlay');
   setTimeout(() => document.getElementById('tName').focus(), 120);
 }
 
+/* ═══════════════════════════════════════════════════
+   TASK MODAL — ÉDITION (NOUVEAU)
+═══════════════════════════════════════════════════ */
+function openEditTask(id) {
+  const task = ST.tasks.find(t => t.id === id);
+  if (!task) return;
+  _editingId  = id;
+  _dayPending = task.dayIndex;
+  document.getElementById('taskModalTitle').textContent = 'Modifier le chantier';
+  document.getElementById('tName').value   = task.name   || '';
+  document.getElementById('tClient').value = task.client || '';
+  document.getElementById('tPrio').value   = task.priority || 'medium';
+  // Sélectionner le bon type dans la grille
+  document.querySelectorAll('.type-btn').forEach(b =>
+    b.classList.toggle('sel', b.dataset.type === task.type)
+  );
+  populateDaySelect(task.dayIndex);
+  document.getElementById('btnDel').style.display    = '';
+  document.getElementById('btnSave').textContent     = 'Enregistrer →';
+  document.getElementById('delConfirm').style.display = 'none';
+  openModal('taskOverlay');
+}
+
+// Ouvre le modal en édition ET affiche directement la confirmation de suppression
+function openEditTaskDelete(id) {
+  openEditTask(id);
+  // Attendre que le modal soit visible avant d'afficher la confirmation
+  requestAnimationFrame(() => showDelConfirm());
+}
+
+/* ═══════════════════════════════════════════════════
+   SÉLECTEUR DE JOUR (NOUVEAU)
+═══════════════════════════════════════════════════ */
+function populateDaySelect(selectedIdx) {
+  const sel = document.getElementById('tDay');
+  sel.innerHTML = '';
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 7; i++) {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    if (ST.forecast?.[i]) {
+      const day = ST.forecast[i];
+      const name = DAYS_L[day.date.getDay()];
+      const dt   = `${day.date.getDate()} ${MONTHS[day.date.getMonth()]}`;
+      opt.textContent = `${name} · ${dt}${i === 0 ? ' (auj.)' : ''}`;
+    } else {
+      const d = new Date(now); d.setDate(now.getDate() + i);
+      opt.textContent = DAYS_L[d.getDay()] + (i === 0 ? ' (auj.)' : '');
+    }
+    if (i === selectedIdx) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SAVE — CRÉATION ET MODIFICATION
+═══════════════════════════════════════════════════ */
 function saveTask() {
   const name   = document.getElementById('tName').value.trim();
   const client = document.getElementById('tClient').value.trim();
   const prio   = document.getElementById('tPrio').value;
+  const dayIdx = parseInt(document.getElementById('tDay').value, 10);
   const sel    = document.querySelector('.type-btn.sel');
   if (!name) { toast('⚠ Nom du chantier requis'); return; }
   if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
-  ST.tasks.push({
-    id:       crypto.randomUUID(),
-    name, client, type: sel.dataset.type, priority: prio,
-    dayIndex: _dayPending,
-  });
+  const patch = { name, client, type: sel.dataset.type, priority: prio, dayIndex: dayIdx };
+  if (_editingId) {
+    const idx = ST.tasks.findIndex(t => t.id === _editingId);
+    if (idx !== -1) ST.tasks[idx] = { ...ST.tasks[idx], ...patch };
+    toast('✓ Chantier modifié');
+  } else {
+    ST.tasks.push({ id: crypto.randomUUID(), ...patch });
+    toast('✓ Chantier ajouté');
+  }
   saveST();
   closeModal('taskOverlay');
   renderBoard();
-  toast('✓ Chantier ajouté');
 }
 
-function delTask(id, e) {
-  e.stopPropagation();
-  ST.tasks = ST.tasks.filter(t => t.id !== id);
-  saveST(); renderBoard();
+/* ═══════════════════════════════════════════════════
+   SUPPRESSION AVEC CONFIRMATION (NOUVEAU)
+═══════════════════════════════════════════════════ */
+function showDelConfirm() {
+  document.getElementById('delConfirm').style.display = 'flex';
+  // Masquer le bouton 🗑 pendant la confirmation pour éviter double-clic
+  document.getElementById('btnDel').style.display = 'none';
+}
+
+function hideDelConfirm() {
+  document.getElementById('delConfirm').style.display = 'none';
+  document.getElementById('btnDel').style.display = '';
+}
+
+function confirmDelTask() {
+  if (!_editingId) return;
+  ST.tasks = ST.tasks.filter(t => t.id !== _editingId);
+  saveST();
+  closeModal('taskOverlay');
+  renderBoard();
   toast('Chantier supprimé');
 }
 
+/* ═══════════════════════════════════════════════════
+   SWAP
+═══════════════════════════════════════════════════ */
 function applySwap(taskId, toDay) {
   const task = ST.tasks.find(t => t.id === taskId);
   if (!task) return;

@@ -2,566 +2,1000 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartPlan Météo · Assistant intelligent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="theme-color" content="#0a0f1e">
+  <title>SmartPlan Météo · Décision terrain</title>
   <style>
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg-0: #05070e;
-      --bg-1: #0b1020;
-      --bg-2: #11172a;
-      --glass: rgba(255, 255, 255, 0.04);
-      --glass-strong: rgba(255, 255, 255, 0.07);
-      --border: rgba(255, 255, 255, 0.10);
-      --border-strong: rgba(255, 255, 255, 0.18);
-      --text-0: #f8fafc;
-      --text-1: #cbd5e1;
-      --text-2: #8e9bb5;
-      --text-3: #64748b;
-      --accent: #6366f1;
-      --accent-2: #8b5cf6;
-      --accent-3: #06b6d4;
-      --accent-soft: rgba(99,102,241,0.18);
-      --green: #10b981; --green-soft: rgba(16,185,129,0.16);
-      --amber: #f59e0b; --amber-soft: rgba(245,158,11,0.16);
-      --red: #ef4444;   --red-soft: rgba(239,68,68,0.16);
+      --bg:      #0a0f1e;
+      --bg1:     #111827;
+      --bg2:     #1a2035;
+      --glass:   rgba(255,255,255,0.05);
+      --border:  rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.20);
+      --text0:   #f8fafc;
+      --text1:   #cbd5e1;
+      --text2:   #8e9bb5;
+      --text3:   #4b5563;
+      --accent:  #6366f1;
+      --accent2: #8b5cf6;
+      --ok:      #10b981; --ok-bg:     rgba(16,185,129,0.14); --ok-bd:     rgba(16,185,129,0.35);
+      --risk:    #f59e0b; --risk-bg:   rgba(245,158,11,0.14); --risk-bd:   rgba(245,158,11,0.35);
+      --danger:  #ef4444; --danger-bg: rgba(239,68,68,0.14);  --danger-bd: rgba(239,68,68,0.40);
+      --col: 196px;
     }
     html, body { height: 100%; }
-    html { scroll-behavior: smooth; }
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
-      background:
-        radial-gradient(1500px 800px at 90% -10%, rgba(139,92,246,0.25), transparent 55%),
-        radial-gradient(1100px 600px at -10% 0%, rgba(6,182,212,0.20), transparent 50%),
-        radial-gradient(900px 500px at 50% 110%, rgba(99,102,241,0.16), transparent 60%),
-        var(--bg-0);
-      color: var(--text-0);
-      padding: 24px 20px 64px;
-      line-height: 1.55; min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text0);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      letter-spacing: -0.005em;
+      overflow-x: hidden;
     }
-    body::before {
-      content: ''; position: fixed; inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: radial-gradient(ellipse at 50% 25%, black 25%, transparent 80%);
-      pointer-events: none; z-index: 0;
-    }
-    .container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
 
-    /* ============== TOP BAR ============== */
+    /* ── TOP BAR ─────────────────────────────────── */
     .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
-      padding: 14px 20px;
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      backdrop-filter: blur(18px) saturate(140%);
-      -webkit-backdrop-filter: blur(18px) saturate(140%);
-      margin-bottom: 22px;
-      animation: fadeIn 0.4s ease both;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px;
+      background: rgba(10,15,30,0.94);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
-    .brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 700; font-size: 0.95rem; }
-    .brand-mark {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      box-shadow: 0 8px 24px rgba(99,102,241,0.45),
-                  inset 0 1px 0 rgba(255,255,255,0.3);
-      position: relative;
+    .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .brand-icon {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid; place-items: center; font-size: 1.15rem;
+      box-shadow: 0 6px 20px rgba(99,102,241,0.45);
     }
-    .brand-mark::after {
-      content: ''; position: absolute; inset: 5px;
-      border: 2px solid rgba(255,255,255,0.92); border-radius: 4px;
-      border-bottom-color: transparent; border-right-color: transparent;
-      transform: rotate(45deg);
+    .brand-text b  { display: block; font-size: 0.97rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+    .brand-text em { display: block; font-size: 0.68rem; color: var(--text3); font-style: normal;
+                     text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+
+    .loc-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 13px;
+      background: var(--glass); border: 1px solid var(--border);
+      border-radius: 999px; cursor: pointer;
+      color: var(--text1); font-size: 0.83rem; font-weight: 600;
+      transition: border-color .2s, background .2s;
+      white-space: nowrap; overflow: hidden; max-width: 220px;
     }
-    .brand-name { display: flex; flex-direction: column; line-height: 1.15; }
-    .brand-name b { color: var(--text-0); font-weight: 800; letter-spacing: -0.01em; }
-    .brand-name span { color: var(--text-3); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .loc-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.08); }
+    .loc-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: var(--ok); box-shadow: 0 0 8px var(--ok);
+      transition: background .4s, box-shadow .4s;
+    }
+    .loc-dot.loading { background: var(--risk); box-shadow: 0 0 8px var(--risk); animation: blink 1s infinite; }
+    .loc-dot.offline { background: var(--text3); box-shadow: none; }
+    @keyframes blink { 50% { opacity: .4; } }
+    #locName { overflow: hidden; text-overflow: ellipsis; }
 
     .weather-pill {
-      display: inline-flex; align-items: center; gap: 14px;
-      padding: 8px 16px;
-      background: var(--glass-strong);
-      border: 1px solid var(--border);
-      border-radius: 999px; font-size: 0.88rem;
-      backdrop-filter: blur(12px);
-    }
-    .weather-pill .icon {
-      width: 32px; height: 32px; display: grid; place-items: center;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      box-shadow: 0 0 18px rgba(251,191,36,0.5);
-      font-size: 1rem;
-    }
-    .weather-pill .meta { display: flex; flex-direction: column; line-height: 1.2; }
-    .weather-pill .meta b { color: var(--text-0); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
-    .weather-pill .meta span { color: var(--text-2); font-size: 0.78rem; }
-    .weather-pill .source-detail {
-      font-size: 0.68rem; color: var(--text-3); margin-top: 2px;
-    }
-    .source-tag {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.7rem; font-weight: 700;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      border: 1px solid transparent;
-      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-      white-space: nowrap;
-    }
-    .source-tag::before {
-      content: ''; width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor; box-shadow: 0 0 8px currentColor;
+      margin-left: auto; display: flex; align-items: center; gap: 8px;
+      padding: 6px 13px;
+      background: var(--glass); border: 1px solid var(--border);
+      border-radius: 999px; font-size: 0.83rem;
       flex-shrink: 0;
     }
-    .source-tag.real    { background: rgba(16,185,129,0.14); color: #34d399; border-color: rgba(16,185,129,0.4); }
-    .source-tag.mock    { background: rgba(148,163,184,0.14); color: #94a3b8; border-color: rgba(148,163,184,0.35); }
-    .source-tag.loading { background: rgba(99,102,241,0.14); color: #a5b4fc; border-color: rgba(99,102,241,0.4); }
+    .weather-pill .wi { font-size: 1.2rem; line-height: 1; }
+    .weather-pill .wt { font-weight: 700; }
+    .weather-pill .wd { color: var(--text2); }
+    @media (max-width: 520px) { .weather-pill .wd { display: none; } }
 
-    /* ============== HERO ============== */
-    .hero {
-      padding: 38px 36px 32px;
-      border-radius: 24px;
-      background:
-        radial-gradient(700px 350px at 100% 0%, rgba(139,92,246,0.20), transparent 60%),
-        linear-gradient(180deg, rgba(99,102,241,0.10), rgba(255,255,255,0.02));
-      border: 1px solid var(--border);
-      backdrop-filter: blur(14px) saturate(130%);
-      -webkit-backdrop-filter: blur(14px) saturate(130%);
-      margin-bottom: 22px;
-      position: relative; overflow: hidden;
-      animation: fadeUp 0.5s cubic-bezier(.2,.7,.3,1) both;
+    /* ── SWAP BANNER ─────────────────────────────── */
+    #swapBanner {
+      max-height: 0; overflow: hidden;
+      border-bottom: 1px solid transparent;
+      transition: max-height .35s ease, padding .3s ease, border-color .3s;
     }
-    .hero::before {
-      content: ''; position: absolute; top: -140px; right: -140px;
-      width: 360px; height: 360px;
-      background: radial-gradient(circle, rgba(139,92,246,0.5), transparent 65%);
-      filter: blur(28px); pointer-events: none;
+    #swapBanner.show {
+      max-height: 300px; padding: 10px 18px 12px;
+      border-bottom-color: rgba(245,158,11,0.22);
+      background: rgba(245,158,11,0.05);
     }
-    .pill {
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 6px 14px;
-      background: var(--accent-soft);
-      border: 1px solid rgba(99,102,241,0.4);
-      border-radius: 999px;
-      font-size: 0.74rem; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: #c7d2fe; margin-bottom: 18px;
+    .swap-hd {
+      font-size: 0.74rem; font-weight: 800; color: var(--risk);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
     }
-    .pill .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 12px var(--accent);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse { 50% { opacity: 0.55; transform: scale(0.8); } }
-    h1 {
-      font-size: clamp(2rem, 4.4vw, 3rem);
-      margin: 0 0 12px; letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 60%, #a5b4fc 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 800; line-height: 1.05;
-    }
-    p.subtitle { color: var(--text-1); margin: 0 0 8px; font-size: 1.08rem; max-width: 660px; }
-    p.value    { color: var(--text-2); margin: 0 0 28px; font-size: 0.95rem; max-width: 640px; }
-    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    button#runBtn {
-      position: relative; overflow: hidden;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      color: white; border: none;
-      padding: 15px 30px; font-size: 1rem; font-weight: 600;
-      border-radius: 14px; cursor: pointer;
-      box-shadow: 0 12px 32px rgba(99,102,241,0.5),
-                  inset 0 1px 0 rgba(255,255,255,0.28);
-      transition: transform 0.18s cubic-bezier(.2,.7,.3,1),
-                  box-shadow 0.25s ease, filter 0.2s ease;
-      display: inline-flex; align-items: center; gap: 10px;
-    }
-    button#runBtn::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform 0.6s ease;
-    }
-    button#runBtn:hover::before { transform: translateX(100%); }
-    button#runBtn:hover {
-      transform: translateY(-2px); filter: brightness(1.06);
-      box-shadow: 0 18px 46px rgba(99,102,241,0.6),
-                  inset 0 1px 0 rgba(255,255,255,0.28);
-    }
-    button#runBtn:active { transform: translateY(0); }
-    button#runBtn:focus-visible { outline: 2px solid #c7d2fe; outline-offset: 3px; }
-    button#runBtn::after { content: '→'; font-size: 1.1rem; transition: transform 0.2s ease; }
-    button#runBtn:hover::after { transform: translateX(4px); }
-    .hero-hint { color: var(--text-3); font-size: 0.85rem; }
-
-    /* ============== HOW IT WORKS ============== */
-    .how {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 14px; margin-bottom: 24px;
-    }
-    .how-step {
-      position: relative; padding: 18px 18px 16px;
-      background: var(--glass); border: 1px solid var(--border);
-      border-radius: 16px; backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease;
-    }
-    .how-step:hover { border-color: rgba(99,102,241,0.45); transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,0.3); }
-    .how-step .num {
-      width: 30px; height: 30px; border-radius: 9px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      display: grid; place-items: center;
-      font-weight: 700; font-size: 0.85rem; color: white;
-      margin-bottom: 10px; box-shadow: 0 6px 18px rgba(99,102,241,0.4);
-    }
-    .how-step h4 { margin: 0 0 4px; font-size: 0.98rem; font-weight: 700; }
-    .how-step p  { margin: 0; font-size: 0.85rem; color: var(--text-2); }
-
-    /* ============== STATS ============== */
-    .stats {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 14px; margin-bottom: 26px;
-    }
-    .stat {
-      padding: 20px 20px 18px; background: var(--glass);
-      border: 1px solid var(--border); border-radius: 16px;
-      backdrop-filter: blur(14px) saturate(130%);
-      -webkit-backdrop-filter: blur(14px) saturate(130%);
-      transition: border-color 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1), box-shadow 0.22s ease;
-    }
-    .stat:hover { border-color: rgba(99,102,241,0.45); transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,0.35); }
-    .stat-label {
-      font-size: 0.78rem; color: var(--text-2);
-      text-transform: uppercase; letter-spacing: 0.09em;
-      font-weight: 700; margin-bottom: 10px;
+    .swap-pills { display: flex; flex-wrap: wrap; gap: 7px; }
+    .swap-pill {
       display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.28);
+      border-radius: 10px; font-size: 0.82rem;
     }
-    .stat-label .ind { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
-    .stat-value { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.025em; color: var(--text-0); line-height: 1; }
-    .stat-sub   { color: var(--text-3); font-size: 0.78rem; margin-top: 6px; }
-    .stat.total      .ind { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-    .stat.maintain   .ind { background: var(--green);  box-shadow: 0 0 10px var(--green); }
-    .stat.risky      .ind { background: var(--amber);  box-shadow: 0 0 10px var(--amber); }
-    .stat.reschedule .ind { background: var(--red);    box-shadow: 0 0 10px var(--red); }
-    .stat.maintain   .stat-value { color: #6ee7b7; }
-    .stat.risky      .stat-value { color: #fcd34d; }
-    .stat.reschedule .stat-value { color: #fca5a5; }
-
-    /* ============== SECTION HEADER ============== */
-    .section-head {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; margin: 8px 4px 14px; flex-wrap: wrap;
+    .swap-pill.sev-danger {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.32);
     }
-    .section-head h3  { margin: 0; font-size: 1.08rem; font-weight: 700; letter-spacing: -0.01em; }
-    .section-head .sub { color: var(--text-3); font-size: 0.85rem; }
+    .swap-pill .sp-txt { color: var(--text1); flex: 1; min-width: 0; }
+    .swap-pill .sp-btn {
+      padding: 4px 11px; border-radius: 999px; cursor: pointer;
+      font-size: 0.74rem; font-weight: 700; white-space: nowrap;
+      background: rgba(245,158,11,0.2); color: var(--risk);
+      border: 1px solid rgba(245,158,11,0.4);
+      transition: background .2s, transform .15s;
+    }
+    .swap-pill.sev-danger .sp-btn {
+      background: rgba(239,68,68,0.18); color: #f87171;
+      border-color: rgba(239,68,68,0.4);
+    }
+    .swap-pill .sp-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
 
-    /* ============== CARDS ============== */
-    #results {
+    /* ── BOARD ───────────────────────────────────── */
+    .board-wrap { overflow-x: auto; padding: 18px; }
+    .board {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 20px;
-    }
-    @keyframes fadeUp  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-    .job-card {
-      position: relative;
-      background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.022));
-      border: 1px solid var(--border); border-radius: 20px;
-      padding: 24px 22px 22px;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.07) inset, 0 18px 44px rgba(0,0,0,0.45);
-      backdrop-filter: blur(20px) saturate(140%);
-      -webkit-backdrop-filter: blur(20px) saturate(140%);
-      transition: transform 0.22s cubic-bezier(.2,.7,.3,1), border-color 0.22s ease, box-shadow 0.22s ease;
-      overflow: hidden;
-      animation: fadeUp 0.45s cubic-bezier(.2,.7,.3,1) both;
-      display: flex; flex-direction: column; gap: 14px;
-    }
-    .job-card > * { margin: 0; }
-    .job-card:nth-child(1) { animation-delay: 0.04s; }
-    .job-card:nth-child(2) { animation-delay: 0.10s; }
-    .job-card:nth-child(3) { animation-delay: 0.16s; }
-    .job-card:nth-child(4) { animation-delay: 0.22s; }
-    .job-card:nth-child(5) { animation-delay: 0.28s; }
-    .job-card:nth-child(6) { animation-delay: 0.34s; }
-    .job-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
-      opacity: 0.75;
-    }
-    .job-card:hover {
-      transform: translateY(-3px); border-color: rgba(99,102,241,0.55);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 22px 54px rgba(0,0,0,0.55);
-    }
-    .job-header {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-    }
-    .job-header h2   { margin: 0 0 4px; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; }
-    .job-header .type { color: var(--text-2); font-size: 0.86rem; text-transform: capitalize; }
-    .job-icon {
-      width: 46px; height: 46px; border-radius: 14px;
-      display: grid; place-items: center; font-size: 1.4rem; flex-shrink: 0;
-      background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.18));
-      border: 1px solid rgba(99,102,241,0.35);
-    }
-    .job-icon.maintain   { background: linear-gradient(135deg, rgba(16,185,129,0.3), rgba(16,185,129,0.1)); border-color: rgba(16,185,129,0.4); }
-    .job-icon.risky      { background: linear-gradient(135deg, rgba(245,158,11,0.3), rgba(245,158,11,0.1)); border-color: rgba(245,158,11,0.4); }
-    .job-icon.reschedule { background: linear-gradient(135deg, rgba(239,68,68,0.3), rgba(239,68,68,0.1)); border-color: rgba(239,68,68,0.4); }
-    .score-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 13px; background: rgba(255,255,255,0.035);
-      border: 1px solid var(--border); border-radius: 12px;
-    }
-    .score-label { font-size: 0.72rem; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700; flex-shrink: 0; }
-    .score-bar   { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; position: relative; }
-    .score-fill  { position: absolute; top: 0; left: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.4s ease; }
-    .score-fill.good { background: linear-gradient(90deg, #10b981, #34d399); }
-    .score-fill.mid  { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .score-fill.bad  { background: linear-gradient(90deg, #ef4444, #f87171); }
-    .score-value { font-weight: 700; font-size: 0.9rem; color: var(--text-0); flex-shrink: 0; }
-    .decision {
-      background: rgba(255,255,255,0.035); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px 14px;
-      font-size: 0.88rem; color: var(--text-1);
-      display: flex; flex-direction: column; gap: 6px;
-    }
-    .decision div { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 11px; border-radius: 999px;
-      font-size: 0.7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      border: 1px solid transparent;
-    }
-    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
-    .badge.maintain   { background: var(--green-soft); color: #34d399; border-color: rgba(16,185,129,0.45); }
-    .badge.risky      { background: var(--amber-soft); color: #fbbf24; border-color: rgba(245,158,11,0.45); }
-    .badge.reschedule { background: var(--red-soft);   color: #f87171; border-color: rgba(239,68,68,0.45); }
-    .client-msg-block {
-      padding: 14px 14px 12px;
-      background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.22);
-      border-radius: 14px;
-    }
-    .client-msg-header {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; margin-bottom: 10px;
-    }
-    .client-msg-label {
-      font-size: 0.7rem; color: #c7d2fe;
-      text-transform: uppercase; letter-spacing: 0.1em;
-      font-weight: 700;
-      display: inline-flex; align-items: center; gap: 8px;
-    }
-    .client-msg-label::before { content: '✉'; font-size: 0.85rem; }
-    .copy-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px;
-      background: rgba(99,102,241,0.14);
-      border: 1px solid rgba(99,102,241,0.34);
-      color: #c7d2fe;
-      font-size: 0.72rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      border-radius: 999px; cursor: pointer;
-      transition: background 0.18s ease, border-color 0.18s ease,
-                  color 0.18s ease, transform 0.15s ease;
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .copy-btn:hover {
-      background: rgba(99,102,241,0.28);
-      border-color: rgba(99,102,241,0.55);
-      color: #ffffff; transform: translateY(-1px);
-    }
-    .copy-btn:active { transform: translateY(0); }
-    .copy-btn:focus-visible { outline: 2px solid #c7d2fe; outline-offset: 2px; }
-    .copy-btn .copy-icon { font-size: 0.85rem; line-height: 1; }
-    .copy-btn.copied {
-      background: rgba(16,185,129,0.22);
-      border-color: rgba(16,185,129,0.55);
-      color: #6ee7b7;
-    }
-    .copy-btn.copied .copy-icon { content: '✓'; }
-    .client-msg {
-      background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.08));
-      border-left: 3px solid var(--accent); padding: 14px 16px; border-radius: 10px;
-      font-weight: 500; white-space: pre-line; font-size: 0.94rem; color: var(--text-0); line-height: 1.65;
+      grid-template-columns: repeat(7, var(--col));
+      gap: 10px;
+      min-width: calc(7 * var(--col) + 6 * 10px);
     }
 
-    /* ============== TOAST ============== */
-    .toast {
-      position: fixed; left: 50%; bottom: 28px;
-      transform: translateX(-50%) translateY(16px);
-      padding: 12px 22px;
-      background: rgba(13, 17, 28, 0.92);
-      color: #ffffff; font-weight: 600; font-size: 0.9rem;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.55);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      opacity: 0; pointer-events: none; z-index: 9999;
-      transition: opacity 0.22s ease, transform 0.22s cubic-bezier(.2,.7,.3,1);
-      display: inline-flex; align-items: center; gap: 10px;
-    }
-    .toast::before {
-      content: '✓'; display: inline-grid; place-items: center;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: var(--green); color: #04130c;
-      font-size: 0.72rem; font-weight: 800;
-    }
-    .toast.error::before { content: '!'; background: var(--red); color: #1a0606; }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    /* ── DAY COLUMN ──────────────────────────────── */
+    .day-col { display: flex; flex-direction: column; gap: 8px; }
 
-    /* ============== EMPTY STATE ============== */
-    .empty {
-      grid-column: 1 / -1; text-align: center; padding: 56px 20px;
-      color: var(--text-3); border: 1px dashed var(--border-strong);
-      border-radius: 18px; background: rgba(255,255,255,0.02); backdrop-filter: blur(12px);
-    }
-    .empty-icon {
-      width: 60px; height: 60px; border-radius: 16px;
-      background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(139,92,246,0.14));
+    .day-hd {
+      border-radius: 14px; overflow: hidden;
       border: 1px solid var(--border);
-      display: grid; place-items: center; margin: 0 auto 14px; font-size: 1.6rem;
+      transition: border-color .25s;
     }
-    .empty h4 { color: var(--text-1); margin: 0 0 6px; font-weight: 600; }
-    .empty p  { margin: 0; font-size: 0.92rem; }
+    .day-hd.today { border-color: rgba(99,102,241,0.55); }
 
-    footer { margin-top: 36px; padding: 18px; text-align: center; color: var(--text-3); font-size: 0.82rem; }
-    footer span { color: var(--text-2); }
+    .risk-bar { height: 4px; width: 100%; }
+    .risk-bar.ok     { background: var(--ok); }
+    .risk-bar.risk   { background: var(--risk); }
+    .risk-bar.danger { background: var(--danger); }
 
-    /* ============== RESPONSIVE ============== */
-    @media (max-width: 900px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .how   { grid-template-columns: 1fr; }
+    .day-hd-body { padding: 11px 13px 10px; background: var(--bg1); }
+    .day-lbl {
+      font-size: 0.7rem; font-weight: 800; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .09em; margin-bottom: 1px;
     }
-    @media (max-width: 600px) {
-      body { padding: 16px 12px 48px; }
-      .topbar { padding: 12px 14px; gap: 12px; }
-      .weather-pill { width: 100%; justify-content: flex-start; padding: 8px 14px; }
-      .hero { padding: 26px 20px; border-radius: 20px; }
-      h1 { font-size: 1.85rem; }
-      p.subtitle { font-size: 1rem; }
-      p.value { margin-bottom: 22px; }
-      button#runBtn { width: 100%; justify-content: center; }
-      .hero-actions { gap: 12px; }
-      #results { grid-template-columns: 1fr; gap: 14px; }
-      .job-card { padding: 20px 18px; border-radius: 18px; gap: 12px; }
-      .job-header h2 { font-size: 1.1rem; }
-      .job-icon { width: 42px; height: 42px; font-size: 1.25rem; }
-      .stat-value { font-size: 1.7rem; }
-      .client-msg { font-size: 0.9rem; padding: 12px 14px; }
-      .client-msg-header { flex-wrap: wrap; gap: 8px; }
-      .copy-btn { padding: 5px 10px; font-size: 0.68rem; }
-      .toast { left: 16px; right: 16px; bottom: 18px; transform: translateY(16px); width: auto; max-width: none; justify-content: center; }
-      .toast.show { transform: translateY(0); }
+    .day-num {
+      font-size: 1.55rem; font-weight: 800; letter-spacing: -.02em; line-height: 1;
     }
+    .today .day-num { color: #a5b4fc; }
+
+    .day-wx-row { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+    .day-wx-icon { font-size: 1.45rem; line-height: 1; flex-shrink: 0; }
+    .day-wx-info { display: flex; flex-direction: column; gap: 1px; }
+    .day-temps { font-size: 0.85rem; font-weight: 700; }
+    .day-temps .hi { color: var(--text0); }
+    .day-temps .lo { color: var(--text2); font-size: 0.78rem; }
+    .day-wx-lbl { font-size: 0.72rem; color: var(--text2); }
+
+    .day-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .chip {
+      padding: 2px 7px; border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text2);
+    }
+    .chip.warn { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
+    .chip.bad  { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
+
+    .risk-badge {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      margin-top: 7px; padding: 5px 8px; border-radius: 8px;
+      font-size: 0.70rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em;
+    }
+    .risk-badge.ok     { background: var(--ok-bg);     color: var(--ok);     border: 1px solid var(--ok-bd); }
+    .risk-badge.risk   { background: var(--risk-bg);   color: var(--risk);   border: 1px solid var(--risk-bd); }
+    .risk-badge.danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-bd); }
+
+    /* ── TASK SLOT ───────────────────────────────── */
+    .task-slot { display: flex; flex-direction: column; gap: 7px; min-height: 20px; }
+
+    .task-card {
+      position: relative; padding: 11px 11px 9px;
+      border-radius: 11px; border: 1px solid var(--border);
+      background: var(--bg2); cursor: pointer;
+      transition: transform .15s, border-color .2s, box-shadow .2s;
+    }
+    .task-card:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,.4); }
+    .task-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; bottom: 0; width: 3px;
+      border-radius: 11px 0 0 11px;
+    }
+    .task-card.ok     { border-color: rgba(16,185,129,0.28); }
+    .task-card.ok::before     { background: var(--ok); }
+    .task-card.risk   { border-color: rgba(245,158,11,0.32); }
+    .task-card.risk::before   { background: var(--risk); }
+    .task-card.danger { border-color: rgba(239,68,68,0.40); }
+    .task-card.danger::before { background: var(--danger); }
+
+    .tc-icon  { font-size: 1.1rem; line-height: 1; margin-bottom: 3px; }
+    .tc-name  { font-size: 0.85rem; font-weight: 700; color: var(--text0); }
+    .tc-client{ font-size: 0.73rem; color: var(--text2); margin-top: 1px; }
+    .tc-risk  { font-size: 0.72rem; margin-top: 6px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.3; }
+    .tc-risk.ok     { color: #6ee7b7; }
+    .tc-risk.risk   { color: #fcd34d; }
+    .tc-risk.danger { color: #fca5a5; }
+
+    .tc-del {
+      position: absolute; top: 7px; right: 7px;
+      width: 22px; height: 22px; border-radius: 6px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.20);
+      color: #f87171; font-size: 0.68rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .15s, background .15s;
+    }
+    .task-card:hover .tc-del { opacity: 1; }
+    .tc-del:hover { background: rgba(239,68,68,0.25); }
+
+    .add-btn {
+      width: 100%; padding: 10px;
+      background: transparent; border: 1.5px dashed rgba(255,255,255,0.13);
+      border-radius: 10px; color: var(--text3); font-size: 0.81rem;
+      cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+      min-height: 44px;
+    }
+    .add-btn:hover {
+      border-color: rgba(99,102,241,0.5); color: #a5b4fc;
+      background: rgba(99,102,241,0.06);
+    }
+
+    /* ── SKELETON ────────────────────────────────── */
+    .skel {
+      border-radius: 12px;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0.04) 25%,
+        rgba(255,255,255,0.09) 50%,
+        rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+
+    /* ── MODAL BASE ──────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.72);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      width: 100%; max-width: 440px;
+      background: var(--bg1);
+      border: 1px solid var(--border2);
+      border-radius: 20px; padding: 26px 22px;
+      box-shadow: 0 28px 64px rgba(0,0,0,0.65);
+      transform: translateY(14px) scale(.98);
+      transition: transform .25s cubic-bezier(.2,.7,.3,1);
+    }
+    .overlay.open .modal { transform: none; }
+    .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 18px; letter-spacing: -.01em; }
+
+    .fg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .fg label {
+      font-size: 0.73rem; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+    .fg input, .fg select, .fg textarea {
+      padding: 11px 13px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text0); font-size: 0.93rem;
+      outline: none; transition: border-color .2s;
+      -webkit-appearance: none; font-family: inherit;
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--accent); }
+    .fg select option { background: #1a2035; }
+    .fg textarea { resize: vertical; min-height: 64px; }
+
+    .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .type-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 9px 5px; border-radius: 10px; cursor: pointer;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      font-size: 0.66rem; color: var(--text2); font-weight: 600;
+      text-align: center; transition: border-color .2s, background .2s, color .2s;
+      min-height: 60px;
+    }
+    .type-btn .ti { font-size: 1.35rem; line-height: 1; margin-bottom: 2px; }
+    .type-btn:hover, .type-btn.sel {
+      border-color: var(--accent); background: rgba(99,102,241,0.12); color: var(--text0);
+    }
+
+    .mf { display: flex; gap: 9px; margin-top: 6px; }
+    .btn-cancel {
+      flex: 1; padding: 12px; border-radius: 11px;
+      background: var(--glass); border: 1px solid var(--border);
+      color: var(--text1); font-size: 0.92rem; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.09); }
+    .btn-primary {
+      flex: 2; padding: 12px; border-radius: 11px; border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 0.92rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 22px rgba(99,102,241,0.4);
+      transition: filter .2s, transform .15s;
+    }
+    .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-primary:active { transform: none; }
+
+    /* ── LOCATION MODAL EXTRAS ───────────────────── */
+    .btn-geo {
+      width: 100%; padding: 11px; border-radius: 10px; margin-bottom: 10px;
+      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.28);
+      color: #34d399; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background .2s;
+    }
+    .btn-geo:hover { background: rgba(16,185,129,0.18); }
+    .loc-input {
+      width: 100%; padding: 11px 13px; margin-bottom: 9px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text0); font-size: 0.92rem;
+      outline: none; font-family: inherit;
+    }
+    .loc-input:focus { border-color: var(--accent); }
+    .loc-results { display: flex; flex-direction: column; gap: 5px; max-height: 230px; overflow-y: auto; }
+    .loc-item {
+      padding: 9px 13px; border-radius: 10px; cursor: pointer;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      font-size: 0.88rem; color: var(--text1);
+      transition: background .15s, border-color .15s;
+    }
+    .loc-item:hover { background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.35); color: var(--text0); }
+    .loc-empty { font-size: 0.85rem; color: var(--text3); padding: 10px 0; }
+
+    /* ── TOAST ───────────────────────────────────── */
+    #toast {
+      position: fixed; left: 50%; bottom: 26px; z-index: 400;
+      transform: translateX(-50%) translateY(14px);
+      padding: 10px 18px;
+      background: rgba(12,17,30,0.96);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px; color: var(--text0);
+      font-size: 0.86rem; font-weight: 600;
+      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+      backdrop-filter: blur(12px);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── RESPONSIVE ──────────────────────────────── */
+    @media (max-width: 680px) { :root { --col: 158px; } }
+    @media (max-width: 520px) { :root { --col: 144px; } .topbar { padding: 9px 12px; } .board-wrap { padding: 12px; } }
   </style>
 </head>
 <body>
-  <div class="container">
 
-    <div class="topbar">
-      <div class="brand">
-        <div class="brand-mark"></div>
-        <div class="brand-name">
-          <b>SmartPlan Météo</b>
-          <span>Outil terrain intelligent</span>
-        </div>
-      </div>
-      <div class="weather-pill" id="weatherPill">
-        <div class="icon" id="weatherIcon">☀</div>
-        <div class="meta">
-          <b id="weatherTemp">— °C</b>
-          <span id="weatherDesc">Chargement…</span>
-          <span class="source-detail" id="weatherSourceDetail"></span>
-        </div>
-        <span class="source-tag mock" id="weatherSource">Météo simulée</span>
-      </div>
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">⛅</div>
+    <div class="brand-text">
+      <b>SmartPlan Météo</b>
+      <em>Décision terrain</em>
     </div>
-
-    <div class="hero">
-      <div class="pill"><span class="dot"></span>Saint-Jean-sur-Richelieu · OpenWeather</div>
-      <h1>SmartPlan Météo</h1>
-      <p class="subtitle">Assistant intelligent pour planifier les travaux extérieurs selon la météo.</p>
-      <p class="value">Planification intelligente selon la météo, les priorités et les messages clients.</p>
-      <div class="hero-actions">
-        <button id="runBtn">Lancer la simulation</button>
-        <span class="hero-hint">Météo réelle si clé API configurée — fallback simulé sinon.</span>
-      </div>
-    </div>
-
-    <div class="section-head">
-      <h3>Comment ça marche</h3>
-      <span class="sub">3 étapes automatiques</span>
-    </div>
-    <div class="how">
-      <div class="how-step">
-        <div class="num">1</div>
-        <h4>Analyse météo</h4>
-        <p>Évalue chaque créneau horaire selon la pluie, le vent, la température et l'humidité.</p>
-      </div>
-      <div class="how-step">
-        <div class="num">2</div>
-        <h4>Priorise les jobs</h4>
-        <p>Croise la météo avec la priorité du chantier et la deadline pour décider la meilleure action.</p>
-      </div>
-      <div class="how-step">
-        <div class="num">3</div>
-        <h4>Génère le message client</h4>
-        <p>Produit un message professionnel prêt à envoyer pour confirmer, alerter ou reporter.</p>
-      </div>
-    </div>
-
-    <div class="stats">
-      <div class="stat total">
-        <div class="stat-label"><span class="ind"></span>Jobs analysés</div>
-        <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-sub">total à traiter</div>
-      </div>
-      <div class="stat maintain">
-        <div class="stat-label"><span class="ind"></span>Maintenus</div>
-        <div class="stat-value" id="statMaintain">—</div>
-        <div class="stat-sub">conditions favorables</div>
-      </div>
-      <div class="stat risky">
-        <div class="stat-label"><span class="ind"></span>À risque</div>
-        <div class="stat-value" id="statRisky">—</div>
-        <div class="stat-sub">à confirmer</div>
-      </div>
-      <div class="stat reschedule">
-        <div class="stat-label"><span class="ind"></span>Reportés</div>
-        <div class="stat-value" id="statReschedule">—</div>
-        <div class="stat-sub">à replanifier</div>
-      </div>
-    </div>
-
-    <div class="section-head">
-      <h3>Décisions par chantier</h3>
-      <span class="sub">Triées par priorité et urgence</span>
-    </div>
-
-    <div id="results">
-      <div class="empty" id="emptyState">
-        <div class="empty-icon">▶</div>
-        <h4>Aucune décision pour le moment</h4>
-        <p>Lancez la simulation pour analyser les chantiers du jour.</p>
-      </div>
-    </div>
-
-    <footer><span>SmartPlan Météo</span> · Données météo fournies par <span>OpenWeather</span> · Fallback simulé si hors-ligne.</footer>
   </div>
+  <button class="loc-btn" id="locBtn" onclick="openLocModal()">
+    <span class="loc-dot" id="locDot"></span>
+    <span id="locName">Chargement…</span>
+  </button>
+  <div class="weather-pill" id="weatherPill">
+    <span class="wi" id="wIcon">☁</span>
+    <span class="wt" id="wTemp">—°</span>
+    <span class="wd" id="wDesc">…</span>
+  </div>
+</header>
 
-  <script src="weatherConfig.js"></script>
-  <script src="mockWeather.js"></script>
-  <script src="weatherApi.js"></script>
-  <script src="weatherScheduler.js"></script>
-  <script src="runSimulation.js"></script>
+<!-- SWAP BANNER -->
+<div id="swapBanner">
+  <div class="swap-hd">⟳ Suggestions de déplacement</div>
+  <div class="swap-pills" id="swapList"></div>
+</div>
+
+<!-- BOARD -->
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<!-- ADD TASK MODAL -->
+<div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="taskModalTitle">Nouveau chantier</h3>
+    <div class="fg">
+      <label>Type de travail</label>
+      <div class="type-grid" id="typeGrid"></div>
+    </div>
+    <div class="fg">
+      <label>Nom du chantier</label>
+      <input type="text" id="tName" placeholder="ex : Terrasse Tremblay" maxlength="60">
+    </div>
+    <div class="fg">
+      <label>Client</label>
+      <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50">
+    </div>
+    <div class="fg">
+      <label>Priorité</label>
+      <select id="tPrio">
+        <option value="urgent">🔴 Urgente</option>
+        <option value="high">🟠 Haute</option>
+        <option value="medium" selected>🟡 Moyenne</option>
+        <option value="low">🟢 Basse</option>
+      </select>
+    </div>
+    <div class="mf">
+      <button class="btn-cancel" onclick="closeModal('taskOverlay')">Annuler</button>
+      <button class="btn-primary" onclick="saveTask()">Ajouter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION MODAL -->
+<div class="overlay" id="locOverlay" onclick="overlayClick(event,'locOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Localisation du chantier</h3>
+    <button class="btn-geo" onclick="geolocate()">📍 Utiliser ma position GPS</button>
+    <input type="text" class="loc-input" id="locSearch"
+           placeholder="Chercher une ville ou adresse…"
+           oninput="schedSearch(this.value)" autocomplete="off">
+    <div class="loc-results" id="locResults"></div>
+    <div class="mf" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeModal('locOverlay')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════ */
+const DAYS_L = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const MONTHS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+
+const JOB_TYPES = {
+  beton:      { name:'Béton',       icon:'🏗️', short:'Béton'   },
+  hauteur:    { name:'En hauteur',  icon:'🧗', short:'Hauteur' },
+  pave:       { name:'Pavé',        icon:'🧱', short:'Pavé'    },
+  excavation: { name:'Excavation',  icon:'🚜', short:'Excav.'  },
+  paysagisme: { name:'Paysagisme',  icon:'🌿', short:'Paysage' },
+  electrique: { name:'Électrique',  icon:'⚡', short:'Électr.' },
+  toiture:    { name:'Toiture',     icon:'🏠', short:'Toiture' },
+  peinture:   { name:'Peinture',    icon:'🎨', short:'Peinture'},
+};
+
+// w = { weathercode, temp_max, temp_min, precipitation, windspeed, rain_prob }
+// Rules evaluated in order; worst level collected for full context
+const RISK_RULES = {
+  beton: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — bétonnage interdit' },
+    { t: w => w.temp_min < 5,       l:'danger', m:'Gel < 5°C — prise impossible' },
+    { t: w => w.precipitation > 5,  l:'danger', m:'Pluie > 5mm — prise compromise' },
+    { t: w => w.precipitation > 2,  l:'risk',   m:'Pluie > 2mm — qualité réduite' },
+    { t: w => w.temp_min < 10,      l:'risk',   m:'Froid — prise lente' },
+    { t: w => w.windspeed > 50,     l:'risk',   m:'Vent fort — surface compromise' },
+  ],
+  hauteur: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — arrêt immédiat' },
+    { t: w => w.windspeed > 40,     l:'danger', m:'Vent > 40km/h — DANGER VITAL' },
+    { t: w => w.precipitation > 5,  l:'risk',   m:'Pluie — surface glissante' },
+    { t: w => w.windspeed > 25,     l:'risk',   m:'Vent > 25km/h — vigilance' },
+    { t: w => [45,48].includes(w.weathercode), l:'risk', m:'Brouillard — visibilité réduite' },
+  ],
+  pave: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — arrêt chantier' },
+    { t: w => w.precipitation > 10, l:'danger', m:'Pluie > 10mm — joint impossible' },
+    { t: w => w.precipitation > 5,  l:'risk',   m:'Pluie > 5mm — qualité compromise' },
+    { t: w => w.temp_min < 0,       l:'risk',   m:'Gel — sable de pose instable' },
+  ],
+  excavation: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — sécurité machines' },
+    { t: w => w.precipitation > 20, l:'risk',   m:'Pluie > 20mm — sol instable' },
+    { t: w => w.windspeed > 60,     l:'risk',   m:'Vent > 60km/h — poussière' },
+  ],
+  paysagisme: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — danger' },
+    { t: w => w.precipitation > 15, l:'risk',   m:'Pluie > 15mm — plantation compromise' },
+    { t: w => w.temp_max > 35,      l:'risk',   m:'Canicule > 35°C — stress hydrique' },
+  ],
+  electrique: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — DANGER ÉLECTROCUTION' },
+    { t: w => w.precipitation > 2,  l:'danger', m:'Pluie — risque électrique' },
+    { t: w => w.precipitation > 0,  l:'risk',   m:'Humidité — précautions requises' },
+  ],
+  toiture: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — danger électrique/vent' },
+    { t: w => w.windspeed > 35,     l:'danger', m:'Vent > 35km/h — chute de matériaux' },
+    { t: w => w.precipitation > 2,  l:'danger', m:'Pluie — surface glissante' },
+    { t: w => w.windspeed > 20,     l:'risk',   m:'Vent > 20km/h — pose difficile' },
+  ],
+  peinture: [
+    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — peinture perdue' },
+    { t: w => w.precipitation > 0,  l:'danger', m:'Pluie — séchage impossible' },
+    { t: w => w.temp_min < 10,      l:'risk',   m:'Froid < 10°C — séchage lent' },
+    { t: w => w.temp_max > 35,      l:'risk',   m:'Chaleur > 35°C — bulles/craquelures' },
+    { t: w => w.windspeed > 30,     l:'risk',   m:'Vent > 30km/h — poussière' },
+  ],
+};
+
+const WMO = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'❄️', 75:'❄️',
+  80:'🌦️', 81:'🌧️', 82:'⛈️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️',
+};
+
+function wIcon(code) {
+  const keys = Object.keys(WMO).map(Number).sort((a,b) => b-a);
+  for (const k of keys) if (code >= k) return WMO[k];
+  return '☁️';
+}
+function wLabel(code) {
+  if (code === 0)  return 'Ensoleillé';
+  if (code <= 3)   return ['','Peu nuageux','Partiellement nuageux','Nuageux'][code];
+  if (code <= 48)  return 'Brouillard';
+  if (code <= 55)  return 'Bruine';
+  if (code <= 65)  return 'Pluie';
+  if (code <= 75)  return 'Neige';
+  if (code <= 82)  return 'Averses';
+  return 'Orage';
+}
+
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+let ST = {
+  loc:      { lat: 45.3584, lon: -73.2728, name: 'Saint-Jean-sur-Richelieu' },
+  forecast: null,
+  tasks:    [],
+};
+
+function loadST() {
+  try {
+    const raw = localStorage.getItem('spm_v2');
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p.loc   && typeof p.loc.lat === 'number') ST.loc   = p.loc;
+    if (Array.isArray(p.tasks))                   ST.tasks = p.tasks;
+  } catch {}
+}
+function saveST() {
+  try { localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, tasks: ST.tasks })); } catch {}
+}
+
+/* ═══════════════════════════════════════════════════
+   WEATHER — Open-Meteo (free, no API key)
+═══════════════════════════════════════════════════ */
+async function fetchForecast(lat, lon) {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast'
+      + `?latitude=${lat}&longitude=${lon}`
+      + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
+      + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
+      + '&timezone=auto&forecast_days=7';
+    const res  = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d    = await res.json();
+    return d.daily.time.map((dt, i) => ({
+      date:          new Date(dt + 'T12:00:00'),
+      weathercode:   d.daily.weathercode[i]                       ?? 3,
+      temp_max:      Math.round(d.daily.temperature_2m_max[i]     ?? 15),
+      temp_min:      Math.round(d.daily.temperature_2m_min[i]     ?? 8),
+      precipitation: Math.round(d.daily.precipitation_sum[i]      ?? 0),
+      windspeed:     Math.round(d.daily.windspeed_10m_max[i]      ?? 10),
+      rain_prob:     Math.round(d.daily.precipitation_probability_max[i] ?? 0),
+    }));
+  } finally { clearTimeout(tid); }
+}
+
+function mockForecast() {
+  const now = new Date(); now.setHours(12,0,0,0);
+  return [
+    { weathercode:  0, temp_max:22, temp_min:12, precipitation:0,  windspeed:8,  rain_prob:5  },
+    { weathercode:  1, temp_max:24, temp_min:14, precipitation:0,  windspeed:12, rain_prob:10 },
+    { weathercode: 63, temp_max:16, temp_min:10, precipitation:14, windspeed:24, rain_prob:85 },
+    { weathercode: 95, temp_max:18, temp_min:13, precipitation:22, windspeed:47, rain_prob:98 },
+    { weathercode:  2, temp_max:21, temp_min:11, precipitation:2,  windspeed:18, rain_prob:30 },
+    { weathercode:  0, temp_max:25, temp_min:13, precipitation:0,  windspeed:9,  rain_prob:5  },
+    { weathercode:  1, temp_max:23, temp_min:12, precipitation:0,  windspeed:10, rain_prob:8  },
+  ].map((s, i) => {
+    const d = new Date(now); d.setDate(now.getDate() + i);
+    return { ...s, date: d };
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   RISK ENGINE
+═══════════════════════════════════════════════════ */
+function assess(jobType, w) {
+  const rules = RISK_RULES[jobType] || [];
+  let level = 'ok', msg = '✓ Conditions favorables';
+  for (const r of rules) {
+    if (!r.t(w)) continue;
+    if (r.l === 'danger') return { level:'danger', msg: r.m };
+    if (level !== 'danger') { level = 'risk'; msg = r.m; }
+  }
+  return { level, msg };
+}
+
+function dayOverallRisk(w) {
+  let worst = 'ok';
+  for (const type of Object.keys(RISK_RULES)) {
+    const { level } = assess(type, w);
+    if (level === 'danger') return 'danger';
+    if (level === 'risk')   worst = 'risk';
+  }
+  return worst;
+}
+
+/* ═══════════════════════════════════════════════════
+   SWAP INTELLIGENCE
+═══════════════════════════════════════════════════ */
+function swapSuggestions() {
+  if (!ST.forecast) return [];
+  const out = [], seen = new Set();
+  for (const task of ST.tasks) {
+    const key = task.id + '_' + task.dayIndex;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const cur = ST.forecast[task.dayIndex];
+    if (!cur) continue;
+    const { level: curLvl } = assess(task.type, cur);
+    if (curLvl === 'ok') continue;
+    // Find best alternative
+    let bestIdx = null;
+    for (let i = 0; i < ST.forecast.length; i++) {
+      if (i === task.dayIndex) continue;
+      const { level } = assess(task.type, ST.forecast[i]);
+      if (level === 'ok') { bestIdx = i; break; }
+      if (bestIdx === null && level === 'risk' && curLvl === 'danger') bestIdx = i;
+    }
+    if (bestIdx === null) continue;
+    const fromName = DAYS_L[cur.date.getDay()];
+    const toName   = DAYS_L[ST.forecast[bestIdx].date.getDay()];
+    const jd       = JOB_TYPES[task.type] || {};
+    out.push({
+      taskId: task.id, toDay: bestIdx, level: curLvl,
+      label: `${jd.icon||''} ${task.name} — ${fromName} → ${toName}`,
+    });
+  }
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDER — BOARD
+═══════════════════════════════════════════════════ */
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  if (!ST.forecast) { renderSkel(board); return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  ST.forecast.forEach((day, di) => {
+    const d = new Date(day.date); d.setHours(0,0,0,0);
+    const isToday  = d.getTime() === today.getTime();
+    const dayRisk  = dayOverallRisk(day);
+    const tasks    = ST.tasks.filter(t => t.dayIndex === di);
+    const windCls  = day.windspeed > 40 ? 'bad' : day.windspeed > 25 ? 'warn' : '';
+    const rainCls  = day.rain_prob > 70 ? 'bad' : day.rain_prob > 40 ? 'warn' : '';
+    const mon      = MONTHS[day.date.getMonth()];
+    const col      = document.createElement('div');
+    col.className  = 'day-col';
+    col.innerHTML  = `
+      <div class="day-hd${isToday?' today':''}">
+        <div class="risk-bar ${dayRisk}"></div>
+        <div class="day-hd-body">
+          <div class="day-lbl">${esc(DAYS_S[day.date.getDay()].toUpperCase())}${isToday?' · Auj.':''}</div>
+          <div class="day-num">${day.date.getDate()} <span style="font-size:.85rem;color:var(--text2)">${mon}</span></div>
+          <div class="day-wx-row">
+            <div class="day-wx-icon">${wIcon(day.weathercode)}</div>
+            <div class="day-wx-info">
+              <div class="day-temps"><span class="hi">${day.temp_max}°</span><span class="lo"> / ${day.temp_min}°</span></div>
+              <div class="day-wx-lbl">${wLabel(day.weathercode)}</div>
+            </div>
+          </div>
+          <div class="day-chips">
+            <span class="chip${windCls?' '+windCls:''}" title="Vent max">💨${day.windspeed}km/h</span>
+            <span class="chip${rainCls?' '+rainCls:''}" title="Probabilité pluie">🌧${day.rain_prob}%</span>
+          </div>
+          <div class="risk-badge ${dayRisk}">
+            ${dayRisk==='ok'?'✓ OK':dayRisk==='risk'?'⚠ Risque':'✕ Danger'}
+          </div>
+        </div>
+      </div>
+      <div class="task-slot" id="slot-${di}"></div>
+      <button class="add-btn" onclick="openAddTask(${di})">+ Ajouter un chantier</button>
+    `;
+    board.appendChild(col);
+    const slot = col.querySelector(`#slot-${di}`);
+    tasks.forEach(task => slot.appendChild(mkTaskCard(task, day)));
+  });
+  renderSwapBanner();
+}
+
+function mkTaskCard(task, dayW) {
+  const jd = JOB_TYPES[task.type] || { icon:'🔧', name:task.type };
+  const { level, msg } = assess(task.type, dayW);
+  const card = document.createElement('div');
+  card.className = `task-card ${level}`;
+  card.innerHTML = `
+    <button class="tc-del" onclick="delTask('${esc(task.id)}',event)" aria-label="Supprimer">✕</button>
+    <div class="tc-icon">${jd.icon}</div>
+    <div class="tc-name">${esc(task.name)}</div>
+    ${task.client ? `<div class="tc-client">${esc(task.client)}</div>` : ''}
+    <div class="tc-risk ${level}">
+      ${level==='ok'?'✓':level==='risk'?'⚠':'✕'} ${esc(msg)}
+    </div>
+  `;
+  return card;
+}
+
+function renderSkel(board) {
+  for (let i = 0; i < 7; i++) {
+    const c = document.createElement('div');
+    c.className = 'day-col';
+    c.innerHTML = `
+      <div class="skel" style="height:196px"></div>
+      <div class="skel" style="height:42px;margin-top:8px"></div>
+    `;
+    board.appendChild(c);
+  }
+}
+
+function renderSwapBanner() {
+  const banner = document.getElementById('swapBanner');
+  const list   = document.getElementById('swapList');
+  list.innerHTML = '';
+  const suggestions = swapSuggestions();
+  if (!suggestions.length) { banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  suggestions.forEach(s => {
+    const p = document.createElement('div');
+    p.className = `swap-pill${s.level==='danger'?' sev-danger':''}`;
+    p.innerHTML = `
+      <span>${s.level==='danger'?'🚨':'⚠️'}</span>
+      <span class="sp-txt">${esc(s.label)}</span>
+      <button class="sp-btn" onclick="applySwap('${esc(s.taskId)}',${s.toDay})">Déplacer →</button>
+    `;
+    list.appendChild(p);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   TASK MODAL
+═══════════════════════════════════════════════════ */
+let _dayPending = 0;
+
+function openAddTask(dayIdx) {
+  _dayPending = dayIdx;
+  document.getElementById('taskModalTitle').textContent = 'Nouveau chantier';
+  document.getElementById('tName').value   = '';
+  document.getElementById('tClient').value = '';
+  document.getElementById('tPrio').value   = 'medium';
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('sel'));
+  // Default: first type
+  const first = document.querySelector('.type-btn');
+  if (first) first.classList.add('sel');
+  openModal('taskOverlay');
+  setTimeout(() => document.getElementById('tName').focus(), 120);
+}
+
+function saveTask() {
+  const name   = document.getElementById('tName').value.trim();
+  const client = document.getElementById('tClient').value.trim();
+  const prio   = document.getElementById('tPrio').value;
+  const sel    = document.querySelector('.type-btn.sel');
+  if (!name) { toast('⚠ Nom du chantier requis'); return; }
+  if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
+  ST.tasks.push({
+    id:       crypto.randomUUID(),
+    name, client, type: sel.dataset.type, priority: prio,
+    dayIndex: _dayPending,
+  });
+  saveST();
+  closeModal('taskOverlay');
+  renderBoard();
+  toast('✓ Chantier ajouté');
+}
+
+function delTask(id, e) {
+  e.stopPropagation();
+  ST.tasks = ST.tasks.filter(t => t.id !== id);
+  saveST(); renderBoard();
+  toast('Chantier supprimé');
+}
+
+function applySwap(taskId, toDay) {
+  const task = ST.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const fromName = DAYS_L[ST.forecast[task.dayIndex]?.date.getDay()] || '?';
+  const toName   = DAYS_L[ST.forecast[toDay]?.date.getDay()] || '?';
+  task.dayIndex  = toDay;
+  saveST(); renderBoard();
+  toast(`✓ Déplacé de ${fromName} → ${toName}`);
+}
+
+function buildTypeGrid() {
+  const g = document.getElementById('typeGrid');
+  g.innerHTML = '';
+  Object.entries(JOB_TYPES).forEach(([key, def], i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'type-btn' + (i === 0 ? ' sel' : '');
+    b.dataset.type = key;
+    b.innerHTML = `<span class="ti">${def.icon}</span>${esc(def.short)}`;
+    b.onclick = () => {
+      g.querySelectorAll('.type-btn').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    g.appendChild(b);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   LOCATION MODAL
+═══════════════════════════════════════════════════ */
+let _searchTimer = null;
+
+function openLocModal() {
+  document.getElementById('locSearch').value = '';
+  document.getElementById('locResults').innerHTML = '';
+  openModal('locOverlay');
+  setTimeout(() => document.getElementById('locSearch').focus(), 120);
+}
+
+function schedSearch(q) {
+  clearTimeout(_searchTimer);
+  const res = document.getElementById('locResults');
+  if (q.length < 2) { res.innerHTML = ''; return; }
+  _searchTimer = setTimeout(() => doSearch(q), 380);
+}
+
+async function doSearch(q) {
+  const res = document.getElementById('locResults');
+  res.innerHTML = '<div class="loc-empty">Recherche…</div>';
+  try {
+    const url  = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`;
+    const data = await (await fetch(url, { headers:{'Accept-Language':'fr'} })).json();
+    res.innerHTML = '';
+    if (!data.length) { res.innerHTML = '<div class="loc-empty">Aucun résultat</div>'; return; }
+    data.forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'loc-item';
+      el.textContent = r.display_name;
+      el.onclick = () => setLoc(+r.lat, +r.lon, r.display_name.split(',')[0].trim());
+      res.appendChild(el);
+    });
+  } catch { res.innerHTML = '<div class="loc-empty">Recherche impossible (réseau)</div>'; }
+}
+
+async function geolocate() {
+  if (!navigator.geolocation) { toast('GPS non disponible'); return; }
+  toast('📍 Géolocalisation en cours…');
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      let name = 'Ma position';
+      try {
+        const url  = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+        const d    = await (await fetch(url, { headers:{'Accept-Language':'fr'} })).json();
+        name = d.address?.city || d.address?.town || d.address?.village || d.display_name?.split(',')[0] || name;
+      } catch {}
+      setLoc(lat, lon, name);
+      closeModal('locOverlay');
+    },
+    () => toast('⚠ GPS refusé ou indisponible')
+  );
+}
+
+async function setLoc(lat, lon, name) {
+  ST.loc = { lat, lon, name };
+  document.getElementById('locName').textContent = name;
+  saveST();
+  closeModal('locOverlay');
+  await loadWeather();
+}
+
+/* ═══════════════════════════════════════════════════
+   WEATHER LOADING
+═══════════════════════════════════════════════════ */
+async function loadWeather() {
+  setDot('loading');
+  ST.forecast = null;
+  renderBoard();
+  try {
+    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon);
+    setDot('ok');
+  } catch (err) {
+    console.warn('Open-Meteo fallback:', err.message);
+    ST.forecast = mockForecast();
+    setDot('offline');
+    toast('⚠ Météo simulée — vérifiez votre connexion');
+  }
+  updateWeatherPill();
+  renderBoard();
+}
+
+function updateWeatherPill() {
+  if (!ST.forecast?.length) return;
+  const d = ST.forecast[0];
+  document.getElementById('wIcon').textContent = wIcon(d.weathercode);
+  document.getElementById('wTemp').textContent = `${d.temp_max}° / ${d.temp_min}°`;
+  document.getElementById('wDesc').textContent = wLabel(d.weathercode);
+}
+
+function setDot(state) {
+  const dot = document.getElementById('locDot');
+  dot.className = `loc-dot${state !== 'ok' ? ' '+state : ''}`;
+  if (state === 'ok') {
+    dot.style.background  = 'var(--ok)';
+    dot.style.boxShadow   = '0 0 8px var(--ok)';
+  } else if (state === 'loading') {
+    dot.style.background  = 'var(--risk)';
+    dot.style.boxShadow   = '0 0 8px var(--risk)';
+  } else {
+    dot.style.background  = 'var(--text3)';
+    dot.style.boxShadow   = 'none';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL HELPERS
+═══════════════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
+let _toastT;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ═══════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════ */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  loadST();
+  buildTypeGrid();
+  document.getElementById('locName').textContent = ST.loc.name;
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal('taskOverlay');
+      closeModal('locOverlay');
+    }
+  });
+  loadWeather();
+});
+</script>
 </body>
 </html>

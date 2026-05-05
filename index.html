@@ -789,11 +789,10 @@ function mkTaskCard(task, dayW) {
   const { level, msg } = assess(task.type, dayW);
   const card = document.createElement('div');
   card.className = `task-card ${level}`;
-  // Cliquer sur la carte ouvre le modal d'édition
   card.addEventListener('click', () => openEditTask(task.id));
   card.innerHTML = `
     <button class="tc-del"
-      onclick="event.stopPropagation();openEditTaskDelete('${esc(task.id)')"
+      onclick="event.stopPropagation();openEditTaskDelete('${esc(task.id)}')"
       aria-label="Supprimer">✕</button>
     <div class="tc-icon">${jd.icon}</div>
     <div class="tc-name">${esc(task.name)}</div>
@@ -859,7 +858,7 @@ function openAddTask(dayIdx) {
 }
 
 /* ═══════════════════════════════════════════════════
-   TASK MODAL — ÉDITION (NOUVEAU)
+   TASK MODAL — ÉDITION
 ═══════════════════════════════════════════════════ */
 function openEditTask(id) {
   const task = ST.tasks.find(t => t.id === id);
@@ -870,7 +869,6 @@ function openEditTask(id) {
   document.getElementById('tName').value   = task.name   || '';
   document.getElementById('tClient').value = task.client || '';
   document.getElementById('tPrio').value   = task.priority || 'medium';
-  // Sélectionner le bon type dans la grille
   document.querySelectorAll('.type-btn').forEach(b =>
     b.classList.toggle('sel', b.dataset.type === task.type)
   );
@@ -881,15 +879,13 @@ function openEditTask(id) {
   openModal('taskOverlay');
 }
 
-// Ouvre le modal en édition ET affiche directement la confirmation de suppression
 function openEditTaskDelete(id) {
   openEditTask(id);
-  // Attendre que le modal soit visible avant d'afficher la confirmation
   requestAnimationFrame(() => showDelConfirm());
 }
 
 /* ═══════════════════════════════════════════════════
-   SÉLECTEUR DE JOUR (NOUVEAU)
+   SÉLECTEUR DE JOUR
 ═══════════════════════════════════════════════════ */
 function populateDaySelect(selectedIdx) {
   const sel = document.getElementById('tDay');
@@ -938,11 +934,10 @@ function saveTask() {
 }
 
 /* ═══════════════════════════════════════════════════
-   SUPPRESSION AVEC CONFIRMATION (NOUVEAU)
+   SUPPRESSION AVEC CONFIRMATION
 ═══════════════════════════════════════════════════ */
 function showDelConfirm() {
   document.getElementById('delConfirm').style.display = 'flex';
-  // Masquer le bouton 🗑 pendant la confirmation pour éviter double-clic
   document.getElementById('btnDel').style.display = 'none';
 }
 

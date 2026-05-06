@@ -210,31 +210,39 @@
     .task-card.danger { border-color: rgba(239,68,68,0.40); }
     .task-card.danger::before { background: var(--danger); }
 
-    .tc-icon  { font-size: 1.1rem; line-height: 1; margin-bottom: 3px; }
-    .tc-name  { font-size: 0.85rem; font-weight: 700; color: var(--text0); }
-    .tc-client{ font-size: 0.73rem; color: var(--text2); margin-top: 1px; }
-    .tc-risk  { font-size: 0.72rem; margin-top: 6px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.3; }
+    .tc-icon   { font-size: 1.1rem; line-height: 1; margin-bottom: 3px; }
+    .tc-name   { font-size: 0.85rem; font-weight: 700; color: var(--text0); padding-right: 58px; }
+    .tc-client { font-size: 0.73rem; color: var(--text2); margin-top: 1px; }
+    .tc-risk   { font-size: 0.72rem; margin-top: 6px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.3; }
     .tc-risk.ok     { color: #6ee7b7; }
     .tc-risk.risk   { color: #fcd34d; }
     .tc-risk.danger { color: #fca5a5; }
 
-    .tc-del {
+    /* ── CARD ACTION BUTTONS ────────────────────── */
+    .tc-actions {
       position: absolute; top: 7px; right: 7px;
-      width: 22px; height: 22px; border-radius: 6px;
-      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.20);
-      color: #f87171; font-size: 0.68rem; cursor: pointer;
+      display: flex; gap: 4px; z-index: 1;
+    }
+    .tc-edit-btn, .tc-del-btn {
+      width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity .15s, background .15s;
+      font-size: 0.78rem;
+      opacity: 0.35; transition: opacity .15s, background .15s;
     }
-    .task-card:hover .tc-del { opacity: 1; }
-    .tc-del:hover { background: rgba(239,68,68,0.25); }
-
-    /* hint visible on the card when hoverable */
-    .tc-edit-hint {
-      font-size: 0.66rem; color: var(--text3); margin-top: 5px;
-      display: none;
+    .task-card:hover .tc-edit-btn,
+    .task-card:hover .tc-del-btn { opacity: 1; }
+    /* always visible on touch devices (no hover state) */
+    @media (hover: none) { .tc-edit-btn, .tc-del-btn { opacity: 0.7; } }
+    .tc-edit-btn {
+      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.20);
+      color: #a5b4fc;
     }
-    .task-card:hover .tc-edit-hint { display: block; }
+    .tc-edit-btn:hover { background: rgba(99,102,241,0.22); }
+    .tc-del-btn {
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.20);
+      color: #f87171;
+    }
+    .tc-del-btn:hover { background: rgba(239,68,68,0.25); }
 
     .add-btn {
       width: 100%; padding: 10px;
@@ -334,7 +342,7 @@
     .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
     .btn-primary:active { transform: none; }
 
-    /* ── DELETE CONFIRM (NEW) ────────────────────── */
+    /* ── DELETE CONFIRM ──────────────────────────────── */
     .del-confirm {
       display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
       padding: 10px 13px; border-radius: 10px; margin-bottom: 10px;
@@ -357,12 +365,13 @@
     }
     .btn-del-no:hover { background: rgba(255,255,255,0.08); }
 
-    /* ── DELETE BUTTON IN FOOTER (NEW) ──────────── */
+    /* ── DELETE BUTTON IN MODAL FOOTER ──────────────── */
     .btn-del {
       padding: 12px 14px; border-radius: 11px; cursor: pointer; flex-shrink: 0;
       background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.22);
-      color: #f87171; font-size: 0.95rem;
+      color: #f87171; font-size: 0.86rem; font-weight: 600;
       transition: background .2s, border-color .2s;
+      white-space: nowrap;
     }
     .btn-del:hover { background: rgba(239,68,68,0.20); border-color: rgba(239,68,68,0.45); }
 
@@ -480,14 +489,14 @@
 
     <!-- Confirmation suppression (cachée par défaut) -->
     <div class="del-confirm" id="delConfirm" style="display:none">
-      <span>⚠ Supprimer ce chantier définitivement ?</span>
+      <span>⚠ Supprimer ce chantier définitivement ?</span>
       <button class="btn-del-no"  onclick="hideDelConfirm()">Non</button>
       <button class="btn-del-yes" onclick="confirmDelTask()">Oui, supprimer</button>
     </div>
 
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('taskOverlay')">Annuler</button>
-      <button class="btn-del"    id="btnDel" style="display:none" onclick="showDelConfirm()" title="Supprimer ce chantier">🗑</button>
+      <button class="btn-del" id="btnDel" style="display:none" onclick="showDelConfirm()">🗑 Supprimer</button>
       <button class="btn-primary" id="btnSave" onclick="saveTask()">Ajouter →</button>
     </div>
   </div>
@@ -617,8 +626,7 @@ let ST = {
   tasks:    [],
 };
 
-// Modal mode: null = création, string = id du chantier édité
-let _editingId  = null;
+let _editingId  = null; // null = création, string = id du chantier édité
 let _dayPending = 0;
 
 function loadST() {
@@ -642,7 +650,7 @@ async function fetchForecast(lat, lon) {
   const tid  = setTimeout(() => ctrl.abort(), 9000);
   try {
     const url = 'https://api.open-meteo.com/v1/forecast'
-      + `?latitude=${lat}&longitude=${lon}`
+      + '?latitude=' + lat + '&longitude=' + lon
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
       + '&timezone=auto&forecast_days=7';
@@ -673,7 +681,7 @@ function mockForecast() {
     { weathercode:  1, temp_max:23, temp_min:12, precipitation:0,  windspeed:10, rain_prob:8  },
   ].map((s, i) => {
     const d = new Date(now); d.setDate(now.getDate() + i);
-    return { ...s, date: d };
+    return Object.assign({}, s, { date: d });
   });
 }
 
@@ -728,7 +736,7 @@ function swapSuggestions() {
     const jd       = JOB_TYPES[task.type] || {};
     out.push({
       taskId: task.id, toDay: bestIdx, level: curLvl,
-      label: `${jd.icon||''} ${task.name} — ${fromName} → ${toName}`,
+      label: (jd.icon || '') + ' ' + task.name + ' — ' + fromName + ' → ' + toName,
     });
   }
   return out;
@@ -742,96 +750,97 @@ function renderBoard() {
   board.innerHTML = '';
   if (!ST.forecast) { renderSkel(board); return; }
   const today = new Date(); today.setHours(0,0,0,0);
-  ST.forecast.forEach((day, di) => {
+  ST.forecast.forEach(function(day, di) {
     const d = new Date(day.date); d.setHours(0,0,0,0);
     const isToday  = d.getTime() === today.getTime();
     const dayRisk  = dayOverallRisk(day);
-    const tasks    = ST.tasks.filter(t => t.dayIndex === di);
+    const tasks    = ST.tasks.filter(function(t) { return t.dayIndex === di; });
     const windCls  = day.windspeed > 40 ? 'bad' : day.windspeed > 25 ? 'warn' : '';
     const rainCls  = day.rain_prob > 70 ? 'bad' : day.rain_prob > 40 ? 'warn' : '';
     const mon      = MONTHS[day.date.getMonth()];
     const col      = document.createElement('div');
     col.className  = 'day-col';
-    col.innerHTML  = `
-      <div class="day-hd${isToday?' today':''}">
-        <div class="risk-bar ${dayRisk}"></div>
-        <div class="day-hd-body">
-          <div class="day-lbl">${esc(DAYS_S[day.date.getDay()].toUpperCase())}${isToday?' · Auj.':''}</div>
-          <div class="day-num">${day.date.getDate()} <span style="font-size:.85rem;color:var(--text2)">${mon}</span></div>
-          <div class="day-wx-row">
-            <div class="day-wx-icon">${wIcon(day.weathercode)}</div>
-            <div class="day-wx-info">
-              <div class="day-temps"><span class="hi">${day.temp_max}°</span><span class="lo"> / ${day.temp_min}°</span></div>
-              <div class="day-wx-lbl">${wLabel(day.weathercode)}</div>
-            </div>
-          </div>
-          <div class="day-chips">
-            <span class="chip${windCls?' '+windCls:''}" title="Vent max">💨${day.windspeed}km/h</span>
-            <span class="chip${rainCls?' '+rainCls:''}" title="Probabilité pluie">🌧${day.rain_prob}%</span>
-          </div>
-          <div class="risk-badge ${dayRisk}">
-            ${dayRisk==='ok'?'✓ OK':dayRisk==='risk'?'⚠ Risque':'✕ Danger'}
-          </div>
-        </div>
-      </div>
-      <div class="task-slot" id="slot-${di}"></div>
-      <button class="add-btn" onclick="openAddTask(${di})">+ Ajouter un chantier</button>
-    `;
+    col.innerHTML  =
+      '<div class="day-hd' + (isToday ? ' today' : '') + '">'
+      + '<div class="risk-bar ' + dayRisk + '"></div>'
+      + '<div class="day-hd-body">'
+      + '<div class="day-lbl">' + esc(DAYS_S[day.date.getDay()].toUpperCase()) + (isToday ? ' · Auj.' : '') + '</div>'
+      + '<div class="day-num">' + day.date.getDate() + ' <span style="font-size:.85rem;color:var(--text2)">' + mon + '</span></div>'
+      + '<div class="day-wx-row">'
+      + '<div class="day-wx-icon">' + wIcon(day.weathercode) + '</div>'
+      + '<div class="day-wx-info">'
+      + '<div class="day-temps"><span class="hi">' + day.temp_max + '°</span><span class="lo"> / ' + day.temp_min + '°</span></div>'
+      + '<div class="day-wx-lbl">' + wLabel(day.weathercode) + '</div>'
+      + '</div></div>'
+      + '<div class="day-chips">'
+      + '<span class="chip' + (windCls ? ' ' + windCls : '') + '" title="Vent max">💨' + day.windspeed + 'km/h</span>'
+      + '<span class="chip' + (rainCls ? ' ' + rainCls : '') + '" title="Probabilité pluie">🌧' + day.rain_prob + '%</span>'
+      + '</div>'
+      + '<div class="risk-badge ' + dayRisk + '">'
+      + (dayRisk === 'ok' ? '✓ OK' : dayRisk === 'risk' ? '⚠ Risque' : '✕ Danger')
+      + '</div>'
+      + '</div></div>'
+      + '<div class="task-slot" id="slot-' + di + '"></div>'
+      + '<button class="add-btn" onclick="openAddTask(' + di + ')">+ Ajouter un chantier</button>';
     board.appendChild(col);
-    const slot = col.querySelector(`#slot-${di}`);
-    tasks.forEach(task => slot.appendChild(mkTaskCard(task, day)));
+    const slot = col.querySelector('#slot-' + di);
+    tasks.forEach(function(task) { slot.appendChild(mkTaskCard(task, day)); });
   });
   renderSwapBanner();
 }
 
+/* Build a task card — uses plain string concat, NO template literals,
+   NO inline onclick with dynamic IDs. Interaction is handled by the
+   board-level delegated listener registered in DOMContentLoaded.      */
 function mkTaskCard(task, dayW) {
-  const jd = JOB_TYPES[task.type] || { icon:'🔧', name:task.type };
-  const { level, msg } = assess(task.type, dayW);
-  const card = document.createElement('div');
-  card.className = `task-card ${level}`;
-  card.addEventListener('click', () => openEditTask(task.id));
-  card.innerHTML = `
-    <button class="tc-del"
-      onclick="event.stopPropagation();openEditTaskDelete('${esc(task.id)}')"
-      aria-label="Supprimer">✕</button>
-    <div class="tc-icon">${jd.icon}</div>
-    <div class="tc-name">${esc(task.name)}</div>
-    ${task.client ? `<div class="tc-client">${esc(task.client)}</div>` : ''}
-    <div class="tc-risk ${level}">
-      ${level==='ok'?'✓':level==='risk'?'⚠':'✕'} ${esc(msg)}
-    </div>
-    <div class="tc-edit-hint">Cliquer pour modifier</div>
-  `;
+  var jd = JOB_TYPES[task.type] || { icon: '🔧', name: task.type };
+  var res = assess(task.type, dayW);
+  var level = res.level;
+  var msg   = res.msg;
+  var card  = document.createElement('div');
+  card.className    = 'task-card ' + level;
+  card.dataset.taskId = task.id;   // used by the delegated listener
+  var lvlIcon = level === 'ok' ? '✓' : level === 'risk' ? '⚠' : '✕';
+  var html =
+    '<div class="tc-actions">'
+    + '<button class="tc-edit-btn" title="Modifier">✏️</button>'
+    + '<button class="tc-del-btn"  title="Supprimer">🗑️</button>'
+    + '</div>'
+    + '<div class="tc-icon">'   + jd.icon + '</div>'
+    + '<div class="tc-name">'   + esc(task.name) + '</div>';
+  if (task.client) {
+    html += '<div class="tc-client">' + esc(task.client) + '</div>';
+  }
+  html += '<div class="tc-risk ' + level + '">' + lvlIcon + ' ' + esc(msg) + '</div>';
+  card.innerHTML = html;
   return card;
 }
 
 function renderSkel(board) {
-  for (let i = 0; i < 7; i++) {
-    const c = document.createElement('div');
+  for (var i = 0; i < 7; i++) {
+    var c = document.createElement('div');
     c.className = 'day-col';
-    c.innerHTML = `
-      <div class="skel" style="height:196px"></div>
-      <div class="skel" style="height:42px;margin-top:8px"></div>
-    `;
+    c.innerHTML =
+      '<div class="skel" style="height:196px"></div>'
+      + '<div class="skel" style="height:42px;margin-top:8px"></div>';
     board.appendChild(c);
   }
 }
 
 function renderSwapBanner() {
-  const banner = document.getElementById('swapBanner');
-  const list   = document.getElementById('swapList');
+  var banner = document.getElementById('swapBanner');
+  var list   = document.getElementById('swapList');
   list.innerHTML = '';
-  const suggestions = swapSuggestions();
+  var suggestions = swapSuggestions();
   if (!suggestions.length) { banner.classList.remove('show'); return; }
   banner.classList.add('show');
-  suggestions.forEach(s => {
-    const p = document.createElement('div');
-    p.className = `swap-pill${s.level==='danger'?' sev-danger':''}`;
-    p.innerHTML = `
-      <span>${s.level==='danger'?'🚨':'⚠️'}</span>
-      <span class="sp-txt">${esc(s.label)}</span>
-      <button class="sp-btn" onclick="applySwap('${esc(s.taskId)}',${s.toDay})">Déplacer →</button>
-    `;
+  suggestions.forEach(function(s) {
+    var p = document.createElement('div');
+    p.className = 'swap-pill' + (s.level === 'danger' ? ' sev-danger' : '');
+    p.innerHTML =
+      '<span>' + (s.level === 'danger' ? '🚨' : '⚠️') + '</span>'
+      + '<span class="sp-txt">' + esc(s.label) + '</span>'
+      + '<button class="sp-btn" onclick="applySwap(\'' + esc(s.taskId) + '\',' + s.toDay + ')">Déplacer →</button>';
     list.appendChild(p);
   });
 }
@@ -846,22 +855,22 @@ function openAddTask(dayIdx) {
   document.getElementById('tName').value   = '';
   document.getElementById('tClient').value = '';
   document.getElementById('tPrio').value   = 'medium';
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('sel'));
-  const first = document.querySelector('.type-btn');
+  document.querySelectorAll('.type-btn').forEach(function(b) { b.classList.remove('sel'); });
+  var first = document.querySelector('.type-btn');
   if (first) first.classList.add('sel');
   populateDaySelect(dayIdx);
-  document.getElementById('btnDel').style.display  = 'none';
-  document.getElementById('btnSave').textContent    = 'Ajouter →';
+  document.getElementById('btnDel').style.display     = 'none';
+  document.getElementById('btnSave').textContent      = 'Ajouter →';
   document.getElementById('delConfirm').style.display = 'none';
   openModal('taskOverlay');
-  setTimeout(() => document.getElementById('tName').focus(), 120);
+  setTimeout(function() { document.getElementById('tName').focus(); }, 120);
 }
 
 /* ═══════════════════════════════════════════════════
    TASK MODAL — ÉDITION
 ═══════════════════════════════════════════════════ */
 function openEditTask(id) {
-  const task = ST.tasks.find(t => t.id === id);
+  var task = ST.tasks.find(function(t) { return t.id === id; });
   if (!task) return;
   _editingId  = id;
   _dayPending = task.dayIndex;
@@ -869,39 +878,39 @@ function openEditTask(id) {
   document.getElementById('tName').value   = task.name   || '';
   document.getElementById('tClient').value = task.client || '';
   document.getElementById('tPrio').value   = task.priority || 'medium';
-  document.querySelectorAll('.type-btn').forEach(b =>
-    b.classList.toggle('sel', b.dataset.type === task.type)
-  );
+  document.querySelectorAll('.type-btn').forEach(function(b) {
+    b.classList.toggle('sel', b.dataset.type === task.type);
+  });
   populateDaySelect(task.dayIndex);
-  document.getElementById('btnDel').style.display    = '';
-  document.getElementById('btnSave').textContent     = 'Enregistrer →';
+  document.getElementById('btnDel').style.display     = '';
+  document.getElementById('btnSave').textContent      = 'Enregistrer les modifications';
   document.getElementById('delConfirm').style.display = 'none';
   openModal('taskOverlay');
 }
 
 function openEditTaskDelete(id) {
   openEditTask(id);
-  requestAnimationFrame(() => showDelConfirm());
+  requestAnimationFrame(showDelConfirm);
 }
 
 /* ═══════════════════════════════════════════════════
    SÉLECTEUR DE JOUR
 ═══════════════════════════════════════════════════ */
 function populateDaySelect(selectedIdx) {
-  const sel = document.getElementById('tDay');
+  var sel = document.getElementById('tDay');
   sel.innerHTML = '';
-  const now = new Date(); now.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 7; i++) {
-    const opt = document.createElement('option');
+  var now = new Date(); now.setHours(0, 0, 0, 0);
+  for (var i = 0; i < 7; i++) {
+    var opt = document.createElement('option');
     opt.value = String(i);
-    if (ST.forecast?.[i]) {
-      const day = ST.forecast[i];
-      const name = DAYS_L[day.date.getDay()];
-      const dt   = `${day.date.getDate()} ${MONTHS[day.date.getMonth()]}`;
-      opt.textContent = `${name} · ${dt}${i === 0 ? ' (auj.)' : ''}`;
+    if (ST.forecast && ST.forecast[i]) {
+      var day  = ST.forecast[i];
+      var name = DAYS_L[day.date.getDay()];
+      var dt   = day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
+      opt.textContent = name + ' · ' + dt + (i === 0 ? ' (auj.)' : '');
     } else {
-      const d = new Date(now); d.setDate(now.getDate() + i);
-      opt.textContent = DAYS_L[d.getDay()] + (i === 0 ? ' (auj.)' : '');
+      var dd = new Date(now); dd.setDate(now.getDate() + i);
+      opt.textContent = DAYS_L[dd.getDay()] + (i === 0 ? ' (auj.)' : '');
     }
     if (i === selectedIdx) opt.selected = true;
     sel.appendChild(opt);
@@ -912,20 +921,23 @@ function populateDaySelect(selectedIdx) {
    SAVE — CRÉATION ET MODIFICATION
 ═══════════════════════════════════════════════════ */
 function saveTask() {
-  const name   = document.getElementById('tName').value.trim();
-  const client = document.getElementById('tClient').value.trim();
-  const prio   = document.getElementById('tPrio').value;
-  const dayIdx = parseInt(document.getElementById('tDay').value, 10);
-  const sel    = document.querySelector('.type-btn.sel');
+  var name   = document.getElementById('tName').value.trim();
+  var client = document.getElementById('tClient').value.trim();
+  var prio   = document.getElementById('tPrio').value;
+  var dayIdx = parseInt(document.getElementById('tDay').value, 10);
+  var sel    = document.querySelector('.type-btn.sel');
   if (!name) { toast('⚠ Nom du chantier requis'); return; }
   if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
-  const patch = { name, client, type: sel.dataset.type, priority: prio, dayIndex: dayIdx };
+  var patch = { name: name, client: client, type: sel.dataset.type, priority: prio, dayIndex: dayIdx };
   if (_editingId) {
-    const idx = ST.tasks.findIndex(t => t.id === _editingId);
-    if (idx !== -1) ST.tasks[idx] = { ...ST.tasks[idx], ...patch };
+    var idx = ST.tasks.findIndex(function(t) { return t.id === _editingId; });
+    if (idx !== -1) ST.tasks[idx] = Object.assign({}, ST.tasks[idx], patch);
     toast('✓ Chantier modifié');
   } else {
-    ST.tasks.push({ id: crypto.randomUUID(), ...patch });
+    var newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    ST.tasks.push(Object.assign({ id: newId }, patch));
     toast('✓ Chantier ajouté');
   }
   saveST();
@@ -938,17 +950,15 @@ function saveTask() {
 ═══════════════════════════════════════════════════ */
 function showDelConfirm() {
   document.getElementById('delConfirm').style.display = 'flex';
-  document.getElementById('btnDel').style.display = 'none';
+  document.getElementById('btnDel').style.display     = 'none';
 }
-
 function hideDelConfirm() {
   document.getElementById('delConfirm').style.display = 'none';
-  document.getElementById('btnDel').style.display = '';
+  document.getElementById('btnDel').style.display     = '';
 }
-
 function confirmDelTask() {
   if (!_editingId) return;
-  ST.tasks = ST.tasks.filter(t => t.id !== _editingId);
+  ST.tasks = ST.tasks.filter(function(t) { return t.id !== _editingId; });
   saveST();
   closeModal('taskOverlay');
   renderBoard();
@@ -959,26 +969,28 @@ function confirmDelTask() {
    SWAP
 ═══════════════════════════════════════════════════ */
 function applySwap(taskId, toDay) {
-  const task = ST.tasks.find(t => t.id === taskId);
+  var task = ST.tasks.find(function(t) { return t.id === taskId; });
   if (!task) return;
-  const fromName = DAYS_L[ST.forecast[task.dayIndex]?.date.getDay()] || '?';
-  const toName   = DAYS_L[ST.forecast[toDay]?.date.getDay()] || '?';
-  task.dayIndex  = toDay;
+  var fromName = DAYS_L[ST.forecast[task.dayIndex] && ST.forecast[task.dayIndex].date.getDay()] || '?';
+  var toName   = DAYS_L[ST.forecast[toDay]         && ST.forecast[toDay].date.getDay()]         || '?';
+  task.dayIndex = toDay;
   saveST(); renderBoard();
-  toast(`✓ Déplacé de ${fromName} → ${toName}`);
+  toast('✓ Déplacé de ' + fromName + ' → ' + toName);
 }
 
 function buildTypeGrid() {
-  const g = document.getElementById('typeGrid');
+  var g = document.getElementById('typeGrid');
   g.innerHTML = '';
-  Object.entries(JOB_TYPES).forEach(([key, def], i) => {
-    const b = document.createElement('button');
+  var entries = Object.entries(JOB_TYPES);
+  entries.forEach(function(entry, i) {
+    var key = entry[0], def = entry[1];
+    var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'type-btn' + (i === 0 ? ' sel' : '');
+    b.className   = 'type-btn' + (i === 0 ? ' sel' : '');
     b.dataset.type = key;
-    b.innerHTML = `<span class="ti">${def.icon}</span>${esc(def.short)}`;
-    b.onclick = () => {
-      g.querySelectorAll('.type-btn').forEach(x => x.classList.remove('sel'));
+    b.innerHTML   = '<span class="ti">' + def.icon + '</span>' + esc(def.short);
+    b.onclick = function() {
+      g.querySelectorAll('.type-btn').forEach(function(x) { x.classList.remove('sel'); });
       b.classList.add('sel');
     };
     g.appendChild(b);
@@ -988,61 +1000,63 @@ function buildTypeGrid() {
 /* ═══════════════════════════════════════════════════
    LOCATION MODAL
 ═══════════════════════════════════════════════════ */
-let _searchTimer = null;
+var _searchTimer = null;
 
 function openLocModal() {
   document.getElementById('locSearch').value = '';
   document.getElementById('locResults').innerHTML = '';
   openModal('locOverlay');
-  setTimeout(() => document.getElementById('locSearch').focus(), 120);
+  setTimeout(function() { document.getElementById('locSearch').focus(); }, 120);
 }
 
 function schedSearch(q) {
   clearTimeout(_searchTimer);
-  const res = document.getElementById('locResults');
+  var res = document.getElementById('locResults');
   if (q.length < 2) { res.innerHTML = ''; return; }
-  _searchTimer = setTimeout(() => doSearch(q), 380);
+  _searchTimer = setTimeout(function() { doSearch(q); }, 380);
 }
 
 async function doSearch(q) {
-  const res = document.getElementById('locResults');
+  var res = document.getElementById('locResults');
   res.innerHTML = '<div class="loc-empty">Recherche…</div>';
   try {
-    const url  = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`;
-    const data = await (await fetch(url, { headers:{'Accept-Language':'fr'} })).json();
+    var url  = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=5';
+    var data = await (await fetch(url, { headers: { 'Accept-Language': 'fr' } })).json();
     res.innerHTML = '';
     if (!data.length) { res.innerHTML = '<div class="loc-empty">Aucun résultat</div>'; return; }
-    data.forEach(r => {
-      const el = document.createElement('div');
-      el.className = 'loc-item';
+    data.forEach(function(r) {
+      var el = document.createElement('div');
+      el.className   = 'loc-item';
       el.textContent = r.display_name;
-      el.onclick = () => setLoc(+r.lat, +r.lon, r.display_name.split(',')[0].trim());
+      el.onclick = function() { setLoc(+r.lat, +r.lon, r.display_name.split(',')[0].trim()); };
       res.appendChild(el);
     });
-  } catch { res.innerHTML = '<div class="loc-empty">Recherche impossible (réseau)</div>'; }
+  } catch(e) { res.innerHTML = '<div class="loc-empty">Recherche impossible (réseau)</div>'; }
 }
 
 async function geolocate() {
   if (!navigator.geolocation) { toast('GPS non disponible'); return; }
   toast('📍 Géolocalisation en cours…');
   navigator.geolocation.getCurrentPosition(
-    async pos => {
-      const { latitude: lat, longitude: lon } = pos.coords;
-      let name = 'Ma position';
+    async function(pos) {
+      var lat = pos.coords.latitude, lon = pos.coords.longitude;
+      var name = 'Ma position';
       try {
-        const url  = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-        const d    = await (await fetch(url, { headers:{'Accept-Language':'fr'} })).json();
-        name = d.address?.city || d.address?.town || d.address?.village || d.display_name?.split(',')[0] || name;
-      } catch {}
+        var url = 'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json';
+        var d   = await (await fetch(url, { headers: { 'Accept-Language': 'fr' } })).json();
+        name = (d.address && (d.address.city || d.address.town || d.address.village))
+          || (d.display_name && d.display_name.split(',')[0])
+          || name;
+      } catch(e) {}
       setLoc(lat, lon, name);
       closeModal('locOverlay');
     },
-    () => toast('⚠ GPS refusé ou indisponible')
+    function() { toast('⚠ GPS refusé ou indisponible'); }
   );
 }
 
 async function setLoc(lat, lon, name) {
-  ST.loc = { lat, lon, name };
+  ST.loc = { lat: lat, lon: lon, name: name };
   document.getElementById('locName').textContent = name;
   saveST();
   closeModal('locOverlay');
@@ -1059,7 +1073,7 @@ async function loadWeather() {
   try {
     ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon);
     setDot('ok');
-  } catch (err) {
+  } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);
     ST.forecast = mockForecast();
     setDot('offline');
@@ -1070,25 +1084,25 @@ async function loadWeather() {
 }
 
 function updateWeatherPill() {
-  if (!ST.forecast?.length) return;
-  const d = ST.forecast[0];
+  if (!ST.forecast || !ST.forecast.length) return;
+  var d = ST.forecast[0];
   document.getElementById('wIcon').textContent = wIcon(d.weathercode);
-  document.getElementById('wTemp').textContent = `${d.temp_max}° / ${d.temp_min}°`;
+  document.getElementById('wTemp').textContent = d.temp_max + '° / ' + d.temp_min + '°';
   document.getElementById('wDesc').textContent = wLabel(d.weathercode);
 }
 
 function setDot(state) {
-  const dot = document.getElementById('locDot');
-  dot.className = `loc-dot${state !== 'ok' ? ' '+state : ''}`;
+  var dot = document.getElementById('locDot');
+  dot.className = 'loc-dot' + (state !== 'ok' ? ' ' + state : '');
   if (state === 'ok') {
-    dot.style.background  = 'var(--ok)';
-    dot.style.boxShadow   = '0 0 8px var(--ok)';
+    dot.style.background = 'var(--ok)';
+    dot.style.boxShadow  = '0 0 8px var(--ok)';
   } else if (state === 'loading') {
-    dot.style.background  = 'var(--risk)';
-    dot.style.boxShadow   = '0 0 8px var(--risk)';
+    dot.style.background = 'var(--risk)';
+    dot.style.boxShadow  = '0 0 8px var(--risk)';
   } else {
-    dot.style.background  = 'var(--text3)';
-    dot.style.boxShadow   = 'none';
+    dot.style.background = 'var(--text3)';
+    dot.style.boxShadow  = 'none';
   }
 }
 
@@ -1102,35 +1116,52 @@ function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
 /* ═══════════════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════════════ */
-let _toastT;
+var _toastT;
 function toast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(_toastT);
-  _toastT = setTimeout(() => t.classList.remove('show'), 2400);
+  _toastT = setTimeout(function() { t.classList.remove('show'); }, 2400);
 }
 
 /* ═══════════════════════════════════════════════════
    UTILS
 ═══════════════════════════════════════════════════ */
 function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g,
-    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
 }
 
 /* ═══════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
   loadST();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;
-  document.addEventListener('keydown', e => {
+
+  document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeModal('taskOverlay');
       closeModal('locOverlay');
     }
   });
+
+  /* Delegated handler for task card clicks — fires for every click inside
+     #board. Identifies the target card via data-task-id, then dispatches
+     to edit (body click) or delete+confirm (🗑️ button click).           */
+  document.getElementById('board').addEventListener('click', function(e) {
+    var card = e.target.closest('[data-task-id]');
+    if (!card) return;
+    var id = card.dataset.taskId;
+    if (e.target.closest('.tc-del-btn')) {
+      openEditTaskDelete(id);
+    } else {
+      openEditTask(id);
+    }
+  });
+
   loadWeather();
 });
 </script>

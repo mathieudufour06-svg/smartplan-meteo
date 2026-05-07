@@ -87,6 +87,45 @@
     .weather-pill .wd { color: var(--text2); }
     @media (max-width: 520px) { .weather-pill .wd { display: none; } }
 
+    /* ── ACTION BAR ──────────────────────────────── */
+    .action-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 8px 18px;
+      background: rgba(10,15,30,0.88);
+      border-bottom: 1px solid var(--border);
+    }
+    .act-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 13px; border-radius: 999px;
+      background: var(--glass); border: 1px solid var(--border);
+      color: var(--text1); font-size: 0.80rem; font-weight: 600;
+      cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+      white-space: nowrap;
+    }
+    .act-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.08); }
+    .act-btn.active { border-color: rgba(99,102,241,0.55); background: rgba(99,102,241,0.13); color: #a5b4fc; }
+
+    /* ── SCORE BADGE ─────────────────────────────── */
+    .score-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 6px; border-radius: 999px;
+      font-size: 0.66rem; font-weight: 800; letter-spacing: .02em;
+    }
+    .score-hi  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: #34d399; }
+    .score-mid { background: rgba(245,158,11,0.13); border: 1px solid rgba(245,158,11,0.35); color: #fbbf24; }
+    .score-lo  { background: rgba(239,68,68,0.13);  border: 1px solid rgba(239,68,68,0.35);  color: #f87171; }
+
+    /* ── TERRAIN MODE ────────────────────────────── */
+    body.terrain { --text0: #ffffff; --text1: #e2e8f0; --text2: #94a3b8; }
+    body.terrain .day-num   { font-size: 1.75rem; }
+    body.terrain .tc-name   { font-size: 0.97rem; }
+    body.terrain .day-temps { font-size: 0.95rem; }
+    body.terrain .risk-badge { font-size: 0.80rem; padding: 7px 10px; }
+    body.terrain .task-card { border-width: 2px; }
+    body.terrain .tc-edit-btn,
+    body.terrain .tc-del-btn { opacity: 1 !important; width: 28px; height: 28px; font-size: 0.88rem; }
+    body.terrain .add-btn { font-size: 0.92rem; padding: 12px; }
+
     /* ── SWAP BANNER ─────────────────────────────── */
     #swapBanner {
       max-height: 0; overflow: hidden;
@@ -153,7 +192,12 @@
     .risk-bar.risk   { background: var(--risk); }
     .risk-bar.danger { background: var(--danger); }
 
-    .day-hd-body { padding: 11px 13px 10px; background: var(--bg1); }
+    .day-hd-body {
+      padding: 11px 13px 10px; background: var(--bg1);
+      cursor: pointer; transition: background .15s;
+    }
+    .day-hd-body:hover { background: rgba(30,40,65,0.98); }
+
     .day-lbl {
       font-size: 0.7rem; font-weight: 800; color: var(--text2);
       text-transform: uppercase; letter-spacing: .09em; margin-bottom: 1px;
@@ -178,6 +222,7 @@
     }
     .chip.warn { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
     .chip.bad  { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
+    .chip.rain-mm { background: rgba(59,130,246,0.10); border-color: rgba(59,130,246,0.3); color: #93c5fd; }
 
     .risk-badge {
       display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -217,6 +262,7 @@
     .tc-risk.ok     { color: #6ee7b7; }
     .tc-risk.risk   { color: #fcd34d; }
     .tc-risk.danger { color: #fca5a5; }
+    .tc-score { display: flex; justify-content: flex-end; margin-top: 5px; }
 
     /* ── CARD ACTION BUTTONS ────────────────────── */
     .tc-actions {
@@ -231,7 +277,6 @@
     }
     .task-card:hover .tc-edit-btn,
     .task-card:hover .tc-del-btn { opacity: 1; }
-    /* always visible on touch devices (no hover state) */
     @media (hover: none) { .tc-edit-btn, .tc-del-btn { opacity: 0.7; } }
     .tc-edit-btn {
       background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.20);
@@ -342,7 +387,6 @@
     .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
     .btn-primary:active { transform: none; }
 
-    /* ── DELETE CONFIRM ──────────────────────────────── */
     .del-confirm {
       display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
       padding: 10px 13px; border-radius: 10px; margin-bottom: 10px;
@@ -365,7 +409,6 @@
     }
     .btn-del-no:hover { background: rgba(255,255,255,0.08); }
 
-    /* ── DELETE BUTTON IN MODAL FOOTER ──────────────── */
     .btn-del {
       padding: 12px 14px; border-radius: 11px; cursor: pointer; flex-shrink: 0;
       background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.22);
@@ -401,6 +444,47 @@
     .loc-item:hover { background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.35); color: var(--text0); }
     .loc-empty { font-size: 0.85rem; color: var(--text3); padding: 10px 0; }
 
+    /* ── DAY DETAIL STAT GRID ────────────────────── */
+    .dd-stats {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px;
+    }
+    .dd-stat {
+      text-align: center; padding: 10px 6px;
+      background: var(--bg2); border-radius: 10px; border: 1px solid var(--border);
+    }
+    .dd-stat .ds-icon { font-size: 1.1rem; }
+    .dd-stat .ds-lbl  { font-size: 0.62rem; color: var(--text2); font-weight: 700;
+                        text-transform: uppercase; letter-spacing: .06em; margin: 2px 0; }
+    .dd-stat .ds-val  { font-size: 0.88rem; font-weight: 700; }
+
+    /* ── VOICE MODAL ─────────────────────────────── */
+    .voice-status {
+      text-align: center; font-size: 2.4rem; margin: 10px 0 14px;
+      cursor: pointer; user-select: none;
+    }
+
+    /* ── JOBS MODAL LIST ─────────────────────────── */
+    .job-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 11px; background: var(--bg2);
+      border-radius: 9px; border: 1px solid var(--border);
+      margin-bottom: 6px;
+    }
+    .job-row-name { flex: 1; font-size: 0.88rem; font-weight: 600; }
+    .job-row-meta { font-size: 0.70rem; color: var(--text2); }
+    .job-del-btn {
+      padding: 4px 10px; border-radius: 7px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+      color: #f87171; font-size: 0.74rem; font-weight: 700; cursor: pointer;
+      transition: background .15s; white-space: nowrap;
+    }
+    .job-del-btn:hover { background: rgba(239,68,68,0.22); }
+    .jobs-add-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;
+    }
+    .jobs-add-grid .fg { margin: 0; }
+    .jobs-add-grid .fg input { padding: 8px 10px; font-size: 0.87rem; }
+
     /* ── TOAST ───────────────────────────────────── */
     #toast {
       position: fixed; left: 50%; bottom: 26px; z-index: 400;
@@ -420,7 +504,7 @@
 
     /* ── RESPONSIVE ──────────────────────────────── */
     @media (max-width: 680px) { :root { --col: 158px; } }
-    @media (max-width: 520px) { :root { --col: 144px; } .topbar { padding: 9px 12px; } .board-wrap { padding: 12px; } }
+    @media (max-width: 520px) { :root { --col: 144px; } .topbar { padding: 9px 12px; } .board-wrap { padding: 12px; } .action-bar { padding: 7px 12px; } }
   </style>
 </head>
 <body>
@@ -428,7 +512,7 @@
 <!-- TOP BAR -->
 <header class="topbar">
   <div class="brand">
-    <div class="brand-icon">⛅</div>
+    <div class="brand-icon">&#9925;</div>
     <div class="brand-text">
       <b>SmartPlan Météo</b>
       <em>Décision terrain</em>
@@ -439,15 +523,23 @@
     <span id="locName">Chargement…</span>
   </button>
   <div class="weather-pill" id="weatherPill">
-    <span class="wi" id="wIcon">☁</span>
+    <span class="wi" id="wIcon">&#9729;</span>
     <span class="wt" id="wTemp">—°</span>
     <span class="wd" id="wDesc">…</span>
   </div>
 </header>
 
+<!-- ACTION BAR -->
+<div class="action-bar">
+  <button class="act-btn" id="btnTerrain" onclick="toggleTerrain()">🔆 Mode Terrain</button>
+  <button class="act-btn" onclick="openVoice()">🎙 Dicter</button>
+  <button class="act-btn" onclick="openJobsModal()">⚙ Métiers</button>
+  <button class="act-btn" onclick="optimizeWeek()">📅 Optimiser</button>
+</div>
+
 <!-- SWAP BANNER -->
 <div id="swapBanner">
-  <div class="swap-hd">⟳ Suggestions de déplacement</div>
+  <div class="swap-hd">&#8634; Suggestions de déplacement</div>
   <div class="swap-pills" id="swapList"></div>
 </div>
 
@@ -460,7 +552,6 @@
 <div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
     <h3 id="taskModalTitle">Nouveau chantier</h3>
-
     <div class="fg">
       <label>Type de travail</label>
       <div class="type-grid" id="typeGrid"></div>
@@ -486,14 +577,11 @@
         <option value="low">🟢 Basse</option>
       </select>
     </div>
-
-    <!-- Confirmation suppression (cachée par défaut) -->
     <div class="del-confirm" id="delConfirm" style="display:none">
-      <span>⚠ Supprimer ce chantier définitivement ?</span>
+      <span>⚠ Supprimer ce chantier définitivement ?</span>
       <button class="btn-del-no"  onclick="hideDelConfirm()">Non</button>
       <button class="btn-del-yes" onclick="confirmDelTask()">Oui, supprimer</button>
     </div>
-
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('taskOverlay')">Annuler</button>
       <button class="btn-del" id="btnDel" style="display:none" onclick="showDelConfirm()">🗑 Supprimer</button>
@@ -517,6 +605,66 @@
   </div>
 </div>
 
+<!-- DAY DETAIL MODAL -->
+<div class="overlay" id="dayDetailOverlay" onclick="overlayClick(event,'dayDetailOverlay')">
+  <div class="modal" style="max-width:500px" role="dialog" aria-modal="true">
+    <h3 id="ddTitle">Météo du jour</h3>
+    <div id="ddContent"></div>
+    <div class="mf" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeModal('dayDetailOverlay')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- OPTIMIZE MODAL -->
+<div class="overlay" id="optimizeOverlay" onclick="overlayClick(event,'optimizeOverlay')">
+  <div class="modal" style="max-width:500px" role="dialog" aria-modal="true">
+    <h3>📅 Optimiser ma semaine</h3>
+    <div id="optimizeContent"></div>
+    <div class="mf" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeModal('optimizeOverlay')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE MODAL -->
+<div class="overlay" id="voiceOverlay" onclick="overlayClick(event,'voiceOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>🎙 Dicter un chantier</h3>
+    <p style="font-size:.84rem;color:var(--text2);margin-bottom:12px">Ex : <em>"Toiture chez Tremblay vendredi priorité haute"</em></p>
+    <div class="voice-status" id="voiceStatus" onclick="startMic()" title="Cliquer pour démarrer">🎤</div>
+    <div class="fg">
+      <label>Texte dicté / saisi</label>
+      <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
+    </div>
+    <div class="mf">
+      <button class="btn-cancel" onclick="closeModal('voiceOverlay')">Annuler</button>
+      <button class="btn-primary" onclick="analyzeAndCreate()">Analyser →</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOBS MODAL -->
+<div class="overlay" id="jobsOverlay" onclick="overlayClick(event,'jobsOverlay')">
+  <div class="modal" style="max-width:500px" role="dialog" aria-modal="true">
+    <h3>⚙ Mes métiers</h3>
+    <div id="jobsList"></div>
+    <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
+    <p style="font-size:.73rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Ajouter un métier</p>
+    <div class="jobs-add-grid">
+      <div class="fg"><label>Emoji</label><input type="text" id="jIcon" placeholder="🔩" maxlength="4"></div>
+      <div class="fg"><label>Nom</label><input type="text" id="jName" placeholder="Soudure" maxlength="30"></div>
+      <div class="fg"><label>Pluie max (mm)</label><input type="number" id="jRain" placeholder="5" min="0" max="100"></div>
+      <div class="fg"><label>Vent max (km/h)</label><input type="number" id="jWind" placeholder="30" min="0" max="200"></div>
+    </div>
+    <div class="fg" style="margin-top:2px"><label>Temp. min (°C)</label><input type="number" id="jTemp" placeholder="5" min="-30" max="30"></div>
+    <div class="mf" style="margin-top:6px">
+      <button class="btn-cancel" onclick="closeModal('jobsOverlay')">Fermer</button>
+      <button class="btn-primary" onclick="addCustomJob()">Ajouter →</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -524,11 +672,11 @@
 /* ═══════════════════════════════════════════════════
    CONSTANTS
 ═══════════════════════════════════════════════════ */
-const DAYS_L = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-const DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-const MONTHS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+var DAYS_L = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+var DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+var MONTHS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
 
-const JOB_TYPES = {
+var JOB_TYPES = {
   beton:      { name:'Béton',       icon:'🏗️', short:'Béton'   },
   hauteur:    { name:'En hauteur',  icon:'🧗', short:'Hauteur' },
   pave:       { name:'Pavé',        icon:'🧱', short:'Pavé'    },
@@ -539,59 +687,59 @@ const JOB_TYPES = {
   peinture:   { name:'Peinture',    icon:'🎨', short:'Peinture'},
 };
 
-const RISK_RULES = {
+var RISK_RULES = {
   beton: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — bétonnage interdit' },
-    { t: w => w.temp_min < 5,       l:'danger', m:'Gel < 5°C — prise impossible' },
-    { t: w => w.precipitation > 5,  l:'danger', m:'Pluie > 5mm — prise compromise' },
-    { t: w => w.precipitation > 2,  l:'risk',   m:'Pluie > 2mm — qualité réduite' },
-    { t: w => w.temp_min < 10,      l:'risk',   m:'Froid — prise lente' },
-    { t: w => w.windspeed > 50,     l:'risk',   m:'Vent fort — surface compromise' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — bétonnage interdit' },
+    { t: function(w) { return w.temp_min < 5; },       l:'danger', m:'Gel < 5°C — prise impossible' },
+    { t: function(w) { return w.precipitation > 5; },  l:'danger', m:'Pluie > 5mm — prise compromise' },
+    { t: function(w) { return w.precipitation > 2; },  l:'risk',   m:'Pluie > 2mm — qualité réduite' },
+    { t: function(w) { return w.temp_min < 10; },      l:'risk',   m:'Froid — prise lente' },
+    { t: function(w) { return w.windspeed > 50; },     l:'risk',   m:'Vent fort — surface compromise' },
   ],
   hauteur: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — arrêt immédiat' },
-    { t: w => w.windspeed > 40,     l:'danger', m:'Vent > 40km/h — DANGER VITAL' },
-    { t: w => w.precipitation > 5,  l:'risk',   m:'Pluie — surface glissante' },
-    { t: w => w.windspeed > 25,     l:'risk',   m:'Vent > 25km/h — vigilance' },
-    { t: w => [45,48].includes(w.weathercode), l:'risk', m:'Brouillard — visibilité réduite' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — arrêt immédiat' },
+    { t: function(w) { return w.windspeed > 40; },     l:'danger', m:'Vent > 40km/h — DANGER VITAL' },
+    { t: function(w) { return w.precipitation > 5; },  l:'risk',   m:'Pluie — surface glissante' },
+    { t: function(w) { return w.windspeed > 25; },     l:'risk',   m:'Vent > 25km/h — vigilance' },
+    { t: function(w) { return w.weathercode === 45 || w.weathercode === 48; }, l:'risk', m:'Brouillard — visibilité réduite' },
   ],
   pave: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — arrêt chantier' },
-    { t: w => w.precipitation > 10, l:'danger', m:'Pluie > 10mm — joint impossible' },
-    { t: w => w.precipitation > 5,  l:'risk',   m:'Pluie > 5mm — qualité compromise' },
-    { t: w => w.temp_min < 0,       l:'risk',   m:'Gel — sable de pose instable' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — arrêt chantier' },
+    { t: function(w) { return w.precipitation > 10; }, l:'danger', m:'Pluie > 10mm — joint impossible' },
+    { t: function(w) { return w.precipitation > 5; },  l:'risk',   m:'Pluie > 5mm — qualité compromise' },
+    { t: function(w) { return w.temp_min < 0; },       l:'risk',   m:'Gel — sable de pose instable' },
   ],
   excavation: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — sécurité machines' },
-    { t: w => w.precipitation > 20, l:'risk',   m:'Pluie > 20mm — sol instable' },
-    { t: w => w.windspeed > 60,     l:'risk',   m:'Vent > 60km/h — poussière' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — sécurité machines' },
+    { t: function(w) { return w.precipitation > 20; }, l:'risk',   m:'Pluie > 20mm — sol instable' },
+    { t: function(w) { return w.windspeed > 60; },     l:'risk',   m:'Vent > 60km/h — poussière' },
   ],
   paysagisme: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — danger' },
-    { t: w => w.precipitation > 15, l:'risk',   m:'Pluie > 15mm — plantation compromise' },
-    { t: w => w.temp_max > 35,      l:'risk',   m:'Canicule > 35°C — stress hydrique' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — danger' },
+    { t: function(w) { return w.precipitation > 15; }, l:'risk',   m:'Pluie > 15mm — plantation compromise' },
+    { t: function(w) { return w.temp_max > 35; },      l:'risk',   m:'Canicule > 35°C — stress hydrique' },
   ],
   electrique: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — DANGER ÉLECTROCUTION' },
-    { t: w => w.precipitation > 2,  l:'danger', m:'Pluie — risque électrique' },
-    { t: w => w.precipitation > 0,  l:'risk',   m:'Humidité — précautions requises' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — DANGER ÉLECTROCUTION' },
+    { t: function(w) { return w.precipitation > 2; },  l:'danger', m:'Pluie — risque électrique' },
+    { t: function(w) { return w.precipitation > 0; },  l:'risk',   m:'Humidité — précautions requises' },
   ],
   toiture: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — danger électrique/vent' },
-    { t: w => w.windspeed > 35,     l:'danger', m:'Vent > 35km/h — chute de matériaux' },
-    { t: w => w.precipitation > 2,  l:'danger', m:'Pluie — surface glissante' },
-    { t: w => w.windspeed > 20,     l:'risk',   m:'Vent > 20km/h — pose difficile' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — danger électrique/vent' },
+    { t: function(w) { return w.windspeed > 35; },     l:'danger', m:'Vent > 35km/h — chute de matériaux' },
+    { t: function(w) { return w.precipitation > 2; },  l:'danger', m:'Pluie — surface glissante' },
+    { t: function(w) { return w.windspeed > 20; },     l:'risk',   m:'Vent > 20km/h — pose difficile' },
   ],
   peinture: [
-    { t: w => w.weathercode >= 95,  l:'danger', m:'Orage — peinture perdue' },
-    { t: w => w.precipitation > 0,  l:'danger', m:'Pluie — séchage impossible' },
-    { t: w => w.temp_min < 10,      l:'risk',   m:'Froid < 10°C — séchage lent' },
-    { t: w => w.temp_max > 35,      l:'risk',   m:'Chaleur > 35°C — bulles/craquelures' },
-    { t: w => w.windspeed > 30,     l:'risk',   m:'Vent > 30km/h — poussière' },
+    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — peinture perdue' },
+    { t: function(w) { return w.precipitation > 0; },  l:'danger', m:'Pluie — séchage impossible' },
+    { t: function(w) { return w.temp_min < 10; },      l:'risk',   m:'Froid < 10°C — séchage lent' },
+    { t: function(w) { return w.temp_max > 35; },      l:'risk',   m:'Chaleur > 35°C — bulles/craquelures' },
+    { t: function(w) { return w.windspeed > 30; },     l:'risk',   m:'Vent > 30km/h — poussière' },
   ],
 };
 
-const WMO = {
+var WMO = {
   0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
   45:'🌫️', 48:'🌫️',
   51:'🌦️', 53:'🌦️', 55:'🌧️',
@@ -602,8 +750,8 @@ const WMO = {
 };
 
 function wIcon(code) {
-  const keys = Object.keys(WMO).map(Number).sort((a,b) => b-a);
-  for (const k of keys) if (code >= k) return WMO[k];
+  var keys = Object.keys(WMO).map(Number).sort(function(a,b){ return b-a; });
+  for (var i = 0; i < keys.length; i++) { if (code >= keys[i]) return WMO[keys[i]]; }
   return '☁️';
 }
 function wLabel(code) {
@@ -618,59 +766,212 @@ function wLabel(code) {
 }
 
 /* ═══════════════════════════════════════════════════
+   SCORE /100
+═══════════════════════════════════════════════════ */
+function calcScore(w) {
+  var s = 100;
+  if (w.weathercode >= 95) s -= 55;
+  else if (w.weathercode >= 80) s -= 20;
+  else if (w.weathercode >= 61) s -= 12;
+  else if (w.weathercode >= 51) s -= 5;
+  if (w.precipitation > 20)      s -= 25;
+  else if (w.precipitation > 10) s -= 18;
+  else if (w.precipitation > 5)  s -= 12;
+  else if (w.precipitation > 2)  s -= 6;
+  if (w.windspeed > 60)      s -= 22;
+  else if (w.windspeed > 40) s -= 16;
+  else if (w.windspeed > 25) s -= 7;
+  if (w.temp_min < 0)        s -= 18;
+  else if (w.temp_min < 5)   s -= 10;
+  else if (w.temp_min < 10)  s -= 4;
+  if (w.temp_max > 38)       s -= 12;
+  else if (w.temp_max > 35)  s -= 6;
+  if (w.rain_prob > 80)      s -= 8;
+  else if (w.rain_prob > 60) s -= 3;
+  return Math.max(0, Math.min(100, Math.round(s)));
+}
+function scoreCls(s) {
+  return s >= 75 ? 'score-hi' : s >= 50 ? 'score-mid' : 'score-lo';
+}
+
+/* ═══════════════════════════════════════════════════
+   TERRAIN MODE
+═══════════════════════════════════════════════════ */
+function toggleTerrain() {
+  var on = document.body.classList.toggle('terrain');
+  try { localStorage.setItem('spm_terrain', on ? '1' : '0'); } catch(e) {}
+  document.getElementById('btnTerrain').classList.toggle('active', on);
+}
+function loadTerrainPref() {
+  try {
+    if (localStorage.getItem('spm_terrain') === '1') {
+      document.body.classList.add('terrain');
+      document.getElementById('btnTerrain').classList.add('active');
+    }
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════
+   CUSTOM JOB TYPES
+═══════════════════════════════════════════════════ */
+var _customJobs = {};
+
+function getMergedJobTypes() {
+  var merged = {};
+  Object.keys(JOB_TYPES).forEach(function(k) { merged[k] = JOB_TYPES[k]; });
+  Object.keys(_customJobs).forEach(function(k) { merged[k] = _customJobs[k]; });
+  return merged;
+}
+
+function buildCustomRules(j) {
+  var rules = [
+    { t: function(w) { return w.weathercode >= 95; }, l:'danger', m:'Orage — arrêt chantier' },
+  ];
+  if (j.rainMax >= 0) {
+    var rm = j.rainMax;
+    rules.push({ t: function(w) { return w.precipitation > rm; }, l:'danger', m:'Pluie > ' + rm + 'mm' });
+  }
+  if (j.windMax > 0) {
+    var wm = j.windMax;
+    rules.push({ t: function(w) { return w.windspeed > wm; }, l:'danger', m:'Vent > ' + wm + 'km/h' });
+  }
+  if (!isNaN(j.tempMin)) {
+    var tm = j.tempMin;
+    rules.push({ t: function(w) { return w.temp_min < tm; }, l:'risk', m:'Froid < ' + tm + '°C' });
+  }
+  return rules;
+}
+
+function loadCustomJobs() {
+  try {
+    var raw = localStorage.getItem('spm_jobs');
+    if (!raw) return;
+    _customJobs = JSON.parse(raw);
+    Object.keys(_customJobs).forEach(function(k) {
+      RISK_RULES[k] = buildCustomRules(_customJobs[k]);
+    });
+  } catch(e) { _customJobs = {}; }
+}
+
+function saveCustomJobs() {
+  try { localStorage.setItem('spm_jobs', JSON.stringify(_customJobs)); } catch(e) {}
+}
+
+function openJobsModal() {
+  renderJobsList();
+  openModal('jobsOverlay');
+}
+
+function renderJobsList() {
+  var list = document.getElementById('jobsList');
+  var keys = Object.keys(_customJobs);
+  if (!keys.length) {
+    list.innerHTML = '<p style="font-size:.83rem;color:var(--text2);padding:4px 0 8px">Aucun métier personnalisé pour l\'instant.</p>';
+    return;
+  }
+  var html = '';
+  keys.forEach(function(k) {
+    var j = _customJobs[k];
+    html += '<div class="job-row">'
+      + '<span style="font-size:1.1rem">' + esc(j.icon) + '</span>'
+      + '<span class="job-row-name">' + esc(j.name) + '</span>'
+      + '<span class="job-row-meta">💧≤' + j.rainMax + 'mm 💨≤' + j.windMax + 'km/h</span>'
+      + '<button class="job-del-btn" onclick="deleteCustomJob(\'' + esc(k) + '\')">Suppr.</button>'
+      + '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function addCustomJob() {
+  var icon = document.getElementById('jIcon').value.trim() || '🔧';
+  var name = document.getElementById('jName').value.trim();
+  var rain = parseFloat(document.getElementById('jRain').value);
+  var wind = parseFloat(document.getElementById('jWind').value);
+  var temp = parseFloat(document.getElementById('jTemp').value);
+  if (!name) { toast('⚠ Nom du métier requis'); return; }
+  if (isNaN(rain)) rain = 5;
+  if (isNaN(wind)) wind = 30;
+  if (isNaN(temp)) temp = 5;
+  var key = 'custom_' + name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now();
+  _customJobs[key] = { icon: icon, name: name, short: name.slice(0,7), rainMax: rain, windMax: wind, tempMin: temp };
+  RISK_RULES[key] = buildCustomRules(_customJobs[key]);
+  saveCustomJobs();
+  renderJobsList();
+  buildTypeGrid();
+  document.getElementById('jIcon').value = '';
+  document.getElementById('jName').value = '';
+  document.getElementById('jRain').value = '';
+  document.getElementById('jWind').value = '';
+  document.getElementById('jTemp').value = '';
+  toast('✓ Métier "' + name + '" ajouté');
+}
+
+function deleteCustomJob(key) {
+  delete _customJobs[key];
+  delete RISK_RULES[key];
+  saveCustomJobs();
+  renderJobsList();
+  buildTypeGrid();
+  renderBoard();
+  toast('Métier supprimé');
+}
+
+/* ═══════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════ */
-let ST = {
+var ST = {
   loc:      { lat: 45.3584, lon: -73.2728, name: 'Saint-Jean-sur-Richelieu' },
   forecast: null,
   tasks:    [],
 };
 
-let _editingId  = null; // null = création, string = id du chantier édité
-let _dayPending = 0;
+var _editingId  = null;
+var _dayPending = 0;
 
 function loadST() {
   try {
-    const raw = localStorage.getItem('spm_v2');
+    var raw = localStorage.getItem('spm_v2');
     if (!raw) return;
-    const p = JSON.parse(raw);
+    var p = JSON.parse(raw);
     if (p.loc   && typeof p.loc.lat === 'number') ST.loc   = p.loc;
     if (Array.isArray(p.tasks))                   ST.tasks = p.tasks;
-  } catch {}
+  } catch(e) {}
 }
 function saveST() {
-  try { localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, tasks: ST.tasks })); } catch {}
+  try { localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, tasks: ST.tasks })); } catch(e) {}
 }
 
 /* ═══════════════════════════════════════════════════
    WEATHER — Open-Meteo (free, no API key)
 ═══════════════════════════════════════════════════ */
 async function fetchForecast(lat, lon) {
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), 9000);
+  var ctrl = new AbortController();
+  var tid  = setTimeout(function() { ctrl.abort(); }, 9000);
   try {
-    const url = 'https://api.open-meteo.com/v1/forecast'
+    var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
       + '&timezone=auto&forecast_days=7';
-    const res  = await fetch(url, { signal: ctrl.signal });
+    var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const d    = await res.json();
-    return d.daily.time.map((dt, i) => ({
-      date:          new Date(dt + 'T12:00:00'),
-      weathercode:   d.daily.weathercode[i]                       ?? 3,
-      temp_max:      Math.round(d.daily.temperature_2m_max[i]     ?? 15),
-      temp_min:      Math.round(d.daily.temperature_2m_min[i]     ?? 8),
-      precipitation: Math.round(d.daily.precipitation_sum[i]      ?? 0),
-      windspeed:     Math.round(d.daily.windspeed_10m_max[i]      ?? 10),
-      rain_prob:     Math.round(d.daily.precipitation_probability_max[i] ?? 0),
-    }));
+    var d    = await res.json();
+    return d.daily.time.map(function(dt, i) {
+      return {
+        date:          new Date(dt + 'T12:00:00'),
+        weathercode:   d.daily.weathercode[i]                       != null ? d.daily.weathercode[i] : 3,
+        temp_max:      Math.round(d.daily.temperature_2m_max[i]     != null ? d.daily.temperature_2m_max[i] : 15),
+        temp_min:      Math.round(d.daily.temperature_2m_min[i]     != null ? d.daily.temperature_2m_min[i] : 8),
+        precipitation: Math.round(d.daily.precipitation_sum[i]      != null ? d.daily.precipitation_sum[i] : 0),
+        windspeed:     Math.round(d.daily.windspeed_10m_max[i]      != null ? d.daily.windspeed_10m_max[i] : 10),
+        rain_prob:     Math.round(d.daily.precipitation_probability_max[i] != null ? d.daily.precipitation_probability_max[i] : 0),
+      };
+    });
   } finally { clearTimeout(tid); }
 }
 
 function mockForecast() {
-  const now = new Date(); now.setHours(12,0,0,0);
+  var now = new Date(); now.setHours(12,0,0,0);
   return [
     { weathercode:  0, temp_max:22, temp_min:12, precipitation:0,  windspeed:8,  rain_prob:5  },
     { weathercode:  1, temp_max:24, temp_min:14, precipitation:0,  windspeed:12, rain_prob:10 },
@@ -679,8 +980,8 @@ function mockForecast() {
     { weathercode:  2, temp_max:21, temp_min:11, precipitation:2,  windspeed:18, rain_prob:30 },
     { weathercode:  0, temp_max:25, temp_min:13, precipitation:0,  windspeed:9,  rain_prob:5  },
     { weathercode:  1, temp_max:23, temp_min:12, precipitation:0,  windspeed:10, rain_prob:8  },
-  ].map((s, i) => {
-    const d = new Date(now); d.setDate(now.getDate() + i);
+  ].map(function(s, i) {
+    var d = new Date(now); d.setDate(now.getDate() + i);
     return Object.assign({}, s, { date: d });
   });
 }
@@ -689,24 +990,267 @@ function mockForecast() {
    RISK ENGINE
 ═══════════════════════════════════════════════════ */
 function assess(jobType, w) {
-  const rules = RISK_RULES[jobType] || [];
-  let level = 'ok', msg = '✓ Conditions favorables';
-  for (const r of rules) {
+  var rules = RISK_RULES[jobType] || [];
+  var level = 'ok', msg = '✓ Conditions favorables';
+  for (var i = 0; i < rules.length; i++) {
+    var r = rules[i];
     if (!r.t(w)) continue;
     if (r.l === 'danger') return { level:'danger', msg: r.m };
     if (level !== 'danger') { level = 'risk'; msg = r.m; }
   }
-  return { level, msg };
+  return { level: level, msg: msg };
 }
 
 function dayOverallRisk(w) {
-  let worst = 'ok';
-  for (const type of Object.keys(RISK_RULES)) {
-    const { level } = assess(type, w);
-    if (level === 'danger') return 'danger';
-    if (level === 'risk')   worst = 'risk';
+  var worst = 'ok';
+  var types = Object.keys(RISK_RULES);
+  for (var i = 0; i < types.length; i++) {
+    var res = assess(types[i], w);
+    if (res.level === 'danger') return 'danger';
+    if (res.level === 'risk')   worst = 'risk';
   }
   return worst;
+}
+
+/* ═══════════════════════════════════════════════════
+   DAY DETAIL MODAL
+═══════════════════════════════════════════════════ */
+function openDayDetail(di) {
+  if (!ST.forecast || !ST.forecast[di]) return;
+  var day = ST.forecast[di];
+  var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
+  document.getElementById('ddTitle').textContent = dayName + ' — Détail météo';
+  var score = calcScore(day);
+  var sc = scoreCls(score);
+  var html =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+    + '<div style="text-align:center;padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">'
+    + '<div style="font-size:2.4rem;line-height:1">' + wIcon(day.weathercode) + '</div>'
+    + '<div style="font-weight:700;margin-top:6px">' + wLabel(day.weathercode) + '</div>'
+    + '<div style="font-size:.78rem;color:var(--text2);margin-top:2px">Code ' + day.weathercode + '</div>'
+    + '</div>'
+    + '<div style="text-align:center;padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">'
+    + '<div style="font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em">Score météo</div>'
+    + '<div class="score-badge ' + sc + '" style="font-size:1.55rem;padding:6px 14px;margin:8px auto;display:inline-flex">' + score + '<span style="font-size:.8rem;opacity:.7">/100</span></div>'
+    + '<div style="font-size:.72rem;color:var(--text2)">' + (score >= 75 ? 'Favorable' : score >= 50 ? 'Risqué' : 'Défavorable') + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="dd-stats">'
+    + ddStat('🌡', 'Max', day.temp_max + '°C')
+    + ddStat('🌡', 'Min', day.temp_min + '°C')
+    + ddStat('💨', 'Vent', day.windspeed + ' km/h')
+    + ddStat('💧', 'Précip.', day.precipitation + ' mm')
+    + ddStat('☔', 'Prob. pluie', day.rain_prob + '%')
+    + ddStat('⛅', 'Ciel', wLabel(day.weathercode))
+    + '</div>'
+    + '<div style="font-size:.70rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Risque par métier</div>'
+    + '<div style="display:flex;flex-direction:column;gap:5px">';
+  var jobs = getMergedJobTypes();
+  Object.keys(jobs).forEach(function(key) {
+    var jd  = jobs[key];
+    var res = assess(key, day);
+    var clr = res.level === 'ok' ? '#6ee7b7' : res.level === 'risk' ? '#fcd34d' : '#fca5a5';
+    var lvlIcon = res.level === 'ok' ? '✓' : res.level === 'risk' ? '⚠' : '✕';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">'
+      + '<span style="font-size:1rem">' + jd.icon + '</span>'
+      + '<span style="flex:1;font-size:.83rem;font-weight:600">' + esc(jd.name || jd.short) + '</span>'
+      + '<span style="color:' + clr + ';font-size:.78rem;font-weight:700">' + lvlIcon + ' ' + esc(res.msg) + '</span>'
+      + '</div>';
+  });
+  html += '</div>';
+  document.getElementById('ddContent').innerHTML = html;
+  openModal('dayDetailOverlay');
+}
+
+function ddStat(icon, lbl, val) {
+  return '<div class="dd-stat">'
+    + '<div class="ds-icon">' + icon + '</div>'
+    + '<div class="ds-lbl">' + lbl + '</div>'
+    + '<div class="ds-val">' + esc(val) + '</div>'
+    + '</div>';
+}
+
+/* ═══════════════════════════════════════════════════
+   OPTIMIZE WEEK
+═══════════════════════════════════════════════════ */
+function optimizeWeek() {
+  if (!ST.forecast) { toast('⚠ Météo non chargée'); return; }
+  var moved = [], changed = false;
+  ST.tasks.forEach(function(task) {
+    var cur = ST.forecast[task.dayIndex];
+    if (!cur) return;
+    var curRes = assess(task.type, cur);
+    if (curRes.level === 'ok') return;
+    var bestIdx = null, bestScore = -1;
+    for (var i = 0; i < ST.forecast.length; i++) {
+      if (i === task.dayIndex) continue;
+      var res = assess(task.type, ST.forecast[i]);
+      var s   = calcScore(ST.forecast[i]);
+      if (res.level === 'ok' && s > bestScore) { bestScore = s; bestIdx = i; }
+    }
+    if (bestIdx === null) {
+      for (var i = 0; i < ST.forecast.length; i++) {
+        if (i === task.dayIndex) continue;
+        var res = assess(task.type, ST.forecast[i]);
+        var s   = calcScore(ST.forecast[i]);
+        if (res.level === 'risk' && s > bestScore) { bestScore = s; bestIdx = i; }
+      }
+    }
+    if (bestIdx === null || bestScore <= calcScore(cur)) return;
+    var fromName = DAYS_L[cur.date.getDay()];
+    var toName   = DAYS_L[ST.forecast[bestIdx].date.getDay()];
+    var jd = getMergedJobTypes()[task.type] || {};
+    moved.push((jd.icon || '') + ' ' + task.name + ' : ' + fromName + ' → ' + toName);
+    task.dayIndex = bestIdx;
+    changed = true;
+  });
+  if (changed) { saveST(); renderBoard(); }
+  var content;
+  if (!moved.length) {
+    content = '<div style="text-align:center;padding:24px 10px;color:var(--text2);">'
+      + '<div style="font-size:2rem;margin-bottom:8px">✅</div>'
+      + '<div style="font-size:.9rem">Tous vos chantiers sont déjà sur les meilleures journées disponibles.</div>'
+      + '</div>';
+  } else {
+    content = '<div style="font-size:.82rem;color:var(--text2);margin-bottom:10px">' + moved.length + ' chantier(s) déplacé(s) :</div>'
+      + '<div style="display:flex;flex-direction:column;gap:7px">';
+    moved.forEach(function(m) {
+      content += '<div style="padding:9px 12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:8px;font-size:.88rem">' + esc(m) + '</div>';
+    });
+    content += '</div>';
+  }
+  document.getElementById('optimizeContent').innerHTML = content;
+  openModal('optimizeOverlay');
+}
+
+/* ═══════════════════════════════════════════════════
+   VOICE ASSISTANT
+═══════════════════════════════════════════════════ */
+var _micActive = false;
+var _micRec    = null;
+
+function openVoice() {
+  document.getElementById('voiceText').value = '';
+  document.getElementById('voiceStatus').textContent = '🎤';
+  _micActive = false;
+  openModal('voiceOverlay');
+  setTimeout(startMic, 300);
+}
+
+function startMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voiceStatus').innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro non disponible<br>Saisir ci-dessous</span>';
+    return;
+  }
+  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+  _micRec = new SR();
+  _micRec.lang = 'fr-FR';
+  _micRec.interimResults = false;
+  _micRec.maxAlternatives = 1;
+  _micActive = true;
+  document.getElementById('voiceStatus').textContent = '🔴';
+  _micRec.onresult = function(e) {
+    document.getElementById('voiceText').value = e.results[0][0].transcript;
+    document.getElementById('voiceStatus').textContent = '✅';
+    _micActive = false;
+  };
+  _micRec.onerror = function() {
+    document.getElementById('voiceStatus').innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro indisponible<br>Saisir ci-dessous</span>';
+    _micActive = false;
+  };
+  _micRec.onend = function() { _micActive = false; };
+  _micRec.start();
+}
+
+function analyzeAndCreate() {
+  var text = document.getElementById('voiceText').value.trim();
+  if (!text) { toast('⚠ Aucun texte à analyser'); return; }
+  var parsed = parseVoiceInput(text);
+  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+  closeModal('voiceOverlay');
+  applyVoiceParsed(parsed);
+}
+
+function parseVoiceInput(text) {
+  var t = text.toLowerCase();
+  var today = new Date();
+  // day detection — map to forecast index 0-6
+  var dayIndex = 0;
+  var dayNames = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  if (t.indexOf('demain') !== -1)       { dayIndex = 1; }
+  else if (t.indexOf("aujourd'hui") !== -1 || t.indexOf('auj') !== -1) { dayIndex = 0; }
+  else {
+    for (var i = 0; i < dayNames.length; i++) {
+      if (t.indexOf(dayNames[i]) !== -1) {
+        var diff = (i - today.getDay() + 7) % 7;
+        dayIndex = diff;
+        break;
+      }
+    }
+  }
+  if (dayIndex > 6) dayIndex = 6;
+  // priority
+  var priority = 'medium';
+  if (t.indexOf('urgent') !== -1)                        priority = 'urgent';
+  else if (t.indexOf('haute') !== -1)                    priority = 'high';
+  else if (t.indexOf('basse') !== -1 || t.indexOf('low') !== -1) priority = 'low';
+  // client
+  var client = '';
+  var chezIdx = t.indexOf('chez ');
+  if (chezIdx !== -1) {
+    var rest = text.slice(chezIdx + 5).trim().split(/\s+/);
+    client = rest[0] || '';
+  }
+  // job type via keyword matching
+  var jobAliases = {
+    beton:      ['béton','beton','dalle','fondation','coulage'],
+    hauteur:    ['hauteur','échafaudage','echafaudage'],
+    pave:       ['pavé','pave','pavage','dallage'],
+    excavation: ['excavation','terrassement','fouille','tranchée'],
+    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin'],
+    electrique: ['électrique','electrique','électricité','electricite'],
+    toiture:    ['toiture','toit','couverture','bardeau'],
+    peinture:   ['peinture','peindre'],
+  };
+  var jobs = getMergedJobTypes();
+  Object.keys(jobs).forEach(function(k) {
+    if (!jobAliases[k]) {
+      jobAliases[k] = [(jobs[k].name || '').toLowerCase(), (jobs[k].short || '').toLowerCase()];
+    }
+  });
+  var jobType = Object.keys(JOB_TYPES)[0];
+  var found = false;
+  Object.keys(jobAliases).forEach(function(k) {
+    if (found) return;
+    var aliases = jobAliases[k];
+    for (var i = 0; i < aliases.length; i++) {
+      if (aliases[i] && t.indexOf(aliases[i]) !== -1) { jobType = k; found = true; break; }
+    }
+  });
+  // clean name
+  var name = text
+    .replace(/chez\s+\S+/i, '')
+    .replace(/\b(urgent[e]?|priorit[eé]\s+\w+|haute?|basse?|moyenne?|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|aujourd'hui|demain)\b/gi, '')
+    .replace(/\s+/g, ' ').trim();
+  if (!name) name = text.trim();
+  return { name: name, client: client, type: jobType, priority: priority, dayIndex: dayIndex };
+}
+
+function applyVoiceParsed(parsed) {
+  _editingId  = null;
+  _dayPending = parsed.dayIndex;
+  document.getElementById('taskModalTitle').textContent = 'Nouveau chantier (vocal)';
+  document.getElementById('tName').value   = parsed.name   || '';
+  document.getElementById('tClient').value = parsed.client || '';
+  document.getElementById('tPrio').value   = parsed.priority || 'medium';
+  buildTypeGrid(parsed.type);
+  populateDaySelect(parsed.dayIndex);
+  document.getElementById('btnDel').style.display     = 'none';
+  document.getElementById('btnSave').textContent      = 'Ajouter →';
+  document.getElementById('delConfirm').style.display = 'none';
+  openModal('taskOverlay');
+  setTimeout(function() { document.getElementById('tName').focus(); }, 120);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -714,31 +1258,31 @@ function dayOverallRisk(w) {
 ═══════════════════════════════════════════════════ */
 function swapSuggestions() {
   if (!ST.forecast) return [];
-  const out = [], seen = new Set();
-  for (const task of ST.tasks) {
-    const key = task.id + '_' + task.dayIndex;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const cur = ST.forecast[task.dayIndex];
-    if (!cur) continue;
-    const { level: curLvl } = assess(task.type, cur);
-    if (curLvl === 'ok') continue;
-    let bestIdx = null;
-    for (let i = 0; i < ST.forecast.length; i++) {
+  var out = [], seen = {};
+  ST.tasks.forEach(function(task) {
+    var key = task.id + '_' + task.dayIndex;
+    if (seen[key]) return;
+    seen[key] = true;
+    var cur = ST.forecast[task.dayIndex];
+    if (!cur) return;
+    var curRes = assess(task.type, cur);
+    if (curRes.level === 'ok') return;
+    var bestIdx = null;
+    for (var i = 0; i < ST.forecast.length; i++) {
       if (i === task.dayIndex) continue;
-      const { level } = assess(task.type, ST.forecast[i]);
-      if (level === 'ok') { bestIdx = i; break; }
-      if (bestIdx === null && level === 'risk' && curLvl === 'danger') bestIdx = i;
+      var res = assess(task.type, ST.forecast[i]);
+      if (res.level === 'ok') { bestIdx = i; break; }
+      if (bestIdx === null && res.level === 'risk' && curRes.level === 'danger') bestIdx = i;
     }
-    if (bestIdx === null) continue;
-    const fromName = DAYS_L[cur.date.getDay()];
-    const toName   = DAYS_L[ST.forecast[bestIdx].date.getDay()];
-    const jd       = JOB_TYPES[task.type] || {};
+    if (bestIdx === null) return;
+    var fromName = DAYS_L[cur.date.getDay()];
+    var toName   = DAYS_L[ST.forecast[bestIdx].date.getDay()];
+    var jd = getMergedJobTypes()[task.type] || {};
     out.push({
-      taskId: task.id, toDay: bestIdx, level: curLvl,
+      taskId: task.id, toDay: bestIdx, level: curRes.level,
       label: (jd.icon || '') + ' ' + task.name + ' — ' + fromName + ' → ' + toName,
     });
-  }
+  });
   return out;
 }
 
@@ -746,25 +1290,33 @@ function swapSuggestions() {
    RENDER — BOARD
 ═══════════════════════════════════════════════════ */
 function renderBoard() {
-  const board = document.getElementById('board');
+  var board = document.getElementById('board');
   board.innerHTML = '';
   if (!ST.forecast) { renderSkel(board); return; }
-  const today = new Date(); today.setHours(0,0,0,0);
+  var today = new Date(); today.setHours(0,0,0,0);
   ST.forecast.forEach(function(day, di) {
-    const d = new Date(day.date); d.setHours(0,0,0,0);
-    const isToday  = d.getTime() === today.getTime();
-    const dayRisk  = dayOverallRisk(day);
-    const tasks    = ST.tasks.filter(function(t) { return t.dayIndex === di; });
-    const windCls  = day.windspeed > 40 ? 'bad' : day.windspeed > 25 ? 'warn' : '';
-    const rainCls  = day.rain_prob > 70 ? 'bad' : day.rain_prob > 40 ? 'warn' : '';
-    const mon      = MONTHS[day.date.getMonth()];
-    const col      = document.createElement('div');
-    col.className  = 'day-col';
-    col.innerHTML  =
+    var d = new Date(day.date); d.setHours(0,0,0,0);
+    var isToday  = d.getTime() === today.getTime();
+    var dayRisk  = dayOverallRisk(day);
+    var tasks    = ST.tasks.filter(function(t) { return t.dayIndex === di; });
+    var windCls  = day.windspeed > 40 ? 'bad' : day.windspeed > 25 ? 'warn' : '';
+    var rainCls  = day.rain_prob > 70 ? 'bad' : day.rain_prob > 40 ? 'warn' : '';
+    var mon      = MONTHS[day.date.getMonth()];
+    var score    = calcScore(day);
+    var sc       = scoreCls(score);
+    var rainMm   = day.precipitation > 0
+      ? '<span class="chip rain-mm" title="Précipitations">💧' + day.precipitation + 'mm</span>'
+      : '';
+    var col = document.createElement('div');
+    col.className = 'day-col';
+    col.innerHTML =
       '<div class="day-hd' + (isToday ? ' today' : '') + '">'
       + '<div class="risk-bar ' + dayRisk + '"></div>'
-      + '<div class="day-hd-body">'
+      + '<div class="day-hd-body" onclick="openDayDetail(' + di + ')" title="Voir le détail météo">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
       + '<div class="day-lbl">' + esc(DAYS_S[day.date.getDay()].toUpperCase()) + (isToday ? ' · Auj.' : '') + '</div>'
+      + '<span class="score-badge ' + sc + '">' + score + '</span>'
+      + '</div>'
       + '<div class="day-num">' + day.date.getDate() + ' <span style="font-size:.85rem;color:var(--text2)">' + mon + '</span></div>'
       + '<div class="day-wx-row">'
       + '<div class="day-wx-icon">' + wIcon(day.weathercode) + '</div>'
@@ -775,6 +1327,7 @@ function renderBoard() {
       + '<div class="day-chips">'
       + '<span class="chip' + (windCls ? ' ' + windCls : '') + '" title="Vent max">💨' + day.windspeed + 'km/h</span>'
       + '<span class="chip' + (rainCls ? ' ' + rainCls : '') + '" title="Probabilité pluie">🌧' + day.rain_prob + '%</span>'
+      + rainMm
       + '</div>'
       + '<div class="risk-badge ' + dayRisk + '">'
       + (dayRisk === 'ok' ? '✓ OK' : dayRisk === 'risk' ? '⚠ Risque' : '✕ Danger')
@@ -783,23 +1336,23 @@ function renderBoard() {
       + '<div class="task-slot" id="slot-' + di + '"></div>'
       + '<button class="add-btn" onclick="openAddTask(' + di + ')">+ Ajouter un chantier</button>';
     board.appendChild(col);
-    const slot = col.querySelector('#slot-' + di);
+    var slot = col.querySelector('#slot-' + di);
     tasks.forEach(function(task) { slot.appendChild(mkTaskCard(task, day)); });
   });
   renderSwapBanner();
 }
 
-/* Build a task card — uses plain string concat, NO template literals,
-   NO inline onclick with dynamic IDs. Interaction is handled by the
-   board-level delegated listener registered in DOMContentLoaded.      */
 function mkTaskCard(task, dayW) {
-  var jd = JOB_TYPES[task.type] || { icon: '🔧', name: task.type };
-  var res = assess(task.type, dayW);
+  var jobs = getMergedJobTypes();
+  var jd   = jobs[task.type] || { icon: '🔧', name: task.type, short: task.type };
+  var res  = assess(task.type, dayW);
   var level = res.level;
   var msg   = res.msg;
+  var score = calcScore(dayW);
+  var sc    = scoreCls(score);
   var card  = document.createElement('div');
-  card.className    = 'task-card ' + level;
-  card.dataset.taskId = task.id;   // used by the delegated listener
+  card.className      = 'task-card ' + level;
+  card.dataset.taskId = task.id;
   var lvlIcon = level === 'ok' ? '✓' : level === 'risk' ? '⚠' : '✕';
   var html =
     '<div class="tc-actions">'
@@ -812,6 +1365,7 @@ function mkTaskCard(task, dayW) {
     html += '<div class="tc-client">' + esc(task.client) + '</div>';
   }
   html += '<div class="tc-risk ' + level + '">' + lvlIcon + ' ' + esc(msg) + '</div>';
+  html += '<div class="tc-score"><span class="score-badge ' + sc + '" style="font-size:.62rem;padding:1px 5px">' + score + '/100</span></div>';
   card.innerHTML = html;
   return card;
 }
@@ -821,7 +1375,7 @@ function renderSkel(board) {
     var c = document.createElement('div');
     c.className = 'day-col';
     c.innerHTML =
-      '<div class="skel" style="height:196px"></div>'
+      '<div class="skel" style="height:210px"></div>'
       + '<div class="skel" style="height:42px;margin-top:8px"></div>';
     board.appendChild(c);
   }
@@ -855,9 +1409,7 @@ function openAddTask(dayIdx) {
   document.getElementById('tName').value   = '';
   document.getElementById('tClient').value = '';
   document.getElementById('tPrio').value   = 'medium';
-  document.querySelectorAll('.type-btn').forEach(function(b) { b.classList.remove('sel'); });
-  var first = document.querySelector('.type-btn');
-  if (first) first.classList.add('sel');
+  buildTypeGrid();
   populateDaySelect(dayIdx);
   document.getElementById('btnDel').style.display     = 'none';
   document.getElementById('btnSave').textContent      = 'Ajouter →';
@@ -878,9 +1430,7 @@ function openEditTask(id) {
   document.getElementById('tName').value   = task.name   || '';
   document.getElementById('tClient').value = task.client || '';
   document.getElementById('tPrio').value   = task.priority || 'medium';
-  document.querySelectorAll('.type-btn').forEach(function(b) {
-    b.classList.toggle('sel', b.dataset.type === task.type);
-  });
+  buildTypeGrid(task.type);
   populateDaySelect(task.dayIndex);
   document.getElementById('btnDel').style.display     = '';
   document.getElementById('btnSave').textContent      = 'Enregistrer les modifications';
@@ -971,24 +1521,27 @@ function confirmDelTask() {
 function applySwap(taskId, toDay) {
   var task = ST.tasks.find(function(t) { return t.id === taskId; });
   if (!task) return;
-  var fromName = DAYS_L[ST.forecast[task.dayIndex] && ST.forecast[task.dayIndex].date.getDay()] || '?';
-  var toName   = DAYS_L[ST.forecast[toDay]         && ST.forecast[toDay].date.getDay()]         || '?';
+  var fromName = ST.forecast[task.dayIndex] ? DAYS_L[ST.forecast[task.dayIndex].date.getDay()] : '?';
+  var toName   = ST.forecast[toDay]         ? DAYS_L[ST.forecast[toDay].date.getDay()]         : '?';
   task.dayIndex = toDay;
   saveST(); renderBoard();
-  toast('✓ Déplacé de ' + fromName + ' → ' + toName);
+  toast('✓ Déplacé : ' + fromName + ' → ' + toName);
 }
 
-function buildTypeGrid() {
+function buildTypeGrid(selectedType) {
   var g = document.getElementById('typeGrid');
   g.innerHTML = '';
-  var entries = Object.entries(JOB_TYPES);
-  entries.forEach(function(entry, i) {
-    var key = entry[0], def = entry[1];
+  var jobs = getMergedJobTypes();
+  var keys = Object.keys(jobs);
+  var firstKey = keys[0];
+  keys.forEach(function(key) {
+    var def = jobs[key];
     var b = document.createElement('button');
     b.type = 'button';
-    b.className   = 'type-btn' + (i === 0 ? ' sel' : '');
+    var isSel = selectedType ? (key === selectedType) : (key === firstKey);
+    b.className    = 'type-btn' + (isSel ? ' sel' : '');
     b.dataset.type = key;
-    b.innerHTML   = '<span class="ti">' + def.icon + '</span>' + esc(def.short);
+    b.innerHTML    = '<span class="ti">' + def.icon + '</span>' + esc(def.short || def.name);
     b.onclick = function() {
       g.querySelectorAll('.type-btn').forEach(function(x) { x.classList.remove('sel'); });
       b.classList.add('sel');
@@ -1094,16 +1647,9 @@ function updateWeatherPill() {
 function setDot(state) {
   var dot = document.getElementById('locDot');
   dot.className = 'loc-dot' + (state !== 'ok' ? ' ' + state : '');
-  if (state === 'ok') {
-    dot.style.background = 'var(--ok)';
-    dot.style.boxShadow  = '0 0 8px var(--ok)';
-  } else if (state === 'loading') {
-    dot.style.background = 'var(--risk)';
-    dot.style.boxShadow  = '0 0 8px var(--risk)';
-  } else {
-    dot.style.background = 'var(--text3)';
-    dot.style.boxShadow  = 'none';
-  }
+  if (state === 'ok')      { dot.style.background = 'var(--ok)';   dot.style.boxShadow = '0 0 8px var(--ok)'; }
+  else if (state === 'loading') { dot.style.background = 'var(--risk)'; dot.style.boxShadow = '0 0 8px var(--risk)'; }
+  else                          { dot.style.background = 'var(--text3)'; dot.style.boxShadow = 'none'; }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1138,19 +1684,18 @@ function esc(s) {
 ═══════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
+  loadCustomJobs();
+  loadTerrainPref();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      closeModal('taskOverlay');
-      closeModal('locOverlay');
+      ['taskOverlay','locOverlay','dayDetailOverlay','optimizeOverlay','voiceOverlay','jobsOverlay']
+        .forEach(function(id) { closeModal(id); });
     }
   });
 
-  /* Delegated handler for task card clicks — fires for every click inside
-     #board. Identifies the target card via data-task-id, then dispatches
-     to edit (body click) or delete+confirm (🗑️ button click).           */
   document.getElementById('board').addEventListener('click', function(e) {
     var card = e.target.closest('[data-task-id]');
     if (!card) return;

@@ -105,6 +105,19 @@
     .act-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.08); }
     .act-btn.active { border-color: rgba(99,102,241,0.55); background: rgba(99,102,241,0.13); color: #a5b4fc; }
 
+    .act-date {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px 4px 8px;
+      background: var(--glass); border: 1px solid var(--border);
+      border-radius: 999px;
+    }
+    .act-date input[type="date"] {
+      background: transparent; border: none; outline: none;
+      color: var(--text1); font-size: 0.80rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; color-scheme: dark;
+      min-width: 120px;
+    }
+
     /* ── SCORE BADGE ─────────────────────────────── */
     .score-badge {
       display: inline-flex; align-items: center;
@@ -535,6 +548,10 @@
   <button class="act-btn" onclick="openVoice()">🎙 Dicter</button>
   <button class="act-btn" onclick="openJobsModal()">⚙ Métiers</button>
   <button class="act-btn" onclick="optimizeWeek()">📅 Optimiser</button>
+  <div class="act-date">
+    <label for="dateStart">📆</label>
+    <input type="date" id="dateStart" onchange="loadWeather()" title="Semaine à partir du">
+  </div>
 </div>
 
 <!-- SWAP BANNER -->
@@ -876,7 +893,7 @@ function renderJobsList() {
       + '<span style="font-size:1.1rem">' + esc(j.icon) + '</span>'
       + '<span class="job-row-name">' + esc(j.name) + '</span>'
       + '<span class="job-row-meta">💧≤' + j.rainMax + 'mm 💨≤' + j.windMax + 'km/h</span>'
-      + '<button class="job-del-btn" onclick="deleteCustomJob(\'' + esc(k) + '\')">Suppr.</button>'
+      + '<button class="job-del-btn" onclick="deleteCustomJob(\'' + esc(k) + \')">Suppr.</button>'
       + '</div>';
   });
   list.innerHTML = html;
@@ -944,15 +961,30 @@ function saveST() {
 /* ═══════════════════════════════════════════════════
    WEATHER — Open-Meteo (free, no API key)
 ═══════════════════════════════════════════════════ */
-async function fetchForecast(lat, lon) {
+function fmtDate(d) {
+  var y   = d.getFullYear();
+  var m   = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+async function fetchForecast(lat, lon, startDate) {
   var ctrl = new AbortController();
   var tid  = setTimeout(function() { ctrl.abort(); }, 9000);
   try {
+    var dateParam;
+    if (startDate) {
+      var sd = new Date(startDate + 'T12:00:00');
+      var ed = new Date(sd); ed.setDate(sd.getDate() + 6);
+      dateParam = '&start_date=' + startDate + '&end_date=' + fmtDate(ed);
+    } else {
+      dateParam = '&forecast_days=7';
+    }
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
-      + '&timezone=auto&forecast_days=7';
+      + '&timezone=auto' + dateParam;
     var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var d    = await res.json();
@@ -1623,8 +1655,10 @@ async function loadWeather() {
   setDot('loading');
   ST.forecast = null;
   renderBoard();
+  var dateInput = document.getElementById('dateStart');
+  var startDate = (dateInput && dateInput.value) ? dateInput.value : null;
   try {
-    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon);
+    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
     setDot('ok');
   } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);
@@ -1688,6 +1722,15 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTerrainPref();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;
+
+  var dateInput = document.getElementById('dateStart');
+  if (dateInput) {
+    var now = new Date();
+    dateInput.value = fmtDate(now);
+    var maxD = new Date(now); maxD.setDate(now.getDate() + 9);
+    dateInput.max = fmtDate(maxD);
+    dateInput.min = fmtDate(now);
+  }
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

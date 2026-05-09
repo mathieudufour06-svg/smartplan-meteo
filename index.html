@@ -2040,7 +2040,7 @@
     <h3>⚙ Mes métiers</h3>
     <div id="jobsList"></div>
     <div style="border-top:1px solid var(--hairline); margin: 14px 0 12px"></div>
-    <p style="font-size:.72rem; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom:10px">Ajouter un métier</p>
+    <p id="jJobNote" style="font-size:.72rem; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom:10px">Ajouter un métier</p>
     <div class="jobs-add-grid">
       <div class="fg"><label>Emoji</label><input type="text" id="jIcon" placeholder="🔩" maxlength="4"></div>
       <div class="fg"><label>Nom</label><input type="text" id="jName" placeholder="Soudure" maxlength="30"></div>
@@ -2050,7 +2050,7 @@
     <div class="fg" style="margin-top:2px"><label>Temp. min (°C)</label><input type="number" id="jTemp" placeholder="5" min="-30" max="30"></div>
     <div class="mf" style="margin-top:6px">
       <button class="btn-cancel" onclick="closeModal('jobsOverlay')">Fermer</button>
-      <button class="btn-primary" onclick="addCustomJob()">Ajouter →</button>
+      <button class="btn-primary" id="btnSaveJob" onclick="addCustomJob()">Ajouter →</button>
     </div>
   </div>
 </div>
@@ -2234,8 +2234,38 @@ function saveCustomJobs() {
 }
 
 function openJobsModal() {
+  resetJobForm();
   renderJobsList();
   openModal('jobsOverlay');
+}
+
+function resetJobForm() {
+  _editingJobKey = null;
+  document.getElementById('jIcon').value = '';
+  document.getElementById('jName').value = '';
+  document.getElementById('jRain').value = '';
+  document.getElementById('jWind').value = '';
+  document.getElementById('jTemp').value = '';
+  document.getElementById('jJobNote').textContent = 'Ajouter un métier personnalisé.';
+  document.getElementById('btnSaveJob').textContent = 'Ajouter →';
+}
+
+function populateJobForm(key) {
+  var job = _customJobs[key];
+  if (!job) return resetJobForm();
+  _editingJobKey = key;
+  document.getElementById('jIcon').value = job.icon || '';
+  document.getElementById('jName').value = job.name || '';
+  document.getElementById('jRain').value = (job.rain != null ? job.rain : '');
+  document.getElementById('jWind').value = (job.wind != null ? job.wind : '');
+  document.getElementById('jTemp').value = (job.temp != null ? job.temp : '');
+  document.getElementById('jJobNote').textContent = 'Modification en cours pour « ' + job.name + ' ». Cliquez Enregistrer pour valider.';
+  document.getElementById('btnSaveJob').textContent = 'Enregistrer →';
+}
+
+function editCustomJob(key) {
+  populateJobForm(key);
+  document.getElementById('jName').focus();
 }
 
 function renderJobsList() {
@@ -2248,10 +2278,16 @@ function renderJobsList() {
     var row = document.createElement('div');
     row.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--hairline); border-radius:12px; margin-bottom:6px;';
     var canDelete = !!_customJobs[k];
+    var actionHtml = '<span style="font-size:.7rem; color:var(--t3)">par défaut</span>';
+    if (canDelete) {
+      actionHtml = '<div style="display:flex; gap:8px; align-items:center;">'
+        + '<button onclick="editCustomJob(\'' + k + '\')" style="color:var(--text); background:var(--surface); border:1px solid var(--hairline); border-radius:8px; padding:6px 10px; font-size:.78rem">Modifier</button>'
+        + '<button onclick="deleteCustomJob(\'' + k + '\')" style="color:var(--danger); font-weight:800; padding:6px 10px; background:var(--danger-bg); border:1px solid var(--danger-bd); border-radius:8px; font-size:.78rem">Suppr.</button>'
+        + '</div>';
+    }
     row.innerHTML = '<span style="font-size:1.4rem">' + j.icon + '</span>'
       + '<span style="flex:1; font-size:.92rem; font-weight:700">' + esc(j.name) + '</span>'
-      + (canDelete ? '<button onclick="deleteCustomJob(\'' + k + '\')" style="color:var(--danger); font-weight:800; padding:6px 10px; background:var(--danger-bg); border:1px solid var(--danger-bd); border-radius:8px; font-size:.78rem">Suppr.</button>'
-                   : '<span style="font-size:.7rem; color:var(--t3)">par défaut</span>');
+      + actionHtml;
     list.appendChild(row);
   });
 }
@@ -2264,6 +2300,10 @@ function addCustomJob() {
   var temp = parseInt(document.getElementById('jTemp').value, 10);
   if (!name) { toast('⚠ Nom requis'); return; }
   var key = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || ('job' + Date.now());
+  if (_editingJobKey && _editingJobKey !== key) {
+    delete _customJobs[_editingJobKey];
+    delete RISK_RULES[_editingJobKey];
+  }
   _customJobs[key] = {
     name: name, short: name.slice(0, 8), icon: icon,
     rain: isNaN(rain) ? null : rain,
@@ -2274,17 +2314,18 @@ function addCustomJob() {
   saveCustomJobs();
   renderJobsList();
   buildTypeGrid();
-  document.getElementById('jIcon').value = '';
-  document.getElementById('jName').value = '';
-  document.getElementById('jRain').value = '';
-  document.getElementById('jWind').value = '';
-  document.getElementById('jTemp').value = '';
-  toast('✓ Métier ajouté');
+  if (_editingJobKey) {
+    toast('✓ Métier modifié');
+  } else {
+    toast('✓ Métier ajouté');
+  }
+  resetJobForm();
 }
 
 function deleteCustomJob(key) {
   delete _customJobs[key];
   delete RISK_RULES[key];
+  if (_editingJobKey === key) resetJobForm();
   saveCustomJobs();
   renderJobsList();
   buildTypeGrid();
@@ -2302,6 +2343,7 @@ var ST = {
 };
 
 var _editingId        = null;
+var _editingJobKey    = null;
 var _dayPending       = 0;
 var _taskSource       = 'manual';
 var _taskPhotoPreview = null;

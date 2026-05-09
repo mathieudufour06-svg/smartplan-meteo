@@ -1974,7 +1974,7 @@
   <div class="modal" role="dialog" aria-modal="true">
     <h3>🎙 Dicter un chantier</h3>
     <p style="font-size:.84rem;color:var(--t3);margin-bottom:12px">Ex : <em>"Asphaltage chez Tremblay samedi à 8h priorité haute"</em></p>
-    <div class="voice-status" id="voiceStatus" onclick="startMic()" title="Cliquer pour démarrer" style="font-size: 2.2rem; text-align: center; margin: 12px 0;">🎤</div>
+    <div class="voice-status" id="voiceStatus" onclick="toggleMic()" title="Cliquer pour démarrer" style="font-size: 2.2rem; text-align: center; margin: 12px 0;">🎤</div>
     <div class="fg">
       <label>Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
@@ -2073,7 +2073,7 @@ var JOB_TYPES = {
   pave:       { name:'Pavé',        icon:'🧱', short:'Pavé'    },
   excavation: { name:'Excavation',  icon:'🚜', short:'Excav.'  },
   paysagisme: { name:'Paysagisme',  icon:'🌿', short:'Paysage' },
-  electrique: { name:'Électrique',  icon:'⚡', short:'Électr.' },
+  electrique: { name:'Électrique',  icon:'🔌', short:'Électr.' },
   toiture:    { name:'Toiture',     icon:'🏠', short:'Toiture' },
   peinture:   { name:'Peinture',    icon:'🎨', short:'Peinture'},
 };
@@ -3153,6 +3153,7 @@ function optimizeWeek() {
 ════════════════════════════════════════════════════════════════ */
 var _micActive = false;
 var _micRec    = null;
+var _micStopping = false;
 
 function openVoice() {
   document.getElementById('voiceText').value = '';
@@ -3169,48 +3170,120 @@ function voiceStatusElement() {
   return document.getElementById('taskVoiceStatus') || document.getElementById('voiceStatus');
 }
 
+function getSpeechRecognitionCtor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+function isIOSSafari() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || '')
+    && /Safari/.test(navigator.userAgent || '')
+    && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent || '');
+}
+function setVoiceStatus(content, title) {
+  var statusEl = voiceStatusElement();
+  if (!statusEl) return;
+  statusEl.innerHTML = content;
+  statusEl.title = title || '';
+}
+function toggleMic() {
+  if (_micActive) {
+    _micStopping = true;
+    if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+    setVoiceStatus('🎤', 'Toucher pour reprendre');
+    return;
+  }
+  startMic();
+}
 function startMic() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var statusEl = document.getElementById('voiceStatus');
-  var textEl = document.getElementById('voiceText');
+  var SR = getSpeechRecognitionCtor();
+  var statusEl = voiceStatusElement();
+  var textEl = voiceTextElement();
   if (!SR) {
-    if (statusEl) statusEl.innerHTML = '<span style="font-size:.82rem; color:var(--t3)">Micro non disponible<br>Saisir ci-dessous</span>';
+    setVoiceStatus('<span style="font-size:.82rem; color:var(--t3)">Dictée vocale non disponible<br>Saisir ci-dessous</span>');
+    _micActive = false;
     return;
   }
   if (_micRec) { try { _micRec.stop(); } catch(e) {} }
   _micRec = new SR();
-  _micRec.lang = 'fr-FR';
-  _micRec.interimResults = false;
+  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
+  _micRec.interimResults = true;
   _micRec.maxAlternatives = 1;
+  _micStopping = false;
   _micActive = true;
-  if (statusEl) statusEl.textContent = '🔴';
+  if (statusEl) { statusEl.textContent = '🔴'; statusEl.title = 'Toucher pour arrêter'; }
   _micRec.onresult = function(e) {
-    if (textEl) textEl.value = e.results[0][0].transcript;
-    if (statusEl) statusEl.textContent = '✅';
+    var finalText = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+    }
+    if (!finalText) return;
+    var nextText = finalText.trim();
+    if (textEl) {
+      var current = textEl.value.trim();
+      textEl.value = current ? current + ' ' + nextText : nextText;
+    }
+    if (statusEl) { statusEl.textContent = '✅'; statusEl.title = 'Toucher pour reprendre'; }
     _micActive = false;
   };
-  _micRec.onerror = function() {
-    if (statusEl) statusEl.innerHTML = '<span style="font-size:.82rem; color:var(--t3)">Micro indisponible</span>';
+  _micRec.onerror = function(e) {
+    var err = e && e.error;
+    if (_micStopping || err === 'aborted' || err === 'no-speech') {
+      _micActive = false;
+      _micStopping = false;
+      setVoiceStatus('🎤', 'Toucher pour reprendre');
+      return;
+    }
+    var msg = 'Micro indisponible<br>Saisir ci-dessous';
+    if (err === 'not-allowed' || err === 'service-not-allowed') msg = 'Autorisez le micro dans Safari<br>puis touchez pour reprendre';
+    else if (err === 'audio-capture') msg = 'Micro introuvable<br>Saisir ci-dessous';
+    else if (err === 'network') msg = 'Service vocal hors ligne<br>Saisir ci-dessous';
+    setVoiceStatus('<span style="font-size:.82rem; color:var(--t3)">' + msg + '</span>');
     _micActive = false;
   };
-  _micRec.onend = function() { _micActive = false; };
-  _micRec.start();
+  _micRec.onend = function() {
+    _micActive = false;
+    if (_micStopping) {
+      _micStopping = false;
+      setVoiceStatus('🎤', 'Toucher pour reprendre');
+    }
+  };
+  try {
+    _micRec.start();
+  } catch(e) {
+    _micActive = false;
+    setVoiceStatus('<span style="font-size:.82rem; color:var(--t3)">Dictée déjà en cours<br>Toucher pour reprendre</span>');
+  }
 }
 
 function startTaskMic() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var SR = getSpeechRecognitionCtor();
   var statusEl = document.getElementById('taskVoiceStatus');
   var textEl = document.getElementById('taskVoiceText');
   if (!SR) { if (statusEl) statusEl.textContent = '⚠'; return; }
   if (_micRec) { try { _micRec.stop(); } catch(e) {} }
   _micRec = new SR();
-  _micRec.lang = 'fr-FR'; _micRec.interimResults = false; _micRec.maxAlternatives = 1;
+  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
+  _micRec.interimResults = true;
+  _micRec.maxAlternatives = 1;
   if (statusEl) statusEl.textContent = '🔴';
   _micRec.onresult = function(e) {
-    if (textEl) textEl.value = e.results[0][0].transcript;
+    var finalText = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+    }
+    if (!finalText) return;
+    var nextText = finalText.trim();
+    if (textEl) {
+      var current = textEl.value.trim();
+      textEl.value = current ? current + ' ' + nextText : nextText;
+    }
     if (statusEl) statusEl.textContent = '✅';
   };
-  _micRec.onerror = function() { if (statusEl) statusEl.textContent = '⚠'; };
+  _micRec.onerror = function(e) {
+    if (statusEl) statusEl.textContent = '⚠';
+  };
+  _micRec.onend = function() {
+    if (statusEl) statusEl.textContent = '🎤';
+  };
   _micRec.start();
 }
 

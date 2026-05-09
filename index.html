@@ -8,15 +8,15 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:      #0a0f1e;
-      --bg1:     #111827;
-      --bg2:     #1a2035;
-      --glass:   rgba(255,255,255,0.05);
-      --border:  rgba(255,255,255,0.10);
-      --border2: rgba(255,255,255,0.20);
+      --bg:      #090f1a;
+      --bg1:     #0f1728;
+      --bg2:     #161f34;
+      --glass:   rgba(255,255,255,0.07);
+      --border:  rgba(255,255,255,0.14);
+      --border2: rgba(255,255,255,0.24);
       --text0:   #f8fafc;
-      --text1:   #cbd5e1;
-      --text2:   #8e9bb5;
+      --text1:   #e2e8f0;
+      --text2:   #94a3b8;
       --text3:   #4b5563;
       --accent:  #6366f1;
       --accent2: #8b5cf6;
@@ -37,73 +37,172 @@
     /* ── TOP BAR ─────────────────────────────────── */
     .topbar {
       position: sticky; top: 0; z-index: 100;
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 18px;
-      background: rgba(10,15,30,0.94);
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 22px;
+      background: linear-gradient(180deg, rgba(10,15,28,0.98), rgba(7,11,21,0.98));
+      border-bottom: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 16px 38px rgba(0,0,0,0.28);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
-    .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
     .brand-icon {
-      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: grid; place-items: center; font-size: 1.15rem;
-      box-shadow: 0 6px 20px rgba(99,102,241,0.45);
+      width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.95), rgba(139,92,246,0.95));
+      display: grid; place-items: center; font-size: 1.4rem;
+      box-shadow: 0 10px 32px rgba(99,102,241,0.35);
     }
-    .brand-text b  { display: block; font-size: 0.97rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
-    .brand-text em { display: block; font-size: 0.68rem; color: var(--text3); font-style: normal;
-                     text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+    .brand-text b  { display: block; font-size: 1.05rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.2; }
+    .brand-text em { display: block; font-size: 0.75rem; color: var(--text2); font-style: normal;
+                     text-transform: uppercase; letter-spacing: 0.12em; font-weight: 800; }
 
     .loc-btn {
-      display: flex; align-items: center; gap: 7px;
-      padding: 7px 13px;
-      background: var(--glass); border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px;
+      background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.22);
       border-radius: 999px; cursor: pointer;
-      color: var(--text1); font-size: 0.83rem; font-weight: 600;
-      transition: border-color .2s, background .2s;
-      white-space: nowrap; overflow: hidden; max-width: 220px;
+      color: var(--text0); font-size: 0.95rem; font-weight: 800;
+      transition: border-color .2s, background .2s, transform .15s;
+      white-space: nowrap; overflow: hidden; max-width: 260px;
     }
-    .loc-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.08); }
+    .loc-btn:hover { border-color: rgba(255,255,255,0.36); background: rgba(255,255,255,0.16); transform: translateY(-1px); }
+    .loc-btn:focus-visible { outline: 3px solid rgba(99,102,241,0.40); outline-offset: 2px; }
     .loc-dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-      background: var(--ok); box-shadow: 0 0 8px var(--ok);
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+      background: var(--ok); box-shadow: 0 0 12px var(--ok);
       transition: background .4s, box-shadow .4s;
     }
-    .loc-dot.loading { background: var(--risk); box-shadow: 0 0 8px var(--risk); animation: blink 1s infinite; }
+    .loc-dot.loading { background: var(--risk); box-shadow: 0 0 12px var(--risk); animation: blink 1s infinite; }
     .loc-dot.offline { background: var(--text3); box-shadow: none; }
     @keyframes blink { 50% { opacity: .4; } }
     #locName { overflow: hidden; text-overflow: ellipsis; }
 
     .weather-pill {
-      margin-left: auto; display: flex; align-items: center; gap: 8px;
-      padding: 6px 13px;
-      background: var(--glass); border: 1px solid var(--border);
-      border-radius: 999px; font-size: 0.83rem;
+      margin-left: auto; display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.20);
+      border-radius: 999px; font-size: 0.95rem;
       flex-shrink: 0;
+      box-shadow: 0 16px 38px rgba(0,0,0,0.12);
     }
-    .weather-pill .wi { font-size: 1.2rem; line-height: 1; }
-    .weather-pill .wt { font-weight: 700; }
-    .weather-pill .wd { color: var(--text2); }
+    .weather-pill .wi { font-size: 1.75rem; line-height: 1; }
+    .weather-pill .wt { font-size: 1.05rem; font-weight: 800; }
+    .weather-pill .wd { color: var(--text1); }
+    .weather-pill:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.30); }
     @media (max-width: 520px) { .weather-pill .wd { display: none; } }
 
     /* ── ACTION BAR ──────────────────────────────── */
     .action-bar {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      padding: 8px 18px;
-      background: rgba(10,15,30,0.88);
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 14px 22px;
+      background: rgba(11,16,30,0.96);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.16);
     }
+    .calendar-hd {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 14px;
+      margin: 18px 0 12px;
+      padding: 0 4px;
+      flex-wrap: wrap;
+    }
+    .calendar-hd h2 { font-size: 1.05rem; font-weight: 900; margin: 0; }
+    .calendar-hd p { margin: 0; color: var(--text2); font-size: 0.92rem; max-width: 56ch; line-height: 1.4; }
+    .calendar-nav {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .calendar-nav .nav-btn {
+      padding: 10px 14px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06); color: var(--text0);
+      cursor: pointer; font-weight: 700;
+      transition: transform .15s, border-color .2s, background .2s;
+    }
+    .calendar-nav .nav-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.24); }
+    .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px;
+      margin-top: 10px;
+    }
+    .calendar-head {
+      padding: 10px 12px; font-size: 0.78rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--text2); font-weight: 700;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .calendar-cell {
+      min-height: 160px; display: flex; flex-direction: column; gap: 10px;
+      padding: 14px; border-radius: 24px;
+      background: rgba(15,22,38,0.96); border: 1px solid rgba(255,255,255,0.10);
+      transition: transform .2s, border-color .2s;
+      cursor: pointer;
+    }
+    .calendar-cell:hover { transform: translateY(-1px); border-color: rgba(99,102,241,0.35); }
+    .calendar-cell-muted { opacity: .38; cursor: default; }
+    .calendar-cell.today { border-color: rgba(99,102,241,0.85); box-shadow: 0 0 0 1px rgba(99,102,241,0.18); }
+    .calendar-date { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .calendar-date .date-num { font-size: 1rem; font-weight: 900; line-height: 1; }
+    .calendar-date .date-badge { padding: 5px 10px; border-radius: 999px; font-size: 0.72rem; background: rgba(255,255,255,0.06); color: var(--text2); }
+    .calendar-wx { display: flex; align-items: center; gap: 8px; color: var(--text1); font-size: 0.88rem; }
+    .calendar-wx .icon { font-size: 1.2rem; line-height: 1; }
+    .calendar-tasks { display: flex; flex-direction: column; gap: 7px; overflow: hidden; flex: 1; }
+    .calendar-task-pill {
+      width: 100%; display: block; padding: 8px 10px; border-radius: 14px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text0); text-align: left; font-size: 0.82rem;
+      text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+      cursor: pointer;
+    }
+    .calendar-task-pill.urgent { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.10); }
+    .calendar-task-pill.high { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.10); }
+    .calendar-task-pill.low { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.10); }
+    .calendar-task-more { margin-top: auto; font-size: 0.82rem; color: var(--text2); }
+    .task-mode-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 12px; }
+    .task-mode-tabs .mode-btn {
+      padding: 10px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06); color: var(--text0); cursor: pointer;
+      font-weight: 700; transition: transform .15s, background .2s, border-color .2s;
+    }
+    .task-mode-tabs .mode-btn.sel { background: rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.30); }
+    .task-mode-tabs .mode-btn:hover { transform: translateY(-1px); }
+    .task-mode-block { display: none; gap: 12px; margin-bottom: 12px; }
+    .task-mode-block.active { display: flex; flex-direction: column; }
+    .mode-note { font-size: 0.88rem; color: var(--text2); line-height: 1.5; }
+    .voice-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .voice-status { font-size: 1.2rem; line-height: 1; }
+    .btn-secondary {
+      padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06); color: var(--text0); cursor: pointer;
+      transition: transform .15s, background .2s;
+    }
+    .btn-secondary:hover { transform: translateY(-1px); background: rgba(255,255,255,0.10); }
+    .task-file-input {
+      width: 100%; padding: 12px 14px; border-radius: 16px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.14); color: var(--text0);
+    }
+    .task-photo-preview { margin-top: 10px; border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); }
+    .task-photo-preview img { width: 100%; display: block; object-fit: cover; }
+    .photo-overlay-note { font-size: 0.87rem; color: var(--text2); margin-bottom: 14px; }
+    .photo-preview {
+      margin-top: 10px; border-radius: 16px; overflow: hidden;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14);
+    }
+    .photo-preview img {
+      width: 100%; height: auto; display: block;
+      max-height: 240px; object-fit: cover;
+    }
+    .tc-meta { color: var(--text2); font-size: 0.92rem; margin-top: 6px; }
+    .tc-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .act-btn {
-      display: flex; align-items: center; gap: 5px;
-      padding: 6px 13px; border-radius: 999px;
-      background: var(--glass); border: 1px solid var(--border);
-      color: var(--text1); font-size: 0.80rem; font-weight: 600;
-      cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 14px 18px; min-height: 54px; min-width: 148px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+      color: var(--text0); font-size: 0.96rem; font-weight: 800;
+      cursor: pointer; transition: border-color .2s, background .2s, transform .15s;
       white-space: nowrap;
     }
-    .act-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.08); }
-    .act-btn.active { border-color: rgba(99,102,241,0.55); background: rgba(99,102,241,0.13); color: #a5b4fc; }
+    .act-btn:hover { border-color: rgba(255,255,255,0.34); background: rgba(255,255,255,0.16); transform: translateY(-1px); }
+    .act-btn:focus-visible { outline: 3px solid rgba(99,102,241,0.35); outline-offset: 3px; }
+    .act-btn.active { border-color: rgba(99,102,241,0.80); background: rgba(99,102,241,0.24); color: #fff; box-shadow: 0 14px 32px rgba(99,102,241,0.16); }
 
     /* ── SCORE BADGE ─────────────────────────────── */
     .score-badge {
@@ -116,15 +215,118 @@
     .score-lo  { background: rgba(239,68,68,0.13);  border: 1px solid rgba(239,68,68,0.35);  color: #f87171; }
 
     /* ── TERRAIN MODE ────────────────────────────── */
-    body.terrain { --text0: #ffffff; --text1: #e2e8f0; --text2: #94a3b8; }
-    body.terrain .day-num   { font-size: 1.75rem; }
-    body.terrain .tc-name   { font-size: 0.97rem; }
-    body.terrain .day-temps { font-size: 0.95rem; }
-    body.terrain .risk-badge { font-size: 0.80rem; padding: 7px 10px; }
-    body.terrain .task-card { border-width: 2px; }
+    body.terrain {
+      --bg:      #03080f;
+      --bg1:     #071219;
+      --bg2:     #0d1c34;
+      --glass:   rgba(255,255,255,0.14);
+      --border:  rgba(255,255,255,0.38);
+      --border2: rgba(255,255,255,0.52);
+      --text0:   #f8fbff;
+      --text1:   #dbe8ff;
+      --text2:   #a2c3ff;
+      --text3:   #8ba6cf;
+      --accent:  #f59e0b;
+      --accent2: #f97316;
+    }
+    body.terrain .topbar {
+      background: linear-gradient(90deg, rgba(2,5,11,0.99), rgba(12,18,34,0.99));
+      border-bottom-color: rgba(255,255,255,0.42);
+      box-shadow: 0 26px 60px rgba(0,0,0,0.42);
+    }
+    body.terrain .topbar::before {
+      content: 'MODE TERRAIN';
+      position: absolute; right: 18px; bottom: -18px;
+      background: rgba(245,158,11,0.28); color: #fff;
+      font-size: 0.95rem; letter-spacing: .22em;
+      padding: 8px 16px; border-radius: 999px;
+      text-transform: uppercase; font-weight: 900;
+      pointer-events: none;
+      box-shadow: 0 10px 26px rgba(245,158,11,0.32);
+    }
+    body.terrain .action-bar {
+      background: rgba(8,12,22,0.98);
+      border-bottom-color: rgba(255,255,255,0.30);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+      padding: 18px 22px;
+    }
+    body.terrain .act-btn {
+      padding: 22px 30px; min-height: 84px; min-width: 180px;
+      font-size: 1.25rem; font-weight: 800; letter-spacing: .02em;
+      background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.42);
+      color: #f8fbff; text-transform: uppercase;
+      box-shadow: 0 16px 38px rgba(0,0,0,0.30);
+      border-radius: 16px;
+    }
+    body.terrain .act-btn:hover { background: rgba(255,255,255,0.20); border-color: rgba(255,255,255,0.60); }
+    body.terrain .loc-btn {
+      padding: 20px 28px; font-size: 1.18rem; font-weight: 800;
+      background: rgba(255,255,255,0.16); border: 2px solid rgba(255,255,255,0.40);
+      box-shadow: 0 16px 38px rgba(0,0,0,0.26); border-radius: 16px;
+    }
+    body.terrain .weather-pill {
+      padding: 16px 24px; font-size: 1.1rem;
+      background: rgba(255,255,255,0.18); border: 2px solid rgba(255,255,255,0.32);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);
+      border-radius: 18px;
+    }
+    body.terrain .weather-pill .wi { font-size: 2.6rem; line-height: 1; }
+    body.terrain .weather-pill .wt { font-size: 1.35rem; }
+    body.terrain .day-num   { font-size: 3.8rem; letter-spacing: -0.04em; }
+    body.terrain .day-wx-icon { font-size: 3.8rem; }
+    body.terrain .day-temps { font-size: 2.1rem; line-height: 1; }
+    body.terrain .day-temps .lo { font-size: 1.25rem; margin-left: 14px; }
+    body.terrain .day-hd-body {
+      padding: 34px 30px 32px;
+      background: rgba(12,18,30,0.98);
+      border: 2px solid rgba(255,255,255,0.24);
+      border-radius: 24px;
+      box-shadow: 0 24px 58px rgba(0,0,0,0.32);
+    }
+    body.terrain .day-hd {
+      border-color: rgba(245,158,11,0.56);
+      box-shadow: 0 22px 54px rgba(245,158,11,0.14);
+      border-radius: 24px;
+    }
+    body.terrain .day-lbl { color: #fbbf24; font-size: 1.05rem; font-weight: 700; }
+    body.terrain .day-wx-lbl { color: #e2e8f0; font-size: 1.05rem; }
+    body.terrain .day-temps .lo { color: #dbeafe; }
+    body.terrain .risk-badge {
+      font-size: 1.05rem; padding: 12px 18px;
+      border-radius: 16px; letter-spacing: .09em;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    }
+    body.terrain .risk-badge.risk { background: rgba(245,158,11,0.30); border-color: rgba(245,158,11,0.72); color: #fef3c7; }
+    body.terrain .risk-badge.danger { background: rgba(239,68,68,0.34); border-color: rgba(239,68,68,0.76); color: #fee2e2; }
+    body.terrain .risk-badge.ok { background: rgba(16,185,129,0.24); border-color: rgba(16,185,129,0.72); color: #d1fae5; }
+    body.terrain .task-card {
+      padding: 26px 24px 22px; border-width: 2px; border-color: rgba(255,255,255,0.22);
+      background: rgba(18,26,44,0.98); box-shadow: 0 24px 56px rgba(0,0,0,0.30);
+      border-radius: 22px;
+    }
+    body.terrain .task-card::before { width: 6px; }
+    body.terrain .tc-name { font-size: 1.35rem; font-weight: 900; color: #f8fbff; line-height: 1.1; }
+    body.terrain .tc-client { font-size: 1rem; color: #d3e3ff; margin-top: 8px; }
+    body.terrain .tc-time { font-size: 1rem; color: #f8fbff; margin-top: 8px; letter-spacing: .01em; }
+    body.terrain .tc-risk { font-size: 1rem; margin-top: 12px; }
+    body.terrain .tc-score { margin-top: 12px; }
     body.terrain .tc-edit-btn,
-    body.terrain .tc-del-btn { opacity: 1 !important; width: 28px; height: 28px; font-size: 0.88rem; }
-    body.terrain .add-btn { font-size: 0.92rem; padding: 12px; }
+    body.terrain .tc-del-btn { opacity: 1 !important; width: 52px; height: 52px; font-size: 1.2rem; border: 2px solid rgba(255,255,255,0.22); }
+    body.terrain .tc-edit-btn:hover { background: rgba(99,102,241,0.22); }
+    body.terrain .tc-del-btn:hover { background: rgba(239,68,68,0.24); }
+    body.terrain .add-btn { font-size: 1.2rem; padding: 24px 28px; min-height: 88px; border: 2px solid rgba(255,255,255,0.30); border-radius: 18px; }
+    body.terrain .add-btn:hover { background: rgba(255,255,255,0.10); }
+    body.terrain .day-col { gap: 24px; }
+    body.terrain .board { gap: 26px; }
+    body.terrain .task-slot { gap: 16px; }
+    body.terrain .brand-text b { font-size: 1.2rem; }
+    body.terrain .brand-text em { color: #dbe8ff; }
+    body.terrain .act-btn.active { background: rgba(245,158,11,0.42); border-color: rgba(245,158,11,0.82); color: #fff; }
+    body.terrain .day-hd-body:hover { background: rgba(18,27,46,0.98); box-shadow: 0 24px 64px rgba(0,0,0,0.28); }
+    body.terrain .day-wx-row { gap: 18px; }
+    body.terrain .day-hd .risk-bar { height: 7px; }
+    body.terrain .day-hd.today { border-color: rgba(245,158,11,0.90); }
+    body.terrain .loc-dot { box-shadow: 0 0 16px var(--ok); }
 
     /* ── SWAP BANNER ─────────────────────────────── */
     #swapBanner {
@@ -169,137 +371,168 @@
     .swap-pill .sp-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
 
     /* ── BOARD ───────────────────────────────────── */
-    .board-wrap { overflow-x: auto; padding: 18px; }
+    .board-wrap {
+      overflow-x: auto; padding: 20px;
+      background: linear-gradient(180deg, rgba(9,14,26,0.92), rgba(12,18,34,0.96));
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 28px;
+      backdrop-filter: blur(10px);
+    }
     .board {
       display: grid;
       grid-template-columns: repeat(7, var(--col));
-      gap: 10px;
-      min-width: calc(7 * var(--col) + 6 * 10px);
+      gap: 14px;
+      min-width: calc(7 * var(--col) + 6 * 14px);
     }
 
     /* ── DAY COLUMN ──────────────────────────────── */
-    .day-col { display: flex; flex-direction: column; gap: 8px; }
+    .day-col { display: flex; flex-direction: column; gap: 12px; }
 
     .day-hd {
-      border-radius: 14px; overflow: hidden;
-      border: 1px solid var(--border);
-      transition: border-color .25s;
+      border-radius: 20px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.16);
+      transition: border-color .25s, transform .25s, box-shadow .25s;
     }
-    .day-hd.today { border-color: rgba(99,102,241,0.55); }
+    .day-hd:hover { transform: translateY(-1px); box-shadow: 0 18px 44px rgba(0,0,0,0.2); }
+    .day-hd.today { border-color: rgba(99,102,241,0.92); box-shadow: 0 18px 48px rgba(66,84,187,0.24); }
 
-    .risk-bar { height: 4px; width: 100%; }
+    .risk-bar { height: 5px; width: 100%; }
     .risk-bar.ok     { background: var(--ok); }
     .risk-bar.risk   { background: var(--risk); }
     .risk-bar.danger { background: var(--danger); }
 
     .day-hd-body {
-      padding: 11px 13px 10px; background: var(--bg1);
-      cursor: pointer; transition: background .15s;
+      padding: 18px 20px 18px; background: linear-gradient(180deg, rgba(18,25,44,0.98), rgba(16,22,38,0.98));
+      cursor: pointer; transition: background .15s, border-color .2s, box-shadow .2s;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
     }
-    .day-hd-body:hover { background: rgba(30,40,65,0.98); }
+    .day-hd-body:hover { background: rgba(26,36,58,0.98); }
 
     .day-lbl {
-      font-size: 0.7rem; font-weight: 800; color: var(--text2);
-      text-transform: uppercase; letter-spacing: .09em; margin-bottom: 1px;
+      font-size: 0.78rem; font-weight: 800; color: #a5b4fc;
+      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px;
     }
     .day-num {
-      font-size: 1.55rem; font-weight: 800; letter-spacing: -.02em; line-height: 1;
+      font-size: 2.05rem; font-weight: 900; letter-spacing: -.03em; line-height: 1;
     }
-    .today .day-num { color: #a5b4fc; }
+    .today .day-num { color: #c7d2fe; }
 
-    .day-wx-row { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
-    .day-wx-icon { font-size: 1.45rem; line-height: 1; flex-shrink: 0; }
-    .day-wx-info { display: flex; flex-direction: column; gap: 1px; }
-    .day-temps { font-size: 0.85rem; font-weight: 700; }
+    .day-wx-row { display: flex; align-items: center; gap: 11px; margin-top: 12px; }
+    .day-wx-icon { font-size: 1.95rem; line-height: 1; flex-shrink: 0; }
+    .day-wx-info { display: flex; flex-direction: column; gap: 3px; }
+    .day-temps { font-size: 1.15rem; font-weight: 800; line-height: 1.1; }
     .day-temps .hi { color: var(--text0); }
-    .day-temps .lo { color: var(--text2); font-size: 0.78rem; }
-    .day-wx-lbl { font-size: 0.72rem; color: var(--text2); }
+    .day-temps .lo { color: var(--text1); font-size: 0.92rem; }
+    .day-wx-lbl { font-size: 0.88rem; color: var(--text1); }
 
-    .day-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .day-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .chip {
-      padding: 2px 7px; border-radius: 999px; font-size: 0.68rem; font-weight: 700;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text2);
+      padding: 3px 9px; border-radius: 999px; font-size: 0.76rem; font-weight: 700;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); color: var(--text2);
     }
-    .chip.warn { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
-    .chip.bad  { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
-    .chip.rain-mm { background: rgba(59,130,246,0.10); border-color: rgba(59,130,246,0.3); color: #93c5fd; }
+    .chip.warn { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
+    .chip.bad  { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
+    .chip.rain-mm { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3); color: #93c5fd; }
 
     .risk-badge {
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      margin-top: 7px; padding: 5px 8px; border-radius: 8px;
-      font-size: 0.70rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em;
+      display: inline-flex; align-items: center;
+      justify-content: center;
+      font-size: 0.82rem; padding: 10px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      letter-spacing: .08em;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
     }
-    .risk-badge.ok     { background: var(--ok-bg);     color: var(--ok);     border: 1px solid var(--ok-bd); }
-    .risk-badge.risk   { background: var(--risk-bg);   color: var(--risk);   border: 1px solid var(--risk-bd); }
-    .risk-badge.danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-bd); }
+    .risk-badge.ok     { background: rgba(16,185,129,0.18); color: #a7f3d0; }
+    .risk-badge.risk   { background: rgba(245,158,11,0.20); color: #fde68a; }
+    .risk-badge.danger { background: rgba(239,68,68,0.20); color: #fecaca; }
+
+    .score-badge { font-size: 0.72rem; padding: 5px 10px; }
+    .add-btn {
+      width: 100%; padding: 16px 18px;
+      background: transparent; border: 1.5px dashed rgba(255,255,255,0.18);
+      border-radius: 16px; color: var(--text1); font-size: 0.96rem;
+      cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+      min-height: 54px;
+    }
+    .add-btn:hover {
+      border-color: rgba(99,102,241,0.6); color: #e0e7ff;
+      background: rgba(99,102,241,0.08);
+    }
+
+    .backlog-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
     /* ── TASK SLOT ───────────────────────────────── */
     .task-slot { display: flex; flex-direction: column; gap: 7px; min-height: 20px; }
 
     .task-card {
-      position: relative; padding: 11px 11px 9px;
-      border-radius: 11px; border: 1px solid var(--border);
-      background: var(--bg2); cursor: pointer;
+      position: relative; padding: 16px 16px 14px;
+      border-radius: 14px; border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(18,26,44,0.98); cursor: pointer;
       transition: transform .15s, border-color .2s, box-shadow .2s;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.20);
     }
-    .task-card:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,.4); }
+    .task-card:hover { transform: translateY(-1px); box-shadow: 0 18px 36px rgba(0,0,0,.32); }
     .task-card::before {
       content: ''; position: absolute;
       top: 0; left: 0; bottom: 0; width: 3px;
-      border-radius: 11px 0 0 11px;
+      border-radius: 14px 0 0 14px;
     }
-    .task-card.ok     { border-color: rgba(16,185,129,0.28); }
+    .task-card.ok     { border-color: rgba(16,185,129,0.35); }
     .task-card.ok::before     { background: var(--ok); }
-    .task-card.risk   { border-color: rgba(245,158,11,0.32); }
+    .task-card.risk   { border-color: rgba(245,158,11,0.38); }
     .task-card.risk::before   { background: var(--risk); }
-    .task-card.danger { border-color: rgba(239,68,68,0.40); }
+    .task-card.danger { border-color: rgba(239,68,68,0.48); }
     .task-card.danger::before { background: var(--danger); }
 
     .tc-icon   { font-size: 1.1rem; line-height: 1; margin-bottom: 3px; }
-    .tc-name   { font-size: 0.85rem; font-weight: 700; color: var(--text0); padding-right: 58px; }
-    .tc-client { font-size: 0.73rem; color: var(--text2); margin-top: 1px; }
-    .tc-risk   { font-size: 0.72rem; margin-top: 6px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.3; }
+    .tc-name   { font-size: 0.92rem; font-weight: 800; color: var(--text0); padding-right: 68px; }
+    .tc-client { font-size: 0.78rem; color: var(--text2); margin-top: 3px; }
+    .tc-risk   { font-size: 0.78rem; margin-top: 8px; display: flex; align-items: flex-start; gap: 5px; line-height: 1.3; }
     .tc-risk.ok     { color: #6ee7b7; }
     .tc-risk.risk   { color: #fcd34d; }
     .tc-risk.danger { color: #fca5a5; }
-    .tc-score { display: flex; justify-content: flex-end; margin-top: 5px; }
+    .tc-score { display: flex; justify-content: flex-end; margin-top: 6px; }
 
     /* ── CARD ACTION BUTTONS ────────────────────── */
     .tc-actions {
-      position: absolute; top: 7px; right: 7px;
-      display: flex; gap: 4px; z-index: 1;
+      position: absolute; top: 9px; right: 9px;
+      display: flex; gap: 6px; z-index: 1;
     }
     .tc-edit-btn, .tc-del-btn {
-      width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 10px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.78rem;
-      opacity: 0.35; transition: opacity .15s, background .15s;
+      font-size: 0.9rem;
+      opacity: 0.6; transition: opacity .15s, background .15s;
     }
     .task-card:hover .tc-edit-btn,
     .task-card:hover .tc-del-btn { opacity: 1; }
-    @media (hover: none) { .tc-edit-btn, .tc-del-btn { opacity: 0.7; } }
+    @media (hover: none) { .tc-edit-btn, .tc-del-btn { opacity: 0.8; } }
     .tc-edit-btn {
-      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.20);
-      color: #a5b4fc;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.24);
+      color: #c7d2fe;
     }
-    .tc-edit-btn:hover { background: rgba(99,102,241,0.22); }
+    .tc-edit-btn:hover { background: rgba(99,102,241,0.25); }
     .tc-del-btn {
-      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.20);
-      color: #f87171;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.24);
+      color: #fca5a5;
     }
-    .tc-del-btn:hover { background: rgba(239,68,68,0.25); }
+    .tc-del-btn:hover { background: rgba(239,68,68,0.28); }
 
     .add-btn {
-      width: 100%; padding: 10px;
-      background: transparent; border: 1.5px dashed rgba(255,255,255,0.13);
-      border-radius: 10px; color: var(--text3); font-size: 0.81rem;
+      width: 100%; padding: 14px 16px;
+      background: transparent; border: 1.5px dashed rgba(255,255,255,0.18);
+      border-radius: 12px; color: var(--text1); font-size: 0.92rem;
       cursor: pointer;
       transition: border-color .2s, color .2s, background .2s;
-      min-height: 44px;
+      min-height: 48px;
     }
     .add-btn:hover {
-      border-color: rgba(99,102,241,0.5); color: #a5b4fc;
-      background: rgba(99,102,241,0.06);
+      border-color: rgba(99,102,241,0.6); color: #e0e7ff;
+      background: rgba(99,102,241,0.08);
     }
 
     /* ── SKELETON ────────────────────────────────── */
@@ -317,43 +550,44 @@
     /* ── MODAL BASE ──────────────────────────────── */
     .overlay {
       position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.72);
+      background: rgba(0,0,0,0.78);
       display: flex; align-items: center; justify-content: center;
-      padding: 20px;
+      padding: 22px;
       opacity: 0; pointer-events: none;
       transition: opacity .2s;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
     .overlay.open { opacity: 1; pointer-events: auto; }
     .modal {
-      width: 100%; max-width: 440px;
-      background: var(--bg1);
-      border: 1px solid var(--border2);
-      border-radius: 20px; padding: 26px 22px;
-      box-shadow: 0 28px 64px rgba(0,0,0,0.65);
-      transform: translateY(14px) scale(.98);
+      width: 100%; max-width: 460px;
+      background: rgba(15,22,38,0.98);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 24px; padding: 28px 24px;
+      box-shadow: 0 32px 88px rgba(0,0,0,0.65);
+      transform: translateY(18px) scale(.98);
       transition: transform .25s cubic-bezier(.2,.7,.3,1);
       max-height: 90vh; overflow-y: auto;
     }
     .overlay.open .modal { transform: none; }
-    .modal h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 18px; letter-spacing: -.01em; }
+    .modal h3 { font-size: 1.18rem; font-weight: 900; margin-bottom: 20px; letter-spacing: -.02em; }
 
-    .fg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .fg label {
-      font-size: 0.73rem; font-weight: 700; color: var(--text2);
-      text-transform: uppercase; letter-spacing: .07em;
+      font-size: 0.75rem; font-weight: 800; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .09em;
     }
     .fg input, .fg select, .fg textarea {
-      padding: 11px 13px;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text0); font-size: 0.93rem;
-      outline: none; transition: border-color .2s;
-      -webkit-appearance: none; font-family: inherit;
+      padding: 13px 14px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 14px; color: var(--text0); font-size: 0.95rem;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none; appearance: none; font-family: inherit;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.03);
     }
-    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--accent); }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
     .fg select option { background: #1a2035; }
-    .fg textarea { resize: vertical; min-height: 64px; }
+    .fg textarea { resize: vertical; min-height: 68px; }
 
     .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
     .type-btn {
@@ -369,22 +603,25 @@
       border-color: var(--accent); background: rgba(99,102,241,0.12); color: var(--text0);
     }
 
-    .mf { display: flex; gap: 9px; margin-top: 6px; }
+    .mf { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
     .btn-cancel {
-      flex: 1; padding: 12px; border-radius: 11px;
+      flex: 1; padding: 14px 16px; border-radius: 12px;
       background: var(--glass); border: 1px solid var(--border);
-      color: var(--text1); font-size: 0.92rem; font-weight: 600;
+      color: var(--text1); font-size: 0.96rem; font-weight: 600;
       cursor: pointer; transition: background .2s;
+      min-height: 44px;
     }
-    .btn-cancel:hover { background: rgba(255,255,255,0.09); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.12); }
     .btn-primary {
-      flex: 2; padding: 12px; border-radius: 11px; border: none;
+      flex: 2; padding: 14px 16px; border-radius: 12px; border: none;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; font-size: 0.92rem; font-weight: 700; cursor: pointer;
-      box-shadow: 0 8px 22px rgba(99,102,241,0.4);
+      color: #fff; font-size: 0.96rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 10px 26px rgba(99,102,241,0.42);
       transition: filter .2s, transform .15s;
+      min-height: 46px;
     }
     .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-primary:focus-visible { outline: 3px solid rgba(99,102,241,0.35); outline-offset: 2px; }
     .btn-primary:active { transform: none; }
 
     .del-confirm {
@@ -395,53 +632,57 @@
     }
     .del-confirm span { flex: 1; min-width: 0; }
     .btn-del-yes {
-      padding: 6px 13px; border-radius: 8px; cursor: pointer;
+      padding: 8px 14px; border-radius: 9px; cursor: pointer;
       background: rgba(239,68,68,0.22); border: 1px solid rgba(239,68,68,0.45);
-      color: #f87171; font-size: 0.8rem; font-weight: 700;
+      color: #f87171; font-size: 0.86rem; font-weight: 700;
       transition: background .15s; white-space: nowrap;
+      min-height: 40px;
     }
     .btn-del-yes:hover { background: rgba(239,68,68,0.38); }
     .btn-del-no {
-      padding: 6px 10px; border-radius: 8px; cursor: pointer;
+      padding: 8px 12px; border-radius: 9px; cursor: pointer;
       background: var(--glass); border: 1px solid var(--border);
-      color: var(--text2); font-size: 0.8rem; font-weight: 600;
+      color: var(--text2); font-size: 0.86rem; font-weight: 600;
       transition: background .15s; white-space: nowrap;
+      min-height: 40px;
     }
-    .btn-del-no:hover { background: rgba(255,255,255,0.08); }
+    .btn-del-no:hover { background: rgba(255,255,255,0.12); }
 
     .btn-del {
-      padding: 12px 14px; border-radius: 11px; cursor: pointer; flex-shrink: 0;
-      background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.22);
-      color: #f87171; font-size: 0.86rem; font-weight: 600;
+      padding: 14px 16px; border-radius: 12px; cursor: pointer; flex-shrink: 0;
+      background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.24);
+      color: #f87171; font-size: 0.92rem; font-weight: 600;
       transition: background .2s, border-color .2s;
       white-space: nowrap;
+      min-height: 46px;
     }
-    .btn-del:hover { background: rgba(239,68,68,0.20); border-color: rgba(239,68,68,0.45); }
+    .btn-del:hover { background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.45); }
 
     /* ── LOCATION MODAL EXTRAS ───────────────────── */
     .btn-geo {
-      width: 100%; padding: 11px; border-radius: 10px; margin-bottom: 10px;
-      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.28);
-      color: #34d399; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      width: 100%; padding: 13px; border-radius: 12px; margin-bottom: 10px;
+      background: rgba(16,185,129,0.10); border: 1px solid rgba(16,185,129,0.30);
+      color: #34d399; font-size: 0.92rem; font-weight: 600; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 8px;
       transition: background .2s;
+      min-height: 44px;
     }
-    .btn-geo:hover { background: rgba(16,185,129,0.18); }
+    .btn-geo:hover { background: rgba(16,185,129,0.22); }
     .loc-input {
-      width: 100%; padding: 11px 13px; margin-bottom: 9px;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text0); font-size: 0.92rem;
+      width: 100%; padding: 12px 14px; margin-bottom: 9px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 12px; color: var(--text0); font-size: 0.96rem;
       outline: none; font-family: inherit;
     }
     .loc-input:focus { border-color: var(--accent); }
-    .loc-results { display: flex; flex-direction: column; gap: 5px; max-height: 230px; overflow-y: auto; }
+    .loc-results { display: flex; flex-direction: column; gap: 7px; max-height: 230px; overflow-y: auto; }
     .loc-item {
-      padding: 9px 13px; border-radius: 10px; cursor: pointer;
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      font-size: 0.88rem; color: var(--text1);
+      padding: 11px 14px; border-radius: 12px; cursor: pointer;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14);
+      font-size: 0.92rem; color: var(--text1);
       transition: background .15s, border-color .15s;
     }
-    .loc-item:hover { background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.35); color: var(--text0); }
+    .loc-item:hover { background: rgba(99,102,241,0.14); border-color: rgba(99,102,241,0.40); color: var(--text0); }
     .loc-empty { font-size: 0.85rem; color: var(--text3); padding: 10px 0; }
 
     /* ── DAY DETAIL STAT GRID ────────────────────── */
@@ -479,6 +720,50 @@
       transition: background .15s; white-space: nowrap;
     }
     .job-del-btn:hover { background: rgba(239,68,68,0.22); }
+    .backlog-section {
+      margin-bottom: 20px; padding: 22px; background: rgba(15,22,38,0.96);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 26px;
+      box-shadow: 0 18px 44px rgba(0,0,0,0.18);
+    }
+    .backlog-hd {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+      margin-bottom: 14px;
+    }
+    .backlog-hd h2 { font-size: 1.12rem; font-weight: 900; letter-spacing: -0.02em; margin: 0; }
+    .backlog-count {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: 999px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+      color: var(--text1); font-size: 0.85rem; font-weight: 700;
+    }
+    .backlog-hd p { color: var(--text2); font-size: 0.86rem; margin-top: 4px; }
+    .backlog-list { display: grid; gap: 16px; }
+    .backlog-empty { color: var(--text2); padding: 22px 0; font-size: 0.95rem; }
+    .backlog-card {
+      background: rgba(17,24,38,0.96); border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 22px; padding: 18px; box-shadow: 0 16px 36px rgba(0,0,0,0.16);
+      display: grid; gap: 14px;
+    }
+    .backlog-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .backlog-title { font-size: 1.02rem; font-weight: 900; }
+    .backlog-meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--text2); font-size: 0.84rem; }
+    .backlog-meta span {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; background: rgba(255,255,255,0.06);
+      border-radius: 999px; border: 1px solid rgba(255,255,255,0.10);
+    }
+    .backlog-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .backlog-btn {
+      padding: 11px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.07); color: var(--text0);
+      font-size: 0.9rem; font-weight: 800; cursor: pointer;
+      min-width: 110px;
+      transition: transform .15s, background .2s, border-color .2s;
+    }
+    .backlog-btn:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+    .backlog-btn.plan { background: rgba(99,102,241,0.20); border-color: rgba(99,102,241,0.30); }
+    .backlog-btn.edit { background: rgba(255,255,255,0.08); }
+    .backlog-btn.del { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.30); color: #fee2e2; }
     .jobs-add-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;
     }
@@ -533,9 +818,7 @@
 <div class="action-bar">
   <button class="act-btn" id="btnTerrain" onclick="toggleTerrain()">🔆 Mode Terrain</button>
   <button class="act-btn" onclick="openVoice()">🎙 Dicter</button>
-  <button class="act-btn" onclick="openJobsModal()">⚙ Métiers</button>
-  <button class="act-btn" onclick="optimizeWeek()">📅 Optimiser</button>
-</div>
+    <button class="act-btn" onclick="openPhotoModal()">📸 Ajouter par photo</button>
 
 <!-- SWAP BANNER -->
 <div id="swapBanner">
@@ -545,6 +828,30 @@
 
 <!-- BOARD -->
 <div class="board-wrap">
+  <section class="backlog-section">
+    <div class="backlog-hd">
+      <div>
+        <div class="backlog-title-row">
+          <h2>Banque de jobs</h2>
+          <span class="backlog-count" id="backlogCount">0 jobs en banque</span>
+        </div>
+        <p>Chantiers non planifiés prêts à être placés sur le calendrier.</p>
+      </div>
+      <button class="act-btn" onclick="openAddTask(null)">+ Nouveau job</button>
+    </div>
+    <div id="backlogList" class="backlog-list"></div>
+  </section>
+  <div class="calendar-hd">
+    <div>
+      <h2 id="calendarMonthLabel">Calendrier mensuel</h2>
+      <p>Les chantiers planifiés s’affichent sur le mois. Cliquez sur un jour pour voir les chantiers ou ajouter un nouveau job.</p>
+    </div>
+    <div class="calendar-nav">
+      <button class="nav-btn" onclick="setCalendarMonth(-1)">← Mois précédent</button>
+      <button class="nav-btn" onclick="setCalendarMonth(0)">Mois actuel</button>
+      <button class="nav-btn" onclick="setCalendarMonth(1)">Mois suivant →</button>
+    </div>
+  </div>
   <div class="board" id="board"></div>
 </div>
 
@@ -565,8 +872,44 @@
       <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50">
     </div>
     <div class="fg">
-      <label>Jour</label>
-      <select id="tDay"></select>
+      <label>Lieu</label>
+      <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80">
+    </div>
+    <div class="fg">
+      <label>Durée</label>
+      <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30">
+    </div>
+    <div class="task-mode-tabs">
+      <button type="button" id="taskModeBtnManual" class="mode-btn sel" onclick="setTaskMode('manual')">Manuel</button>
+      <button type="button" id="taskModeBtnVoice" class="mode-btn" onclick="setTaskMode('voice')">Dicter</button>
+      <button type="button" id="taskModeBtnPhoto" class="mode-btn" onclick="setTaskMode('photo')">Photo</button>
+    </div>
+    <div class="task-mode-block active" id="taskManualSection">
+      <div class="mode-note">Remplissez les détails du chantier puis sauvegardez. Utilisez les onglets pour dicter ou importer une photo.</div>
+    </div>
+    <div class="task-mode-block" id="taskVoiceSection">
+      <div class="mode-note">Dictez une phrase comme « Toiture chez Tremblay vendredi à 9h priorité urgente ». Appuyez sur le micro puis analysez.</div>
+      <div class="voice-line">
+        <button type="button" class="btn-secondary" onclick="startTaskMic()">🎙 Démarrer la dictée</button>
+        <span class="voice-status" id="taskVoiceStatus">🎤</span>
+      </div>
+      <textarea id="taskVoiceText" rows="3" placeholder="Le texte dicté apparaîtra ici"></textarea>
+      <button type="button" class="btn-secondary" onclick="applyTaskVoice()">Analyser et remplir</button>
+    </div>
+    <div class="task-mode-block" id="taskPhotoSection">
+      <div class="mode-note">Importez une photo pour créer un brouillon modifiable. Le nom du fichier peut servir de base.</div>
+      <input type="file" id="taskPhotoFile" class="task-file-input" accept="image/*" capture="environment" onchange="loadTaskPhoto(this.files)">
+      <div class="task-photo-preview" id="taskPhotoPreviewContainer" style="display:none">
+        <img id="taskPhotoPreview" alt="Aperçu photo">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Date</label>
+      <input type="date" id="tDate">
+    </div>
+    <div class="fg">
+      <label>Heure</label>
+      <input type="time" id="tTime" value="">
     </div>
     <div class="fg">
       <label>Priorité</label>
@@ -640,6 +983,54 @@
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('voiceOverlay')">Annuler</button>
       <button class="btn-primary" onclick="analyzeAndCreate()">Analyser →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO ANALYSIS MODAL -->
+<div class="overlay" id="photoOverlay" onclick="overlayClick(event,'photoOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>📸 Analyse photo</h3>
+    <p class="photo-overlay-note">Téléchargez une photo de formulaire, soumission ou note de chantier. Les champs seront préremplis et créent un brouillon dans la banque.</p>
+    <div class="fg">
+      <label>Importer une photo</label>
+      <input type="file" id="photoFile" accept="image/*" capture="environment" onchange="loadPhotoPreview(this.files)">
+    </div>
+    <div class="photo-preview" id="photoPreviewContainer" style="display:none">
+      <img id="photoPreview" alt="Aperçu de la photo">
+    </div>
+    <div class="fg">
+      <label>Nom du chantier</label>
+      <input type="text" id="photoName" placeholder="Titre du chantier" maxlength="60">
+    </div>
+    <div class="fg">
+      <label>Client</label>
+      <input type="text" id="photoClient" placeholder="Nom du client" maxlength="50">
+    </div>
+    <div class="fg">
+      <label>Lieu</label>
+      <input type="text" id="photoLocation" placeholder="Ville, adresse, secteur" maxlength="80">
+    </div>
+    <div class="fg">
+      <label>Durée</label>
+      <input type="text" id="photoDuration" placeholder="ex : 2h, 1 journée" maxlength="30">
+    </div>
+    <div class="fg">
+      <label>Type de travail</label>
+      <select id="photoType"></select>
+    </div>
+    <div class="fg">
+      <label>Priorité</label>
+      <select id="photoPrio">
+        <option value="urgent">🔴 Urgente</option>
+        <option value="high">🟠 Haute</option>
+        <option value="medium" selected>🟡 Moyenne</option>
+        <option value="low">🟢 Basse</option>
+      </select>
+    </div>
+    <div class="mf">
+      <button class="btn-cancel" onclick="closeModal('photoOverlay')">Annuler</button>
+      <button class="btn-primary" onclick="createPhotoDraft()">Créer brouillon de job</button>
     </div>
   </div>
 </div>
@@ -925,8 +1316,11 @@ var ST = {
   tasks:    [],
 };
 
-var _editingId  = null;
-var _dayPending = 0;
+var _editingId      = null;
+var _dayPending     = 0;
+var _taskSource     = 'manual';
+var _taskPhotoPreview = null;
+var _calendarActive = new Date(); _calendarActive.setHours(0,0,0,0); _calendarActive.setDate(1);
 
 function loadST() {
   try {
@@ -934,7 +1328,18 @@ function loadST() {
     if (!raw) return;
     var p = JSON.parse(raw);
     if (p.loc   && typeof p.loc.lat === 'number') ST.loc   = p.loc;
-    if (Array.isArray(p.tasks))                   ST.tasks = p.tasks;
+    if (Array.isArray(p.tasks)) {
+      ST.tasks = p.tasks.map(function(task) {
+        if (!task.status) {
+          task.status = (task.dayIndex === undefined || task.dayIndex === null) ? 'backlog' : 'scheduled';
+        }
+        if (!task.source) task.source = 'manual';
+        if (!task.name && task.title) task.name = task.title;
+        if (!task.title) task.title = task.name || '';
+        if (!task.priority) task.priority = 'medium';
+        return task;
+      });
+    }
   } catch(e) {}
 }
 function saveST() {
@@ -1130,17 +1535,33 @@ var _micActive = false;
 var _micRec    = null;
 
 function openVoice() {
-  document.getElementById('voiceText').value = '';
-  document.getElementById('voiceStatus').textContent = '🎤';
+  _taskSource = 'voice';
+  openAddTask(null);
+  setTaskMode('voice');
+  var textArea = document.getElementById('taskVoiceText');
+  var statusEl = document.getElementById('taskVoiceStatus');
+  if (textArea) textArea.value = '';
+  if (statusEl) statusEl.textContent = '🎤';
   _micActive = false;
-  openModal('voiceOverlay');
   setTimeout(startMic, 300);
+}
+
+function voiceTextElement() {
+  return document.getElementById('taskVoiceText') || document.getElementById('voiceText');
+}
+
+function voiceStatusElement() {
+  return document.getElementById('taskVoiceStatus') || document.getElementById('voiceStatus');
 }
 
 function startMic() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var statusEl = voiceStatusElement();
+  var textEl = voiceTextElement();
   if (!SR) {
-    document.getElementById('voiceStatus').innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro non disponible<br>Saisir ci-dessous</span>';
+    if (statusEl) {
+      statusEl.innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro non disponible<br>Saisir ci-dessous</span>';
+    }
     return;
   }
   if (_micRec) { try { _micRec.stop(); } catch(e) {} }
@@ -1149,14 +1570,16 @@ function startMic() {
   _micRec.interimResults = false;
   _micRec.maxAlternatives = 1;
   _micActive = true;
-  document.getElementById('voiceStatus').textContent = '🔴';
+  if (statusEl) statusEl.textContent = '🔴';
   _micRec.onresult = function(e) {
-    document.getElementById('voiceText').value = e.results[0][0].transcript;
-    document.getElementById('voiceStatus').textContent = '✅';
+    if (textEl) textEl.value = e.results[0][0].transcript;
+    if (statusEl) statusEl.textContent = '✅';
     _micActive = false;
   };
   _micRec.onerror = function() {
-    document.getElementById('voiceStatus').innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro indisponible<br>Saisir ci-dessous</span>';
+    if (statusEl) {
+      statusEl.innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro indisponible<br>Saisir ci-dessous</span>';
+    }
     _micActive = false;
   };
   _micRec.onend = function() { _micActive = false; };
@@ -1164,11 +1587,21 @@ function startMic() {
 }
 
 function analyzeAndCreate() {
-  var text = document.getElementById('voiceText').value.trim();
+  var textEl = document.getElementById('voiceText');
+  var text = textEl ? textEl.value.trim() : '';
   if (!text) { toast('⚠ Aucun texte à analyser'); return; }
   var parsed = parseVoiceInput(text);
   if (_micRec) { try { _micRec.stop(); } catch(e) {} }
   closeModal('voiceOverlay');
+  applyVoiceParsed(parsed);
+}
+
+function applyTaskVoice() {
+  var textEl = document.getElementById('taskVoiceText');
+  var text = textEl ? textEl.value.trim() : '';
+  if (!text) { toast('⚠ Aucun texte à analyser'); return; }
+  var parsed = parseVoiceInput(text);
+  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
   applyVoiceParsed(parsed);
 }
 
@@ -1177,16 +1610,25 @@ function parseVoiceInput(text) {
   var today = new Date();
   // day detection — map to forecast index 0-6
   var dayIndex = 0;
-  var dayNames = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  if (t.indexOf('demain') !== -1)       { dayIndex = 1; }
-  else if (t.indexOf("aujourd'hui") !== -1 || t.indexOf('auj') !== -1) { dayIndex = 0; }
+  var dayNamesFr = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  var dayNamesEn = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  var nextWord = /\b(?:next|prochain|prochaine)\b/.test(t);
+  if (/\b(?:demain|tomorrow)\b/.test(t))       { dayIndex = 1; }
+  else if (/\b(?:aujourd'hui|aujourd hui|today|auj)\b/.test(t)) { dayIndex = 0; }
   else {
-    for (var i = 0; i < dayNames.length; i++) {
-      if (t.indexOf(dayNames[i]) !== -1) {
-        var diff = (i - today.getDay() + 7) % 7;
-        dayIndex = diff;
-        break;
+    var foundDay = null;
+    for (var i = 0; i < dayNamesFr.length; i++) {
+      if (new RegExp('\\b' + dayNamesFr[i] + '\\b').test(t)) { foundDay = i; break; }
+    }
+    if (foundDay === null) {
+      for (var j = 0; j < dayNamesEn.length; j++) {
+        if (new RegExp('\\b' + dayNamesEn[j] + '\\b').test(t)) { foundDay = j; break; }
       }
+    }
+    if (foundDay !== null) {
+      var diff = (foundDay - today.getDay() + 7) % 7;
+      if (diff === 0 && nextWord) diff = 7;
+      dayIndex = diff;
     }
   }
   if (dayIndex > 6) dayIndex = 6;
@@ -1197,10 +1639,9 @@ function parseVoiceInput(text) {
   else if (t.indexOf('basse') !== -1 || t.indexOf('low') !== -1) priority = 'low';
   // client
   var client = '';
-  var chezIdx = t.indexOf('chez ');
-  if (chezIdx !== -1) {
-    var rest = text.slice(chezIdx + 5).trim().split(/\s+/);
-    client = rest[0] || '';
+  var clientMatch = t.match(/\b(?:chez|pour|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ'’]+)/i);
+  if (clientMatch) {
+    client = clientMatch[1].replace(/[’']s$/i, '');
   }
   // job type via keyword matching
   var jobAliases = {
@@ -1208,7 +1649,7 @@ function parseVoiceInput(text) {
     hauteur:    ['hauteur','échafaudage','echafaudage'],
     pave:       ['pavé','pave','pavage','dallage'],
     excavation: ['excavation','terrassement','fouille','tranchée'],
-    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin'],
+    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','tree','trees','coupe','cut','cutting','abattage'],
     electrique: ['électrique','electrique','électricité','electricite'],
     toiture:    ['toiture','toit','couverture','bardeau'],
     peinture:   ['peinture','peindre'],
@@ -1228,29 +1669,155 @@ function parseVoiceInput(text) {
       if (aliases[i] && t.indexOf(aliases[i]) !== -1) { jobType = k; found = true; break; }
     }
   });
-  // clean name
-  var name = text
-    .replace(/chez\s+\S+/i, '')
-    .replace(/\b(urgent[e]?|priorit[eé]\s+\w+|haute?|basse?|moyenne?|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|aujourd'hui|demain)\b/gi, '')
-    .replace(/\s+/g, ' ').trim();
+  // clean name and keep a useful fallback
+  var name = text;
+  name = name.replace(/\b(?:chez|pour|at|for)\s+[A-Za-zÀ-ÖØ-öø-ÿ'’]+/gi, '');
+  name = name.replace(/\b(?:samedi prochain|vendredi prochain|dimanche prochain|jeudi prochain|mercredi prochain|mardi prochain|lundi prochain|next saturday|next friday|next sunday|next thursday|next wednesday|next tuesday|next monday|après-demain|apres-demain|tomorrow|demain)\b/gi, '');
+  name = name.replace(new RegExp('\\b(?:' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')\\b', 'gi'), '');
+  name = name.replace(/\b(?:urgent[e]?|priorit[eé]\s+\w+|haute?|basse?|moyenne?)\b/gi, '');
+  var time = '';
+  var timeMatch = text.match(/\b(?:à\s*)?([0-1]?\d|2[0-3])(?:h|:)([0-5]?\d)?\b/i);
+  if (timeMatch) {
+    var hour = parseInt(timeMatch[1], 10);
+    var min  = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    time = ('0' + hour).slice(-2) + ':' + ('0' + min).slice(-2);
+    name = name.replace(timeMatch[0], '');
+  }
+  if (!time) {
+    if (/\b(?:ce matin|this morning)\b/i.test(text))       time = '08:00';
+    else if (/\b(?:cet après-midi|après-midi|apres-midi|this afternoon)\b/i.test(text)) time = '14:00';
+    else if (/\b(?:ce soir|this evening)\b/i.test(text))   time = '18:00';
+  }
+  name = name.replace(/\s+/g, ' ').trim();
+  if (/\b(?:arbre|arbres|tree|trees|coupe|cut|cutting|abattage)\b/i.test(t)) {
+    name = 'Coupe d’arbres';
+  }
   if (!name) name = text.trim();
-  return { name: name, client: client, type: jobType, priority: priority, dayIndex: dayIndex };
+  return { name: name, client: client, type: jobType, priority: priority, dayIndex: dayIndex, time: time };
 }
 
 function applyVoiceParsed(parsed) {
-  _editingId  = null;
-  _dayPending = parsed.dayIndex;
+  _editingId        = null;
+  _dayPending       = parsed.dayIndex;
+  _taskSource       = 'voice';
+  _taskPhotoPreview = null;
   document.getElementById('taskModalTitle').textContent = 'Nouveau chantier (vocal)';
-  document.getElementById('tName').value   = parsed.name   || '';
-  document.getElementById('tClient').value = parsed.client || '';
-  document.getElementById('tPrio').value   = parsed.priority || 'medium';
+  document.getElementById('tName').value     = parsed.name     || '';
+  document.getElementById('tClient').value   = parsed.client   || '';
+  document.getElementById('tLocation').value = parsed.location || '';
+  document.getElementById('tDuration').value = parsed.duration || '';
+  document.getElementById('tTime').value     = parsed.time     || '';
+  document.getElementById('tPrio').value     = parsed.priority || 'medium';
   buildTypeGrid(parsed.type);
-  populateDaySelect(parsed.dayIndex);
+  var dateValue = '';
+  if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
+    dateValue = ST.forecast[parsed.dayIndex].date.toISOString().slice(0,10);
+  }
+  populateDateInput(dateValue);
+  setTaskMode('voice');
   document.getElementById('btnDel').style.display     = 'none';
   document.getElementById('btnSave').textContent      = 'Ajouter →';
   document.getElementById('delConfirm').style.display = 'none';
   openModal('taskOverlay');
   setTimeout(function() { document.getElementById('tName').focus(); }, 120);
+}
+
+function openPhotoModal() {
+  _taskSource       = 'photo';
+  _taskPhotoPreview = null;
+  document.getElementById('photoFile').value = '';
+  document.getElementById('photoName').value = '';
+  document.getElementById('photoClient').value = '';
+  document.getElementById('photoLocation').value = '';
+  document.getElementById('photoDuration').value = '';
+  document.getElementById('photoPrio').value = 'medium';
+  document.getElementById('photoPreview').src = '';
+  document.getElementById('photoPreviewContainer').style.display = 'none';
+  buildPhotoTypeSelect();
+  openModal('photoOverlay');
+}
+
+function buildPhotoTypeSelect(selectedType) {
+  var sel = document.getElementById('photoType');
+  sel.innerHTML = '';
+  var jobs = getMergedJobTypes();
+  var keys = Object.keys(jobs);
+  keys.forEach(function(key) {
+    var opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = jobs[key].short || jobs[key].name || key;
+    sel.appendChild(opt);
+  });
+  if (selectedType && keys.indexOf(selectedType) !== -1) {
+    sel.value = selectedType;
+  } else if (keys.length) {
+    sel.value = keys[0];
+  }
+}
+
+function loadPhotoPreview(files) {
+  if (!files || !files[0]) return;
+  var file = files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _taskPhotoPreview = e.target.result;
+    var img = document.getElementById('photoPreview');
+    img.src = _taskPhotoPreview;
+    document.getElementById('photoPreviewContainer').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  var parsed = parseJobFromImage(file);
+  if (parsed.name && !document.getElementById('photoName').value) document.getElementById('photoName').value = parsed.name;
+  if (parsed.client && !document.getElementById('photoClient').value) document.getElementById('photoClient').value = parsed.client;
+  if (parsed.location && !document.getElementById('photoLocation').value) document.getElementById('photoLocation').value = parsed.location;
+  if (parsed.duration && !document.getElementById('photoDuration').value) document.getElementById('photoDuration').value = parsed.duration;
+  buildPhotoTypeSelect(parsed.type);
+  document.getElementById('photoPrio').value = parsed.priority || 'medium';
+}
+
+function parseJobFromImage(imageFile) {
+  var name = imageFile.name ? imageFile.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ') : 'Chantier photo';
+  return {
+    name: name,
+    client: '',
+    location: '',
+    duration: '',
+    priority: 'medium',
+    type: Object.keys(getMergedJobTypes())[0] || 'general'
+  };
+}
+
+function createPhotoDraft() {
+  var name     = document.getElementById('photoName').value.trim();
+  var client   = document.getElementById('photoClient').value.trim();
+  var location = document.getElementById('photoLocation').value.trim();
+  var duration = document.getElementById('photoDuration').value.trim();
+  var type     = document.getElementById('photoType').value;
+  var prio     = document.getElementById('photoPrio').value;
+  if (!name) { toast('⚠ Nom du chantier requis'); return; }
+  var newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+  ST.tasks.push({
+    id: newId,
+    name: name,
+    title: name,
+    client: client,
+    location: location,
+    duration: duration,
+    type: type,
+    priority: prio,
+    status: 'backlog',
+    dayIndex: null,
+    scheduledDate: '',
+    scheduledTime: '',
+    source: 'photo',
+    photoPreview: _taskPhotoPreview || ''
+  });
+  saveST();
+  closeModal('photoOverlay');
+  renderBoard();
+  toast('✓ Brouillon ajouté à la banque de jobs');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1291,55 +1858,135 @@ function swapSuggestions() {
 ═══════════════════════════════════════════════════ */
 function renderBoard() {
   var board = document.getElementById('board');
+  var backlogEl = document.getElementById('backlogList');
   board.innerHTML = '';
-  if (!ST.forecast) { renderSkel(board); return; }
-  var today = new Date(); today.setHours(0,0,0,0);
-  ST.forecast.forEach(function(day, di) {
-    var d = new Date(day.date); d.setHours(0,0,0,0);
-    var isToday  = d.getTime() === today.getTime();
-    var dayRisk  = dayOverallRisk(day);
-    var tasks    = ST.tasks.filter(function(t) { return t.dayIndex === di; });
-    var windCls  = day.windspeed > 40 ? 'bad' : day.windspeed > 25 ? 'warn' : '';
-    var rainCls  = day.rain_prob > 70 ? 'bad' : day.rain_prob > 40 ? 'warn' : '';
-    var mon      = MONTHS[day.date.getMonth()];
-    var score    = calcScore(day);
-    var sc       = scoreCls(score);
-    var rainMm   = day.precipitation > 0
-      ? '<span class="chip rain-mm" title="Précipitations">💧' + day.precipitation + 'mm</span>'
-      : '';
-    var col = document.createElement('div');
-    col.className = 'day-col';
-    col.innerHTML =
-      '<div class="day-hd' + (isToday ? ' today' : '') + '">'
-      + '<div class="risk-bar ' + dayRisk + '"></div>'
-      + '<div class="day-hd-body" onclick="openDayDetail(' + di + ')" title="Voir le détail météo">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
-      + '<div class="day-lbl">' + esc(DAYS_S[day.date.getDay()].toUpperCase()) + (isToday ? ' · Auj.' : '') + '</div>'
-      + '<span class="score-badge ' + sc + '">' + score + '</span>'
-      + '</div>'
-      + '<div class="day-num">' + day.date.getDate() + ' <span style="font-size:.85rem;color:var(--text2)">' + mon + '</span></div>'
-      + '<div class="day-wx-row">'
-      + '<div class="day-wx-icon">' + wIcon(day.weathercode) + '</div>'
-      + '<div class="day-wx-info">'
-      + '<div class="day-temps"><span class="hi">' + day.temp_max + '°</span><span class="lo"> / ' + day.temp_min + '°</span></div>'
-      + '<div class="day-wx-lbl">' + wLabel(day.weathercode) + '</div>'
-      + '</div></div>'
-      + '<div class="day-chips">'
-      + '<span class="chip' + (windCls ? ' ' + windCls : '') + '" title="Vent max">💨' + day.windspeed + 'km/h</span>'
-      + '<span class="chip' + (rainCls ? ' ' + rainCls : '') + '" title="Probabilité pluie">🌧' + day.rain_prob + '%</span>'
-      + rainMm
-      + '</div>'
-      + '<div class="risk-badge ' + dayRisk + '">'
-      + (dayRisk === 'ok' ? '✓ OK' : dayRisk === 'risk' ? '⚠ Risque' : '✕ Danger')
-      + '</div>'
-      + '</div></div>'
-      + '<div class="task-slot" id="slot-' + di + '"></div>'
-      + '<button class="add-btn" onclick="openAddTask(' + di + ')">+ Ajouter un chantier</button>';
-    board.appendChild(col);
-    var slot = col.querySelector('#slot-' + di);
-    tasks.forEach(function(task) { slot.appendChild(mkTaskCard(task, day)); });
+  if (backlogEl) {
+    var backlogTasks = ST.tasks.filter(function(t) {
+      return t.status === 'backlog' || (typeof t.status === 'undefined' && (t.dayIndex === undefined || t.dayIndex === null));
+    });
+    backlogEl.innerHTML = '';
+    var countEl = document.getElementById('backlogCount');
+    if (countEl) {
+      countEl.textContent = backlogTasks.length + ' job' + (backlogTasks.length > 1 ? 's' : '') + ' en banque';
+    }
+    if (!backlogTasks.length) {
+      backlogEl.innerHTML = '<div class="backlog-empty">Aucun chantier en banque. Créez un job sans date pour le garder en banque.</div>';
+    } else {
+      backlogTasks.forEach(function(task) { backlogEl.appendChild(mkBacklogCard(task)); });
+    }
+  }
+  if (!ST.forecast) { renderCalendarSkel(board); return; }
+  document.getElementById('calendarMonthLabel').textContent = MONTHS[_calendarActive.getMonth()] + ' ' + _calendarActive.getFullYear();
+  var grid = document.createElement('div');
+  grid.className = 'calendar-grid';
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(function(name) {
+    var hd = document.createElement('div'); hd.className = 'calendar-head'; hd.textContent = name;
+    grid.appendChild(hd);
   });
+  var year = _calendarActive.getFullYear();
+  var month = _calendarActive.getMonth();
+  var firstDay = new Date(year, month, 1);
+  var startIndex = (firstDay.getDay() + 6) % 7;
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var totalCells = Math.ceil((startIndex + daysInMonth) / 7) * 7;
+  var today = new Date(); today.setHours(0,0,0,0);
+  for (var i = 0; i < totalCells; i++) {
+    var cell = document.createElement('div');
+    cell.className = 'calendar-cell';
+    if (i < startIndex || i >= startIndex + daysInMonth) {
+      cell.classList.add('calendar-cell-muted');
+      grid.appendChild(cell);
+      continue;
+    }
+    var dayNumber = i - startIndex + 1;
+    var cellDate = new Date(year, month, dayNumber);
+    cellDate.setHours(0,0,0,0);
+    var iso = cellDate.toISOString().slice(0,10);
+    var cellTasks = ST.tasks.filter(function(t) { return t.scheduledDate === iso; });
+    var forecastIdx = findForecastIndexByDate(iso);
+    var day = forecastIdx !== null ? ST.forecast[forecastIdx] : null;
+    if (cellDate.getTime() === today.getTime()) cell.classList.add('today');
+    var dateRow = document.createElement('div');
+    dateRow.className = 'calendar-date';
+    dateRow.innerHTML = '<div class="date-num">' + dayNumber + '</div>'
+      + '<div class="date-badge">' + (day ? esc(DAYS_S[day.date.getDay()].toUpperCase()) : 'Planifié') + '</div>';
+    cell.appendChild(dateRow);
+    if (day) {
+      var wx = document.createElement('div');
+      wx.className = 'calendar-wx';
+      wx.innerHTML = '<span class="icon">' + wIcon(day.weathercode) + '</span><span>' + wLabel(day.weathercode) + '</span>';
+      cell.appendChild(wx);
+    }
+    var tasksWrap = document.createElement('div');
+    tasksWrap.className = 'calendar-tasks';
+    if (cellTasks.length) {
+      cellTasks.slice(0, 3).forEach(function(task) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'calendar-task-pill ' + (task.priority || 'medium');
+        btn.innerHTML = esc(task.name) + (task.time ? ' · ' + esc(task.time) : '');
+        btn.onclick = function(e) { e.stopPropagation(); openEditTask(task.id); };
+        tasksWrap.appendChild(btn);
+      });
+      if (cellTasks.length > 3) {
+        var more = document.createElement('div');
+        more.className = 'calendar-task-more';
+        more.textContent = '+' + (cellTasks.length - 3) + ' autre(s)';
+        tasksWrap.appendChild(more);
+      }
+    } else {
+      tasksWrap.innerHTML = '<div class="calendar-task-more">Aucun chantier planifié</div>';
+    }
+    cell.appendChild(tasksWrap);
+    cell.onclick = (function(dateIso, hasTasks) {
+      return function() {
+        if (hasTasks) openDayDetail(dateIso);
+        else openAddTask(dateIso);
+      };
+    })(iso, cellTasks.length > 0);
+    grid.appendChild(cell);
+  }
+  board.appendChild(grid);
   renderSwapBanner();
+}
+
+function renderCalendarSkel(board) {
+  var grid = document.createElement('div');
+  grid.className = 'calendar-grid';
+  ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(function(name) {
+    var hd = document.createElement('div'); hd.className = 'calendar-head'; hd.textContent = name;
+    grid.appendChild(hd);
+  });
+  for (var i = 0; i < 35; i++) {
+    var cell = document.createElement('div');
+    cell.className = 'calendar-cell calendar-cell-muted';
+    var skel = document.createElement('div');
+    skel.className = 'skel';
+    skel.style.height = '120px';
+    cell.appendChild(skel);
+    grid.appendChild(cell);
+  }
+  board.appendChild(grid);
+  renderSwapBanner();
+}
+
+function findForecastIndexByDate(dateIso) {
+  if (!ST.forecast) return null;
+  for (var i = 0; i < ST.forecast.length; i++) {
+    if (ST.forecast[i].date.toISOString().slice(0,10) === dateIso) return i;
+  }
+  return null;
+}
+
+function setCalendarMonth(delta) {
+  if (delta === 0) {
+    _calendarActive = new Date();
+    _calendarActive.setHours(0,0,0,0);
+    _calendarActive.setDate(1);
+  } else {
+    _calendarActive.setMonth(_calendarActive.getMonth() + delta);
+  }
+  renderBoard();
 }
 
 function mkTaskCard(task, dayW) {
@@ -1364,8 +2011,49 @@ function mkTaskCard(task, dayW) {
   if (task.client) {
     html += '<div class="tc-client">' + esc(task.client) + '</div>';
   }
+  if (task.location) {
+    html += '<div class="tc-meta">📍 ' + esc(task.location) + '</div>';
+  }
+  if (task.duration) {
+    html += '<div class="tc-meta">⏱ ' + esc(task.duration) + '</div>';
+  }
+  if (task.time) {
+    html += '<div class="tc-time">🕒 ' + esc(task.time) + '</div>';
+  }
+  html += '<div class="tc-badges">'
+    + '<span class="chip ' + (task.priority === 'urgent' ? 'bad' : task.priority === 'high' ? 'warn' : task.priority === 'low' ? '' : 'score-hi') + '">' + (task.priority === 'urgent' ? 'Urgente' : task.priority === 'high' ? 'Haute' : task.priority === 'low' ? 'Basse' : 'Moyenne') + '</span>';
+  if (task.source === 'photo') {
+    html += '<span class="chip" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.10);">📸 Photo</span>';
+  }
+  html += '</div>';
   html += '<div class="tc-risk ' + level + '">' + lvlIcon + ' ' + esc(msg) + '</div>';
   html += '<div class="tc-score"><span class="score-badge ' + sc + '" style="font-size:.62rem;padding:1px 5px">' + score + '/100</span></div>';
+  card.innerHTML = html;
+  return card;
+}
+
+function mkBacklogCard(task) {
+  var jobs = getMergedJobTypes();
+  var jd   = jobs[task.type] || { icon: '🔧', name: task.type, short: task.type || task.type };
+  var card = document.createElement('div');
+  card.className = 'backlog-card';
+  var html =
+    '<div class="backlog-row">'
+    + '<div class="backlog-title">' + esc(task.name) + '</div>'
+    + '<span class="chip ' + (task.priority === 'urgent' ? 'bad' : task.priority === 'high' ? 'warn' : 'score-hi') + '">' + (task.priority === 'urgent' ? 'Urgent' : task.priority === 'high' ? 'Haute' : task.priority === 'low' ? 'Basse' : 'Moyenne') + '</span>'
+    + '</div>'
+    + '<div class="backlog-meta">'
+    + '<span>👤 ' + (task.client ? esc(task.client) : 'Client inconnu') + '</span>'
+    + '<span>🔧 ' + esc(jd.short || jd.name || task.type) + '</span>';
+  if (task.duration) html += '<span>⏱ ' + esc(task.duration) + '</span>';
+  if (task.location) html += '<span>📍 ' + esc(task.location) + '</span>';
+  if (task.source === 'photo') html += '<span>📸 Photo</span>';
+  html += '</div>';
+  html += '<div class="backlog-actions">'
+    + '<button class="backlog-btn plan" onclick="openEditTask(' + JSON.stringify(task.id) + ', ' + JSON.stringify('Planifier le chantier') + ')">Planifier</button>'
+    + '<button class="backlog-btn edit" onclick="openEditTask(' + JSON.stringify(task.id) + ')">Modifier</button>'
+    + '<button class="backlog-btn del" onclick="deleteTaskById(' + JSON.stringify(task.id) + ')">Supprimer</button>'
+    + '</div>';
   card.innerHTML = html;
   return card;
 }
@@ -1403,14 +2091,26 @@ function renderSwapBanner() {
    TASK MODAL — CRÉATION
 ═══════════════════════════════════════════════════ */
 function openAddTask(dayIdx) {
-  _editingId  = null;
-  _dayPending = dayIdx;
+  _editingId        = null;
+  _dayPending       = dayIdx;
+  _taskSource       = 'manual';
+  _taskPhotoPreview = null;
   document.getElementById('taskModalTitle').textContent = 'Nouveau chantier';
-  document.getElementById('tName').value   = '';
-  document.getElementById('tClient').value = '';
-  document.getElementById('tPrio').value   = 'medium';
+  document.getElementById('tName').value     = '';
+  document.getElementById('tClient').value   = '';
+  document.getElementById('tLocation').value = '';
+  document.getElementById('tDuration').value = '';
+  document.getElementById('tTime').value     = dayIdx == null ? '' : '08:00';
+  document.getElementById('tPrio').value     = 'medium';
   buildTypeGrid();
-  populateDaySelect(dayIdx);
+  var dateValue = '';
+  if (typeof dayIdx === 'string' && dayIdx) {
+    dateValue = dayIdx;
+  } else if (typeof dayIdx === 'number' && ST.forecast && ST.forecast[dayIdx]) {
+    dateValue = ST.forecast[dayIdx].date.toISOString().slice(0,10);
+  }
+  populateDateInput(dateValue);
+  setTaskMode('manual');
   document.getElementById('btnDel').style.display     = 'none';
   document.getElementById('btnSave').textContent      = 'Ajouter →';
   document.getElementById('delConfirm').style.display = 'none';
@@ -1421,17 +2121,23 @@ function openAddTask(dayIdx) {
 /* ═══════════════════════════════════════════════════
    TASK MODAL — ÉDITION
 ═══════════════════════════════════════════════════ */
-function openEditTask(id) {
+function openEditTask(id, title) {
   var task = ST.tasks.find(function(t) { return t.id === id; });
   if (!task) return;
-  _editingId  = id;
-  _dayPending = task.dayIndex;
-  document.getElementById('taskModalTitle').textContent = 'Modifier le chantier';
-  document.getElementById('tName').value   = task.name   || '';
-  document.getElementById('tClient').value = task.client || '';
-  document.getElementById('tPrio').value   = task.priority || 'medium';
+  _editingId        = id;
+  _dayPending       = task.dayIndex;
+  _taskSource       = task.source || 'manual';
+  _taskPhotoPreview = task.photoPreview || null;
+  document.getElementById('taskModalTitle').textContent = title || 'Modifier le chantier';
+  document.getElementById('tName').value     = task.name     || '';
+  document.getElementById('tClient').value   = task.client   || '';
+  document.getElementById('tLocation').value = task.location || '';
+  document.getElementById('tDuration').value = task.duration || '';
+  document.getElementById('tTime').value     = task.time     || '';
+  document.getElementById('tPrio').value     = task.priority || 'medium';
   buildTypeGrid(task.type);
-  populateDaySelect(task.dayIndex);
+  populateDateInput(task.status === 'backlog' ? '' : (task.scheduledDate || ''));
+  setTaskMode('manual');
   document.getElementById('btnDel').style.display     = '';
   document.getElementById('btnSave').textContent      = 'Enregistrer les modifications';
   document.getElementById('delConfirm').style.display = 'none';
@@ -1443,45 +2149,52 @@ function openEditTaskDelete(id) {
   requestAnimationFrame(showDelConfirm);
 }
 
+function deleteTaskById(id) {
+  _editingId = id;
+  showDelConfirm();
+}
+
 /* ═══════════════════════════════════════════════════
    SÉLECTEUR DE JOUR
 ═══════════════════════════════════════════════════ */
-function populateDaySelect(selectedIdx) {
-  var sel = document.getElementById('tDay');
-  sel.innerHTML = '';
-  var now = new Date(); now.setHours(0, 0, 0, 0);
-  for (var i = 0; i < 7; i++) {
-    var opt = document.createElement('option');
-    opt.value = String(i);
-    if (ST.forecast && ST.forecast[i]) {
-      var day  = ST.forecast[i];
-      var name = DAYS_L[day.date.getDay()];
-      var dt   = day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
-      opt.textContent = name + ' · ' + dt + (i === 0 ? ' (auj.)' : '');
-    } else {
-      var dd = new Date(now); dd.setDate(now.getDate() + i);
-      opt.textContent = DAYS_L[dd.getDay()] + (i === 0 ? ' (auj.)' : '');
-    }
-    if (i === selectedIdx) opt.selected = true;
-    sel.appendChild(opt);
-  }
+function populateDateInput(dateIso) {
+  var input = document.getElementById('tDate');
+  input.value = dateIso || '';
 }
 
 /* ═══════════════════════════════════════════════════
    SAVE — CRÉATION ET MODIFICATION
 ═══════════════════════════════════════════════════ */
 function saveTask() {
-  var name   = document.getElementById('tName').value.trim();
-  var client = document.getElementById('tClient').value.trim();
-  var prio   = document.getElementById('tPrio').value;
-  var dayIdx = parseInt(document.getElementById('tDay').value, 10);
-  var sel    = document.querySelector('.type-btn.sel');
+  var name     = document.getElementById('tName').value.trim();
+  var client   = document.getElementById('tClient').value.trim();
+  var location = document.getElementById('tLocation').value.trim();
+  var duration = document.getElementById('tDuration').value.trim();
+  var time     = document.getElementById('tTime').value || '';
+  var scheduledDate = document.getElementById('tDate').value || '';
+  var dayIdx = scheduledDate ? findForecastIndexByDate(scheduledDate) : null;
+  var prio     = document.getElementById('tPrio').value;
+  var sel      = document.querySelector('.type-btn.sel');
   if (!name) { toast('⚠ Nom du chantier requis'); return; }
   if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
-  var patch = { name: name, client: client, type: sel.dataset.type, priority: prio, dayIndex: dayIdx };
+  var status = scheduledDate ? 'scheduled' : 'backlog';
+  var source = _taskSource || 'manual';
+  var patch = {
+    name: name, title: name, client: client, location: location, duration: duration,
+    time: time, scheduledTime: time, scheduledDate: scheduledDate,
+    type: sel.dataset.type, priority: prio, dayIndex: dayIdx, status: status, source: source
+  };
+  if (_taskPhotoPreview !== null) {
+    patch.photoPreview = _taskPhotoPreview;
+  }
   if (_editingId) {
     var idx = ST.tasks.findIndex(function(t) { return t.id === _editingId; });
-    if (idx !== -1) ST.tasks[idx] = Object.assign({}, ST.tasks[idx], patch);
+    if (idx !== -1) {
+      if (_taskPhotoPreview === null && ST.tasks[idx].photoPreview) {
+        patch.photoPreview = ST.tasks[idx].photoPreview;
+      }
+      ST.tasks[idx] = Object.assign({}, ST.tasks[idx], patch);
+    }
     toast('✓ Chantier modifié');
   } else {
     var newId = (typeof crypto !== 'undefined' && crypto.randomUUID)

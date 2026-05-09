@@ -105,16 +105,6 @@
     .act-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.08); }
     .act-btn.active { border-color: rgba(99,102,241,0.55); background: rgba(99,102,241,0.13); color: #a5b4fc; }
 
-    /* ── SCORE BADGE ─────────────────────────────── */
-    .score-badge {
-      display: inline-flex; align-items: center;
-      padding: 2px 6px; border-radius: 999px;
-      font-size: 0.66rem; font-weight: 800; letter-spacing: .02em;
-    }
-    .score-hi  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: #34d399; }
-    .score-mid { background: rgba(245,158,11,0.13); border: 1px solid rgba(245,158,11,0.35); color: #fbbf24; }
-    .score-lo  { background: rgba(239,68,68,0.13);  border: 1px solid rgba(239,68,68,0.35);  color: #f87171; }
-
     /* ── TERRAIN MODE ────────────────────────────── */
     body.terrain { --text0: #ffffff; --text1: #e2e8f0; --text2: #94a3b8; }
     body.terrain .day-num   { font-size: 1.75rem; }
@@ -262,7 +252,7 @@
     .tc-risk.ok     { color: #6ee7b7; }
     .tc-risk.risk   { color: #fcd34d; }
     .tc-risk.danger { color: #fca5a5; }
-    .tc-score { display: flex; justify-content: flex-end; margin-top: 5px; }
+    .tc-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
 
     /* ── CARD ACTION BUTTONS ────────────────────── */
     .tc-actions {
@@ -354,6 +344,8 @@
     .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--accent); }
     .fg select option { background: #1a2035; }
     .fg textarea { resize: vertical; min-height: 64px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-row .fg { min-width: 0; }
 
     .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
     .type-btn {
@@ -462,6 +454,7 @@
       text-align: center; font-size: 2.4rem; margin: 10px 0 14px;
       cursor: pointer; user-select: none;
     }
+    .voice-status.listening { color: #f87171; text-shadow: 0 0 18px rgba(239,68,68,.55); }
 
     /* ── JOBS MODAL LIST ─────────────────────────── */
     .job-row {
@@ -484,6 +477,15 @@
     }
     .jobs-add-grid .fg { margin: 0; }
     .jobs-add-grid .fg input { padding: 8px 10px; font-size: 0.87rem; }
+
+    .bank-pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 3px 7px; border-radius: 999px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      color: var(--text2); font-size: 0.66rem; font-weight: 800;
+    }
+    .bank-pill.warn { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
+    .bank-pill.bad  { background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.3); color: #f87171; }
 
     /* ── TOAST ───────────────────────────────────── */
     #toast {
@@ -577,6 +579,20 @@
         <option value="low">🟢 Basse</option>
       </select>
     </div>
+    <div class="field-row">
+      <div class="fg">
+        <label>Durée estimée (h)</label>
+        <input type="number" id="tHours" min="0.5" max="24" step="0.5" placeholder="2">
+      </div>
+      <div class="fg">
+        <label>Temp. min (°C)</label>
+        <input type="number" id="tTempMin" min="-40" max="50" step="1" placeholder="Auto">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Temp. max (°C)</label>
+      <input type="number" id="tTempMax" min="-40" max="60" step="1" placeholder="Auto">
+    </div>
     <div class="del-confirm" id="delConfirm" style="display:none">
       <span>⚠ Supprimer ce chantier définitivement ?</span>
       <button class="btn-del-no"  onclick="hideDelConfirm()">Non</button>
@@ -632,7 +648,7 @@
   <div class="modal" role="dialog" aria-modal="true">
     <h3>🎙 Dicter un chantier</h3>
     <p style="font-size:.84rem;color:var(--text2);margin-bottom:12px">Ex : <em>"Toiture chez Tremblay vendredi priorité haute"</em></p>
-    <div class="voice-status" id="voiceStatus" onclick="startMic()" title="Cliquer pour démarrer">🎤</div>
+    <div class="voice-status" id="voiceStatus" onclick="toggleMic()" title="Toucher pour démarrer ou arrêter">🎤</div>
     <div class="fg">
       <label>Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
@@ -657,7 +673,10 @@
       <div class="fg"><label>Pluie max (mm)</label><input type="number" id="jRain" placeholder="5" min="0" max="100"></div>
       <div class="fg"><label>Vent max (km/h)</label><input type="number" id="jWind" placeholder="30" min="0" max="200"></div>
     </div>
-    <div class="fg" style="margin-top:2px"><label>Temp. min (°C)</label><input type="number" id="jTemp" placeholder="5" min="-30" max="30"></div>
+    <div class="field-row" style="margin-top:2px">
+      <div class="fg"><label>Temp. min (°C)</label><input type="number" id="jTemp" placeholder="5" min="-30" max="30"></div>
+      <div class="fg"><label>Temp. max (°C)</label><input type="number" id="jTempMax" placeholder="35" min="-30" max="60"></div>
+    </div>
     <div class="mf" style="margin-top:6px">
       <button class="btn-cancel" onclick="closeModal('jobsOverlay')">Fermer</button>
       <button class="btn-primary" onclick="addCustomJob()">Ajouter →</button>
@@ -766,9 +785,9 @@ function wLabel(code) {
 }
 
 /* ═══════════════════════════════════════════════════
-   SCORE /100
+   INTERNAL WEATHER RANKING
 ═══════════════════════════════════════════════════ */
-function calcScore(w) {
+function weatherRank(w) {
   var s = 100;
   if (w.weathercode >= 95) s -= 55;
   else if (w.weathercode >= 80) s -= 20;
@@ -789,9 +808,6 @@ function calcScore(w) {
   if (w.rain_prob > 80)      s -= 8;
   else if (w.rain_prob > 60) s -= 3;
   return Math.max(0, Math.min(100, Math.round(s)));
-}
-function scoreCls(s) {
-  return s >= 75 ? 'score-hi' : s >= 50 ? 'score-mid' : 'score-lo';
 }
 
 /* ═══════════════════════════════════════════════════
@@ -839,6 +855,10 @@ function buildCustomRules(j) {
     var tm = j.tempMin;
     rules.push({ t: function(w) { return w.temp_min < tm; }, l:'risk', m:'Froid < ' + tm + '°C' });
   }
+  if (!isNaN(j.tempMax)) {
+    var tx = j.tempMax;
+    rules.push({ t: function(w) { return w.temp_max > tx; }, l:'risk', m:'Chaleur > ' + tx + '°C' });
+  }
   return rules;
 }
 
@@ -875,7 +895,7 @@ function renderJobsList() {
     html += '<div class="job-row">'
       + '<span style="font-size:1.1rem">' + esc(j.icon) + '</span>'
       + '<span class="job-row-name">' + esc(j.name) + '</span>'
-      + '<span class="job-row-meta">💧≤' + j.rainMax + 'mm 💨≤' + j.windMax + 'km/h</span>'
+      + '<span class="job-row-meta">💧≤' + j.rainMax + 'mm 💨≤' + j.windMax + 'km/h 🌡' + j.tempMin + '°/' + (j.tempMax == null ? '—' : j.tempMax + '°') + '</span>'
       + '<button class="job-del-btn" onclick="deleteCustomJob(\'' + esc(k) + '\')">Suppr.</button>'
       + '</div>';
   });
@@ -888,12 +908,14 @@ function addCustomJob() {
   var rain = parseFloat(document.getElementById('jRain').value);
   var wind = parseFloat(document.getElementById('jWind').value);
   var temp = parseFloat(document.getElementById('jTemp').value);
+  var tempMax = parseFloat(document.getElementById('jTempMax').value);
   if (!name) { toast('⚠ Nom du métier requis'); return; }
   if (isNaN(rain)) rain = 5;
   if (isNaN(wind)) wind = 30;
   if (isNaN(temp)) temp = 5;
+  if (isNaN(tempMax)) tempMax = 35;
   var key = 'custom_' + name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now();
-  _customJobs[key] = { icon: icon, name: name, short: name.slice(0,7), rainMax: rain, windMax: wind, tempMin: temp };
+  _customJobs[key] = { icon: icon, name: name, short: name.slice(0,7), rainMax: rain, windMax: wind, tempMin: temp, tempMax: tempMax };
   RISK_RULES[key] = buildCustomRules(_customJobs[key]);
   saveCustomJobs();
   renderJobsList();
@@ -903,6 +925,7 @@ function addCustomJob() {
   document.getElementById('jRain').value = '';
   document.getElementById('jWind').value = '';
   document.getElementById('jTemp').value = '';
+  document.getElementById('jTempMax').value = '';
   toast('✓ Métier "' + name + '" ajouté');
 }
 
@@ -1001,6 +1024,52 @@ function assess(jobType, w) {
   return { level: level, msg: msg };
 }
 
+function assessTask(task, w) {
+  var res = assess(task.type, w);
+  if (res.level === 'danger') return res;
+  var min = parseFloat(task.tempMin);
+  var max = parseFloat(task.tempMax);
+  if (!isNaN(min) && w.temp_min < min) {
+    return { level:'risk', msg:'Froid < ' + min + '°C' };
+  }
+  if (!isNaN(max) && w.temp_max > max) {
+    return { level:'risk', msg:'Chaleur > ' + max + '°C' };
+  }
+  return res;
+}
+
+function taskTempLabel(task) {
+  var min = parseFloat(task.tempMin);
+  var max = parseFloat(task.tempMax);
+  if (isNaN(min) && isNaN(max)) return '';
+  if (!isNaN(min) && !isNaN(max)) return min + '° à ' + max + '°';
+  return !isNaN(min) ? 'min ' + min + '°' : 'max ' + max + '°';
+}
+
+var DAY_HOUR_BANK = 8;
+
+function getTaskHours(task) {
+  var h = parseFloat(task.hours);
+  return isNaN(h) || h <= 0 ? 1 : h;
+}
+
+function dayHours(dayIdx, exceptId) {
+  return ST.tasks.reduce(function(sum, task) {
+    if (task.dayIndex !== dayIdx || task.id === exceptId) return sum;
+    return sum + getTaskHours(task);
+  }, 0);
+}
+
+function canFitInDay(task, dayIdx) {
+  return dayHours(dayIdx, task.id) + getTaskHours(task) <= DAY_HOUR_BANK;
+}
+
+function bankPill(dayIdx) {
+  var used = dayHours(dayIdx);
+  var cls = used > DAY_HOUR_BANK ? ' bad' : used >= DAY_HOUR_BANK ? ' warn' : '';
+  return '<span class="bank-pill' + cls + '" title="Banque de temps">' + used + 'h/' + DAY_HOUR_BANK + 'h</span>';
+}
+
 function dayOverallRisk(w) {
   var worst = 'ok';
   var types = Object.keys(RISK_RULES);
@@ -1020,8 +1089,6 @@ function openDayDetail(di) {
   var day = ST.forecast[di];
   var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
   document.getElementById('ddTitle').textContent = dayName + ' — Détail météo';
-  var score = calcScore(day);
-  var sc = scoreCls(score);
   var html =
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
     + '<div style="text-align:center;padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">'
@@ -1030,9 +1097,9 @@ function openDayDetail(di) {
     + '<div style="font-size:.78rem;color:var(--text2);margin-top:2px">Code ' + day.weathercode + '</div>'
     + '</div>'
     + '<div style="text-align:center;padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">'
-    + '<div style="font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em">Score météo</div>'
-    + '<div class="score-badge ' + sc + '" style="font-size:1.55rem;padding:6px 14px;margin:8px auto;display:inline-flex">' + score + '<span style="font-size:.8rem;opacity:.7">/100</span></div>'
-    + '<div style="font-size:.72rem;color:var(--text2)">' + (score >= 75 ? 'Favorable' : score >= 50 ? 'Risqué' : 'Défavorable') + '</div>'
+    + '<div style="font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em">Banque du jour</div>'
+    + '<div style="font-size:1.6rem;font-weight:800;margin:8px auto">' + dayHours(di) + 'h</div>'
+    + '<div style="font-size:.72rem;color:var(--text2)">sur ' + DAY_HOUR_BANK + 'h planifiées</div>'
     + '</div>'
     + '</div>'
     + '<div class="dd-stats">'
@@ -1079,24 +1146,26 @@ function optimizeWeek() {
   ST.tasks.forEach(function(task) {
     var cur = ST.forecast[task.dayIndex];
     if (!cur) return;
-    var curRes = assess(task.type, cur);
+    var curRes = assessTask(task, cur);
     if (curRes.level === 'ok') return;
     var bestIdx = null, bestScore = -1;
     for (var i = 0; i < ST.forecast.length; i++) {
       if (i === task.dayIndex) continue;
-      var res = assess(task.type, ST.forecast[i]);
-      var s   = calcScore(ST.forecast[i]);
+      if (!canFitInDay(task, i)) continue;
+      var res = assessTask(task, ST.forecast[i]);
+      var s   = weatherRank(ST.forecast[i]);
       if (res.level === 'ok' && s > bestScore) { bestScore = s; bestIdx = i; }
     }
     if (bestIdx === null) {
       for (var i = 0; i < ST.forecast.length; i++) {
         if (i === task.dayIndex) continue;
-        var res = assess(task.type, ST.forecast[i]);
-        var s   = calcScore(ST.forecast[i]);
+        if (!canFitInDay(task, i)) continue;
+        var res = assessTask(task, ST.forecast[i]);
+        var s   = weatherRank(ST.forecast[i]);
         if (res.level === 'risk' && s > bestScore) { bestScore = s; bestIdx = i; }
       }
     }
-    if (bestIdx === null || bestScore <= calcScore(cur)) return;
+    if (bestIdx === null || bestScore <= weatherRank(cur)) return;
     var fromName = DAYS_L[cur.date.getDay()];
     var toName   = DAYS_L[ST.forecast[bestIdx].date.getDay()];
     var jd = getMergedJobTypes()[task.type] || {};
@@ -1128,39 +1197,85 @@ function optimizeWeek() {
 ═══════════════════════════════════════════════════ */
 var _micActive = false;
 var _micRec    = null;
+var _micStopping = false;
 
 function openVoice() {
-  document.getElementById('voiceText').value = '';
-  document.getElementById('voiceStatus').textContent = '🎤';
+  setVoiceStatus('🎤', false, 'Toucher pour dicter');
   _micActive = false;
   openModal('voiceOverlay');
-  setTimeout(startMic, 300);
+}
+
+function setVoiceStatus(content, active, title) {
+  var el = document.getElementById('voiceStatus');
+  el.innerHTML = content;
+  el.classList.toggle('listening', !!active);
+  el.title = title || (active ? 'Toucher pour arrêter' : 'Toucher pour démarrer');
+}
+
+function toggleMic() {
+  if (_micActive) {
+    _micStopping = true;
+    if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+    setVoiceStatus('🎤', false, 'Toucher pour reprendre');
+    return;
+  }
+  startMic();
+}
+
+function appendVoiceText(txt) {
+  var ta = document.getElementById('voiceText');
+  var current = ta.value.trim();
+  var next = String(txt || '').trim();
+  if (!next) return;
+  ta.value = current ? current + ' ' + next : next;
 }
 
 function startMic() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    document.getElementById('voiceStatus').innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro non disponible<br>Saisir ci-dessous</span>';
+    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">Micro non disponible<br>Saisir ci-dessous</span>', false);
     return;
   }
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+  if (_micRec && _micActive) { try { _micRec.stop(); } catch(e) {} }
   _micRec = new SR();
   _micRec.lang = 'fr-FR';
-  _micRec.interimResults = false;
+  _micRec.interimResults = true;
   _micRec.maxAlternatives = 1;
+  _micRec.continuous = false;
+  _micStopping = false;
   _micActive = true;
-  document.getElementById('voiceStatus').textContent = '🔴';
+  setVoiceStatus('🔴', true, 'Toucher pour arrêter');
   _micRec.onresult = function(e) {
-    document.getElementById('voiceText').value = e.results[0][0].transcript;
-    document.getElementById('voiceStatus').textContent = '✅';
+    var finalText = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+    }
+    appendVoiceText(finalText);
+    if (finalText) setVoiceStatus('✅', false, 'Toucher pour continuer');
+  };
+  _micRec.onerror = function(e) {
+    var err = e && e.error;
+    if (_micStopping || err === 'aborted' || err === 'no-speech') {
+      _micActive = false;
+      setVoiceStatus('🎤', false, 'Toucher pour reprendre');
+      return;
+    }
+    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">Micro indisponible<br>Saisir ci-dessous</span>', false);
     _micActive = false;
   };
-  _micRec.onerror = function() {
-    document.getElementById('voiceStatus').innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Micro indisponible<br>Saisir ci-dessous</span>';
+  _micRec.onend = function() {
     _micActive = false;
+    if (_micStopping) {
+      _micStopping = false;
+      setVoiceStatus('🎤', false, 'Toucher pour reprendre');
+    }
   };
-  _micRec.onend = function() { _micActive = false; };
-  _micRec.start();
+  try {
+    _micRec.start();
+  } catch(e) {
+    _micActive = false;
+    setVoiceStatus('🎤', false, 'Toucher pour reprendre');
+  }
 }
 
 function analyzeAndCreate() {
@@ -1244,6 +1359,9 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tName').value   = parsed.name   || '';
   document.getElementById('tClient').value = parsed.client || '';
   document.getElementById('tPrio').value   = parsed.priority || 'medium';
+  document.getElementById('tHours').value  = '1';
+  document.getElementById('tTempMin').value = '';
+  document.getElementById('tTempMax').value = '';
   buildTypeGrid(parsed.type);
   populateDaySelect(parsed.dayIndex);
   document.getElementById('btnDel').style.display     = 'none';
@@ -1265,12 +1383,13 @@ function swapSuggestions() {
     seen[key] = true;
     var cur = ST.forecast[task.dayIndex];
     if (!cur) return;
-    var curRes = assess(task.type, cur);
+    var curRes = assessTask(task, cur);
     if (curRes.level === 'ok') return;
     var bestIdx = null;
     for (var i = 0; i < ST.forecast.length; i++) {
       if (i === task.dayIndex) continue;
-      var res = assess(task.type, ST.forecast[i]);
+      if (!canFitInDay(task, i)) continue;
+      var res = assessTask(task, ST.forecast[i]);
       if (res.level === 'ok') { bestIdx = i; break; }
       if (bestIdx === null && res.level === 'risk' && curRes.level === 'danger') bestIdx = i;
     }
@@ -1302,8 +1421,6 @@ function renderBoard() {
     var windCls  = day.windspeed > 40 ? 'bad' : day.windspeed > 25 ? 'warn' : '';
     var rainCls  = day.rain_prob > 70 ? 'bad' : day.rain_prob > 40 ? 'warn' : '';
     var mon      = MONTHS[day.date.getMonth()];
-    var score    = calcScore(day);
-    var sc       = scoreCls(score);
     var rainMm   = day.precipitation > 0
       ? '<span class="chip rain-mm" title="Précipitations">💧' + day.precipitation + 'mm</span>'
       : '';
@@ -1315,7 +1432,7 @@ function renderBoard() {
       + '<div class="day-hd-body" onclick="openDayDetail(' + di + ')" title="Voir le détail météo">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
       + '<div class="day-lbl">' + esc(DAYS_S[day.date.getDay()].toUpperCase()) + (isToday ? ' · Auj.' : '') + '</div>'
-      + '<span class="score-badge ' + sc + '">' + score + '</span>'
+      + bankPill(di)
       + '</div>'
       + '<div class="day-num">' + day.date.getDate() + ' <span style="font-size:.85rem;color:var(--text2)">' + mon + '</span></div>'
       + '<div class="day-wx-row">'
@@ -1345,11 +1462,9 @@ function renderBoard() {
 function mkTaskCard(task, dayW) {
   var jobs = getMergedJobTypes();
   var jd   = jobs[task.type] || { icon: '🔧', name: task.type, short: task.type };
-  var res  = assess(task.type, dayW);
+  var res  = assessTask(task, dayW);
   var level = res.level;
   var msg   = res.msg;
-  var score = calcScore(dayW);
-  var sc    = scoreCls(score);
   var card  = document.createElement('div');
   card.className      = 'task-card ' + level;
   card.dataset.taskId = task.id;
@@ -1365,7 +1480,10 @@ function mkTaskCard(task, dayW) {
     html += '<div class="tc-client">' + esc(task.client) + '</div>';
   }
   html += '<div class="tc-risk ' + level + '">' + lvlIcon + ' ' + esc(msg) + '</div>';
-  html += '<div class="tc-score"><span class="score-badge ' + sc + '" style="font-size:.62rem;padding:1px 5px">' + score + '/100</span></div>';
+  html += '<div class="tc-meta"><span class="chip" title="Durée estimée">⏱' + getTaskHours(task) + 'h</span>';
+  var tl = taskTempLabel(task);
+  if (tl) html += '<span class="chip" title="Contraintes température">🌡' + esc(tl) + '</span>';
+  html += '</div>';
   card.innerHTML = html;
   return card;
 }
@@ -1409,6 +1527,9 @@ function openAddTask(dayIdx) {
   document.getElementById('tName').value   = '';
   document.getElementById('tClient').value = '';
   document.getElementById('tPrio').value   = 'medium';
+  document.getElementById('tHours').value  = '1';
+  document.getElementById('tTempMin').value = '';
+  document.getElementById('tTempMax').value = '';
   buildTypeGrid();
   populateDaySelect(dayIdx);
   document.getElementById('btnDel').style.display     = 'none';
@@ -1430,6 +1551,9 @@ function openEditTask(id) {
   document.getElementById('tName').value   = task.name   || '';
   document.getElementById('tClient').value = task.client || '';
   document.getElementById('tPrio').value   = task.priority || 'medium';
+  document.getElementById('tHours').value  = getTaskHours(task);
+  document.getElementById('tTempMin').value = task.tempMin == null ? '' : task.tempMin;
+  document.getElementById('tTempMax').value = task.tempMax == null ? '' : task.tempMax;
   buildTypeGrid(task.type);
   populateDaySelect(task.dayIndex);
   document.getElementById('btnDel').style.display     = '';
@@ -1475,10 +1599,23 @@ function saveTask() {
   var client = document.getElementById('tClient').value.trim();
   var prio   = document.getElementById('tPrio').value;
   var dayIdx = parseInt(document.getElementById('tDay').value, 10);
+  var hours  = parseFloat(document.getElementById('tHours').value);
+  var tempMin = parseFloat(document.getElementById('tTempMin').value);
+  var tempMax = parseFloat(document.getElementById('tTempMax').value);
   var sel    = document.querySelector('.type-btn.sel');
   if (!name) { toast('⚠ Nom du chantier requis'); return; }
   if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
-  var patch = { name: name, client: client, type: sel.dataset.type, priority: prio, dayIndex: dayIdx };
+  if (isNaN(hours) || hours <= 0) hours = 1;
+  var patch = {
+    name: name,
+    client: client,
+    type: sel.dataset.type,
+    priority: prio,
+    dayIndex: dayIdx,
+    hours: hours,
+    tempMin: isNaN(tempMin) ? null : tempMin,
+    tempMax: isNaN(tempMax) ? null : tempMax,
+  };
   if (_editingId) {
     var idx = ST.tasks.findIndex(function(t) { return t.id === _editingId; });
     if (idx !== -1) ST.tasks[idx] = Object.assign({}, ST.tasks[idx], patch);
@@ -1493,6 +1630,7 @@ function saveTask() {
   saveST();
   closeModal('taskOverlay');
   renderBoard();
+  if (dayHours(dayIdx) > DAY_HOUR_BANK) toast('⚠ Banque de temps dépassée ce jour-là');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1521,6 +1659,10 @@ function confirmDelTask() {
 function applySwap(taskId, toDay) {
   var task = ST.tasks.find(function(t) { return t.id === taskId; });
   if (!task) return;
+  if (!canFitInDay(task, toDay)) {
+    toast('⚠ Banque de temps pleine ce jour-là');
+    return;
+  }
   var fromName = ST.forecast[task.dayIndex] ? DAYS_L[ST.forecast[task.dayIndex].date.getDay()] : '?';
   var toName   = ST.forecast[toDay]         ? DAYS_L[ST.forecast[toDay].date.getDay()]         : '?';
   task.dayIndex = toDay;
@@ -1656,7 +1798,13 @@ function setDot(state) {
    MODAL HELPERS
 ═══════════════════════════════════════════════════ */
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  if (id === 'voiceOverlay' && _micRec) {
+    _micStopping = true;
+    try { _micRec.stop(); } catch(e) {}
+  }
+  document.getElementById(id).classList.remove('open');
+}
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
 
 /* ═══════════════════════════════════════════════════

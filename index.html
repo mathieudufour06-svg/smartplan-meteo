@@ -32,6 +32,7 @@
       color: var(--text0);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+      padding-bottom: 82px;
     }
 
     /* ── TOP BAR ─────────────────────────────────── */
@@ -487,6 +488,45 @@
     .bank-pill.warn { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
     .bank-pill.bad  { background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.3); color: #f87171; }
 
+    .view-hint {
+      display: none;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--text2);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .view-hint.show { display: block; }
+
+    .bottom-nav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      background: rgba(10,15,30,0.96);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-btn {
+      min-width: 0; min-height: 48px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      border-radius: 13px; color: var(--text2);
+      background: transparent; border: 1px solid transparent;
+      font-size: 0.68rem; font-weight: 750; cursor: pointer;
+    }
+    .nav-btn .ni { font-size: 1.12rem; line-height: 1; }
+    .nav-btn.active {
+      color: var(--text0);
+      background: rgba(99,102,241,0.13);
+      border-color: rgba(99,102,241,0.32);
+    }
+    .nav-btn.plus {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 8px 22px rgba(99,102,241,0.34);
+    }
+
     /* ── TOAST ───────────────────────────────────── */
     #toast {
       position: fixed; left: 50%; bottom: 26px; z-index: 400;
@@ -506,7 +546,7 @@
 
     /* ── RESPONSIVE ──────────────────────────────── */
     @media (max-width: 680px) { :root { --col: 158px; } }
-    @media (max-width: 520px) { :root { --col: 144px; } .topbar { padding: 9px 12px; } .board-wrap { padding: 12px; } .action-bar { padding: 7px 12px; } }
+    @media (max-width: 520px) { :root { --col: 144px; } .topbar { padding: 9px 12px; } .board-wrap { padding: 12px; } .action-bar { padding: 7px 12px; } .view-hint { padding: 9px 12px; } }
   </style>
 </head>
 <body>
@@ -545,10 +585,20 @@
   <div class="swap-pills" id="swapList"></div>
 </div>
 
+<div class="view-hint" id="viewHint"></div>
+
 <!-- BOARD -->
 <div class="board-wrap">
   <div class="board" id="board"></div>
 </div>
+
+<nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
+  <button class="nav-btn active" type="button" data-tab="home" onclick="switchTab('home')"><span class="ni">⌂</span><span>Accueil</span></button>
+  <button class="nav-btn" type="button" data-tab="calendar" onclick="switchTab('calendar')"><span class="ni">□</span><span>Calendrier</span></button>
+  <button class="nav-btn" type="button" data-tab="bank" onclick="switchTab('bank')"><span class="ni">◷</span><span>Banque</span></button>
+  <button class="nav-btn" type="button" data-tab="terrain" onclick="switchTab('terrain')"><span class="ni">◎</span><span>Terrain</span></button>
+  <button class="nav-btn plus" type="button" data-tab="new" onclick="switchTab('new')"><span class="ni">＋</span><span>Nouveau</span></button>
+</nav>
 
 <!-- ADD / EDIT TASK MODAL -->
 <div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
@@ -813,18 +863,67 @@ function weatherRank(w) {
 /* ═══════════════════════════════════════════════════
    TERRAIN MODE
 ═══════════════════════════════════════════════════ */
+var _activeTab = 'home';
+
 function toggleTerrain() {
-  var on = document.body.classList.toggle('terrain');
-  try { localStorage.setItem('spm_terrain', on ? '1' : '0'); } catch(e) {}
-  document.getElementById('btnTerrain').classList.toggle('active', on);
+  switchTab(document.body.classList.contains('terrain') ? 'home' : 'terrain');
 }
 function loadTerrainPref() {
   try {
     if (localStorage.getItem('spm_terrain') === '1') {
-      document.body.classList.add('terrain');
-      document.getElementById('btnTerrain').classList.add('active');
+      _activeTab = 'terrain';
     }
   } catch(e) {}
+}
+
+function switchTab(tab) {
+  if (tab === 'new') {
+    var dayIdx = Math.max(0, Math.min(6, _dayPending || 0));
+    openAddTask(dayIdx);
+    renderActive();
+    return;
+  }
+  if (['home','calendar','bank','terrain'].indexOf(tab) === -1) tab = 'home';
+  _activeTab = tab;
+  renderActive();
+}
+
+function renderActive() {
+  var terrainOn = _activeTab === 'terrain';
+  document.body.classList.toggle('terrain', terrainOn);
+  try { localStorage.setItem('spm_terrain', terrainOn ? '1' : '0'); } catch(e) {}
+
+  var terrainBtn = document.getElementById('btnTerrain');
+  if (terrainBtn) terrainBtn.classList.toggle('active', terrainOn);
+
+  document.querySelectorAll('[data-tab]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.tab === _activeTab && btn.dataset.tab !== 'new');
+  });
+
+  var hint = document.getElementById('viewHint');
+  if (!hint) return;
+  var html = '';
+  if (_activeTab === 'calendar') {
+    html = 'Calendrier · touchez une journée ou un chantier pour modifier la planification.';
+  } else if (_activeTab === 'bank') {
+    html = renderBankSummary();
+  } else if (_activeTab === 'terrain') {
+    html = 'Mode Terrain · lisibilité renforcée, navigation toujours disponible.';
+  }
+  hint.innerHTML = html;
+  hint.classList.toggle('show', !!html);
+}
+
+function renderBankSummary() {
+  var total = ST.tasks.reduce(function(sum, task) { return sum + getTaskHours(task); }, 0);
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var used = dayHours(i);
+    if (used <= 0) continue;
+    var name = ST.forecast && ST.forecast[i] ? DAYS_S[ST.forecast[i].date.getDay()] : DAYS_S[i];
+    days.push(name + ' ' + used + 'h');
+  }
+  return 'Banque · ' + total + 'h planifiées cette semaine' + (days.length ? ' · ' + days.join(' · ') : '');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1230,15 +1329,35 @@ function appendVoiceText(txt) {
   ta.value = current ? current + ' ' + next : next;
 }
 
+function getSpeechRecognitionCtor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function isIOSSafari() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || '')
+    && /Safari/.test(navigator.userAgent || '')
+    && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent || '');
+}
+
+function voiceUnavailableMessage() {
+  if (window.isSecureContext === false) {
+    return 'Dictée Safari requiert HTTPS<br>Ouvrir via Netlify';
+  }
+  if (isIOSSafari()) {
+    return 'Dictée non prise en charge ici<br>Saisir ci-dessous';
+  }
+  return 'Dictée vocale non disponible<br>Saisir ci-dessous';
+}
+
 function startMic() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var SR = getSpeechRecognitionCtor();
   if (!SR) {
-    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">Micro non disponible<br>Saisir ci-dessous</span>', false);
+    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">' + voiceUnavailableMessage() + '</span>', false);
     return;
   }
   if (_micRec && _micActive) { try { _micRec.stop(); } catch(e) {} }
   _micRec = new SR();
-  _micRec.lang = 'fr-FR';
+  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
   _micRec.interimResults = true;
   _micRec.maxAlternatives = 1;
   _micRec.continuous = false;
@@ -1260,7 +1379,15 @@ function startMic() {
       setVoiceStatus('🎤', false, 'Toucher pour reprendre');
       return;
     }
-    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">Micro indisponible<br>Saisir ci-dessous</span>', false);
+    var msg = 'Dictée interrompue<br>Toucher pour réessayer';
+    if (err === 'not-allowed' || err === 'service-not-allowed') {
+      msg = 'Autorisez le micro dans Safari<br>puis touchez pour reprendre';
+    } else if (err === 'audio-capture') {
+      msg = 'Micro introuvable<br>Saisir ci-dessous';
+    } else if (err === 'network') {
+      msg = 'Service vocal hors ligne<br>Saisir ci-dessous';
+    }
+    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">' + msg + '</span>', false);
     _micActive = false;
   };
   _micRec.onend = function() {
@@ -1274,7 +1401,10 @@ function startMic() {
     _micRec.start();
   } catch(e) {
     _micActive = false;
-    setVoiceStatus('🎤', false, 'Toucher pour reprendre');
+    var m = e && e.name === 'InvalidStateError'
+      ? 'Dictée déjà en cours<br>Toucher pour reprendre'
+      : 'Dictée bloquée par Safari<br>Toucher pour réessayer';
+    setVoiceStatus('<span style="font-size:.82rem;color:var(--text2)">' + m + '</span>', false);
   }
 }
 
@@ -1457,6 +1587,7 @@ function renderBoard() {
     tasks.forEach(function(task) { slot.appendChild(mkTaskCard(task, day)); });
   });
   renderSwapBanner();
+  renderActive();
 }
 
 function mkTaskCard(task, dayW) {
@@ -1835,6 +1966,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadCustomJobs();
   loadTerrainPref();
   buildTypeGrid();
+  renderActive();
   document.getElementById('locName').textContent = ST.loc.name;
 
   document.addEventListener('keydown', function(e) {

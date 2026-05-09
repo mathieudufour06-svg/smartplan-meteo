@@ -751,7 +751,7 @@ var JOB_TYPES = {
   pave:       { name:'Pavé',        icon:'🧱', short:'Pavé'    },
   excavation: { name:'Excavation',  icon:'🚜', short:'Excav.'  },
   paysagisme: { name:'Paysagisme',  icon:'🌿', short:'Paysage' },
-  electrique: { name:'Électrique',  icon:'⚡', short:'Électr.' },
+  electrique: { name:'Électrique',  icon:'🔌', short:'Électr.' },
   toiture:    { name:'Toiture',     icon:'🏠', short:'Toiture' },
   peinture:   { name:'Peinture',    icon:'🎨', short:'Peinture'},
 };
@@ -866,7 +866,7 @@ function weatherRank(w) {
 var _activeTab = 'home';
 
 function toggleTerrain() {
-  switchTab(document.body.classList.contains('terrain') ? 'home' : 'terrain');
+  switchTab(_activeTab === 'terrain' ? 'home' : 'terrain');
 }
 function loadTerrainPref() {
   try {
@@ -1165,7 +1165,7 @@ function canFitInDay(task, dayIdx) {
 
 function bankPill(dayIdx) {
   var used = dayHours(dayIdx);
-  var cls = used > DAY_HOUR_BANK ? ' bad' : used >= DAY_HOUR_BANK ? ' warn' : '';
+  var cls = used > DAY_HOUR_BANK ? ' bad' : '';
   return '<span class="bank-pill' + cls + '" title="Banque de temps">' + used + 'h/' + DAY_HOUR_BANK + 'h</span>';
 }
 
@@ -1360,7 +1360,7 @@ function startMic() {
   _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
   _micRec.interimResults = true;
   _micRec.maxAlternatives = 1;
-  _micRec.continuous = false;
+  _micRec.continuous = isIOSSafari() ? true : false;
   _micStopping = false;
   _micActive = true;
   setVoiceStatus('🔴', true, 'Toucher pour arrêter');

@@ -84,7 +84,7 @@ function renderJobCard(job, decision, weatherByHour) {
     <div class="score-row">
       <div class="score-label">Score météo</div>
       <div class="score-bar"><div class="score-fill ${scoreCls}" style="width:${meteoScore}%"></div></div>
-      <div class="score-value">${meteoScore}/100</div>
+      <div class="score-value">${meteoScore}</div>
     </div>
     <div class="decision">
       <div>→ Action : <span class="badge ${decision.action}">${escapeHtml(decision.action)}</span></div>

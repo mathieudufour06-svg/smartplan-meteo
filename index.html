@@ -813,6 +813,370 @@
     .jobs-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
 
     /* ════════════════════════════════════════════════════════════════
+       CALENDAR
+    ════════════════════════════════════════════════════════════════ */
+    .cal-header {
+      display: flex; align-items: center; gap: var(--s2);
+      margin-bottom: var(--s3);
+    }
+    .cal-title {
+      flex: 1;
+      font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em;
+      text-transform: capitalize;
+      line-height: 1.1;
+    }
+    .cal-nav {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
+      display: grid; place-items: center;
+      background: var(--surface);
+      border: 1px solid var(--hairline-2);
+      border-radius: 50%;
+      font-size: 1.3rem;
+      color: var(--t1);
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+    }
+    .cal-nav:active { transform: scale(0.92); background: var(--surface-2); }
+
+    .cal-toggle {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      padding: 4px;
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-pill);
+      margin-bottom: var(--s4);
+    }
+    .cal-toggle button {
+      padding: 9px 8px;
+      border-radius: var(--r-pill);
+      font-size: 0.84rem; font-weight: 700;
+      color: var(--t3);
+      transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .cal-toggle button.active {
+      background: var(--surface-3);
+      color: var(--t1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.20);
+    }
+
+    .cal-today-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--s2);
+      margin-bottom: var(--s4);
+    }
+    .cal-today-btn {
+      padding: 8px 16px;
+      background: rgba(91,158,255,0.12);
+      border: 1px solid rgba(91,158,255,0.30);
+      color: var(--blue);
+      border-radius: var(--r-pill);
+      font-size: 0.80rem; font-weight: 800;
+      transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+    }
+    .cal-today-btn:active { transform: scale(0.96); background: rgba(91,158,255,0.22); }
+    .cal-active-date {
+      font-size: 0.86rem; font-weight: 700; color: var(--t2);
+      text-transform: capitalize;
+      text-align: right;
+    }
+
+    /* ── MONTH ────────────────────────────────────────────────── */
+    .cal-weekdays {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .cal-wd {
+      text-align: center;
+      font-size: 0.66rem; font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--t3);
+      padding: 4px 0;
+    }
+    .cal-wd.weekend { color: var(--blue); }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-cell {
+      position: relative;
+      aspect-ratio: 0.78;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 2px;
+      padding: 6px 2px 4px;
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .cal-cell:active { transform: scale(0.94); background: var(--surface-2); }
+    .cal-cell.muted { background: transparent; border-color: transparent; opacity: 0.30; }
+    .cal-cell.muted:active { transform: none; }
+    .cal-cell.today {
+      background: linear-gradient(180deg, rgba(91,158,255,0.18) 0%, rgba(91,158,255,0.06) 100%);
+      border-color: var(--blue);
+    }
+    .cal-cell.today .cc-num { color: var(--blue); }
+    .cal-cell.selected {
+      box-shadow: 0 0 0 2px var(--blue), 0 8px 22px rgba(91,158,255,0.30);
+      border-color: var(--blue);
+    }
+    .cal-cell .cc-num {
+      font-weight: 800;
+      font-size: 0.95rem;
+      line-height: 1.1;
+      color: var(--t1);
+    }
+    .cal-cell .cc-wx {
+      font-size: 1rem;
+      line-height: 1;
+      opacity: 0.85;
+      min-height: 16px;
+    }
+    .cal-cell .cc-jobs {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      min-height: 8px;
+      max-width: 100%;
+    }
+    .cal-cell .cc-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+    }
+    .cal-cell .cc-dot.warn { background: var(--warning); }
+    .cal-cell .cc-dot.bad { background: var(--danger); }
+    .cal-cell .cc-more {
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: var(--t3);
+      line-height: 1;
+    }
+
+    .cal-month-preview {
+      margin-top: var(--s5);
+    }
+    .cal-month-preview-h {
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--t3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: var(--s3);
+      padding-left: var(--s1);
+    }
+    .cal-month-preview-h b {
+      color: var(--t1); font-weight: 800;
+      text-transform: capitalize;
+      letter-spacing: -0.01em;
+      font-size: 0.92rem;
+    }
+
+    /* ── WEEK ─────────────────────────────────────────────────── */
+    .cal-week-strip {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: var(--s5);
+    }
+    .cal-week-day {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      padding: 10px 2px 8px;
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-md);
+      min-height: 84px;
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .cal-week-day:active { transform: scale(0.94); }
+    .cal-week-day.today {
+      background: linear-gradient(180deg, rgba(91,158,255,0.16), rgba(91,158,255,0.05));
+      border-color: var(--blue);
+    }
+    .cal-week-day.today .wd-num { color: var(--blue); }
+    .cal-week-day.selected {
+      box-shadow: 0 0 0 2px var(--blue), 0 10px 26px rgba(91,158,255,0.30);
+      border-color: var(--blue);
+    }
+    .cal-week-day .wd-name {
+      font-size: 0.62rem; font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+    .cal-week-day .wd-num {
+      font-size: 1.10rem; font-weight: 800;
+      color: var(--t1);
+      line-height: 1;
+    }
+    .cal-week-day .wd-icon {
+      font-size: 1.05rem; line-height: 1;
+    }
+    .cal-week-day .wd-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px;
+      padding: 0 5px;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 9px;
+      font-size: 0.66rem; font-weight: 800;
+    }
+    .cal-week-day .wd-count.zero {
+      background: transparent;
+      color: var(--t4);
+    }
+
+    .cal-week-group {
+      margin-bottom: var(--s5);
+    }
+    .cal-week-group-h {
+      display: flex; align-items: center; gap: var(--s2);
+      padding: 0 var(--s1) var(--s2);
+      margin-bottom: var(--s2);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .cal-week-group-h .gh-day {
+      font-size: 0.84rem; font-weight: 800;
+      text-transform: capitalize;
+      color: var(--t1);
+      letter-spacing: -0.01em;
+    }
+    .cal-week-group-h .gh-num {
+      display: inline-grid; place-items: center;
+      width: 22px; height: 22px;
+      background: var(--surface-2);
+      border: 1px solid var(--hairline);
+      border-radius: 50%;
+      font-size: 0.72rem; font-weight: 800;
+      color: var(--t1);
+    }
+    .cal-week-group-h .gh-num.today {
+      background: var(--blue); border-color: var(--blue); color: #fff;
+    }
+    .cal-week-group-h .gh-wx {
+      font-size: 1rem; line-height: 1;
+    }
+    .cal-week-group-h .gh-spacer { flex: 1; }
+    .cal-week-group-h .gh-count {
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--t3);
+    }
+
+    /* ── DAY ──────────────────────────────────────────────────── */
+    .cal-day-hero {
+      position: relative;
+      padding: var(--s5);
+      border-radius: var(--r-xl);
+      background:
+        radial-gradient(120% 80% at 0% 0%, rgba(91,158,255,0.16) 0%, transparent 55%),
+        linear-gradient(160deg, var(--surface-2) 0%, var(--surface) 100%);
+      border: 1px solid var(--hairline-2);
+      box-shadow: var(--shadow-card);
+      margin-bottom: var(--s5);
+      overflow: hidden;
+    }
+    .cal-day-hero-row {
+      display: flex; align-items: center; gap: var(--s4);
+    }
+    .cal-day-hero-icon {
+      font-size: 3.4rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 14px rgba(91,158,255,0.35));
+    }
+    .cal-day-hero-info { flex: 1; }
+    .cal-day-hero-temp {
+      font-size: 1.85rem; font-weight: 900; letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .cal-day-hero-temp em {
+      font-style: normal; color: var(--t3); font-weight: 800;
+      font-size: 1.1rem; margin-left: 4px;
+    }
+    .cal-day-hero-label {
+      font-size: 0.86rem; font-weight: 700; color: var(--t1);
+      margin-top: 4px;
+    }
+    .cal-day-hero-score {
+      display: inline-flex; align-items: baseline; gap: 2px;
+      padding: 6px 12px;
+      border-radius: var(--r-pill);
+      font-weight: 800;
+      background: var(--ok-bg); border: 1px solid var(--ok-bd);
+      color: var(--green);
+      flex-shrink: 0;
+    }
+    .cal-day-hero-score.warn { background: var(--warning-bg); border-color: var(--warning-bd); color: var(--warning); }
+    .cal-day-hero-score.bad  { background: var(--danger-bg); border-color: var(--danger-bd); color: var(--danger); }
+    .cal-day-hero-score b { font-size: 0.95rem; font-weight: 900; }
+    .cal-day-hero-score em { font-style: normal; opacity: 0.7; font-size: 0.66rem; }
+
+    .cal-day-no-wx {
+      padding: var(--s4);
+      margin-top: var(--s3);
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed var(--hairline-2);
+      border-radius: var(--r-md);
+      text-align: center;
+      font-size: 0.82rem; color: var(--t3);
+    }
+
+    .cal-day-jobs { display: flex; flex-direction: column; gap: var(--s3); }
+
+    /* job time gutter (vertical timeline feel) */
+    .cal-day-job {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: var(--s3);
+      align-items: stretch;
+    }
+    .cal-day-job-time {
+      flex-shrink: 0;
+      padding-top: var(--s4);
+      font-size: 0.78rem; font-weight: 800;
+      color: var(--t2);
+      text-align: right;
+      line-height: 1.2;
+    }
+    .cal-day-job-time .tt-amp {
+      font-size: 0.62rem;
+      color: var(--t3);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .cal-day-job-time .tt-no {
+      font-size: 0.66rem;
+      color: var(--t3);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .cal-day-job .job-card {
+      width: 100%;
+    }
+
+    .cal-add-btn {
+      margin-top: var(--s3);
+      padding: var(--s4);
+      width: 100%;
+      background: var(--surface);
+      border: 1px dashed var(--hairline-3);
+      color: var(--t2);
+      border-radius: var(--r-md);
+      font-size: 0.92rem; font-weight: 700;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .cal-add-btn:active {
+      background: var(--surface-2);
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
        TOAST
     ════════════════════════════════════════════════════════════════ */
     #toast {
@@ -955,19 +1319,50 @@
 
     </section>
 
-    <!-- ═══════════════════ CALENDAR (placeholder PR2) ═══════════════════ -->
+    <!-- ═══════════════════ CALENDAR ═══════════════════ -->
     <section class="view" id="viewCalendar" data-view="calendar">
-      <div class="ph">
-        <div class="ph-icon">📅</div>
-        <span class="ph-tag">Bientôt · PR2</span>
-        <h1 class="ph-title">Calendrier mobile</h1>
-        <p class="ph-sub">Vues mois, semaine et jour avec météo intégrée. Vous pourrez tapoter une journée pour voir et déplacer ses chantiers.</p>
-        <ul class="ph-feat">
-          <li>Vue mois native iOS</li>
-          <li>Semaine et jour avec timeline</li>
-          <li>Météo visible dans chaque cellule</li>
-          <li>Glisser-déposer un chantier vers une autre date</li>
-        </ul>
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calNavigate(-1)" aria-label="Précédent">‹</button>
+        <h1 class="cal-title" id="calTitle">—</h1>
+        <button class="cal-nav" onclick="calNavigate(1)" aria-label="Suivant">›</button>
+      </div>
+
+      <div class="cal-toggle">
+        <button class="active" data-cal-mode="month" onclick="setCalMode('month')">Mois</button>
+        <button data-cal-mode="week" onclick="setCalMode('week')">Semaine</button>
+        <button data-cal-mode="day" onclick="setCalMode('day')">Jour</button>
+      </div>
+
+      <div class="cal-today-row">
+        <button class="cal-today-btn" onclick="calGoToday()">Aujourd'hui</button>
+        <span class="cal-active-date" id="calActiveDate"></span>
+      </div>
+
+      <!-- MONTH MODE -->
+      <div class="cal-mode" id="calModeMonth">
+        <div class="cal-weekdays">
+          <div class="cal-wd">Lun</div>
+          <div class="cal-wd">Mar</div>
+          <div class="cal-wd">Mer</div>
+          <div class="cal-wd">Jeu</div>
+          <div class="cal-wd">Ven</div>
+          <div class="cal-wd weekend">Sam</div>
+          <div class="cal-wd weekend">Dim</div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-month-preview" id="calMonthPreview"></div>
+      </div>
+
+      <!-- WEEK MODE -->
+      <div class="cal-mode" id="calModeWeek" style="display:none">
+        <div class="cal-week-strip" id="calWeekStrip"></div>
+        <div id="calWeekJobs"></div>
+      </div>
+
+      <!-- DAY MODE -->
+      <div class="cal-mode" id="calModeDay" style="display:none">
+        <div id="calDayHeroWrap"></div>
+        <div class="cal-day-jobs" id="calDayJobs"></div>
       </div>
     </section>
 
@@ -1275,6 +1670,7 @@
 var DAYS_L = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 var DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 var MONTHS = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+var MONTHS_FULL = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 
 var JOB_TYPES = {
   beton:      { name:'Béton',       icon:'🏗️', short:'Béton'   },
@@ -1497,7 +1893,7 @@ function deleteCustomJob(key) {
   saveCustomJobs();
   renderJobsList();
   buildTypeGrid();
-  renderHome();
+  renderActive();
   toast('Métier supprimé');
 }
 
@@ -1515,6 +1911,12 @@ var _dayPending       = 0;
 var _taskSource       = 'manual';
 var _taskPhotoPreview = null;
 var _activeTab        = 'home';
+
+/* Calendar state */
+var _calMode = 'month';
+var _calActive = (function() { var d = new Date(); d.setHours(0,0,0,0); return d; })();
+var _calMonthCursor = (function() { var d = new Date(); d.setHours(0,0,0,0); d.setDate(1); return d; })();
+var _calWeekCursor  = (function() { var d = new Date(); d.setHours(0,0,0,0); var dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow); return d; })();
 
 function loadST() {
   try {
@@ -1623,9 +2025,364 @@ function switchTab(tabId) {
   document.querySelectorAll('.nav-tab').forEach(function(b) {
     b.classList.toggle('active', b.dataset.tab === tabId);
   });
-  // scroll to top of view
   window.scrollTo({ top: 0, behavior: 'instant' });
-  if (tabId === 'home') renderHome();
+  renderActive();
+}
+
+function renderActive() {
+  if (_activeTab === 'home') renderHome();
+  else if (_activeTab === 'calendar') renderCalendar();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CALENDAR
+════════════════════════════════════════════════════════════════ */
+function setCalMode(mode) {
+  _calMode = mode;
+  document.querySelectorAll('[data-cal-mode]').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.calMode === mode);
+  });
+  document.getElementById('calModeMonth').style.display = mode === 'month' ? '' : 'none';
+  document.getElementById('calModeWeek').style.display  = mode === 'week'  ? '' : 'none';
+  document.getElementById('calModeDay').style.display   = mode === 'day'   ? '' : 'none';
+  renderCalendar();
+}
+
+function calNavigate(delta) {
+  if (_calMode === 'month') {
+    _calMonthCursor = new Date(_calMonthCursor.getFullYear(), _calMonthCursor.getMonth() + delta, 1);
+  } else if (_calMode === 'week') {
+    var nx = new Date(_calWeekCursor); nx.setDate(nx.getDate() + delta * 7); _calWeekCursor = nx;
+  } else {
+    var nd = new Date(_calActive); nd.setDate(nd.getDate() + delta); _calActive = nd;
+  }
+  renderCalendar();
+}
+
+function calGoToday() {
+  var t = new Date(); t.setHours(0,0,0,0);
+  _calActive = t;
+  _calMonthCursor = new Date(t.getFullYear(), t.getMonth(), 1);
+  var dow = (t.getDay() + 6) % 7;
+  _calWeekCursor = new Date(t); _calWeekCursor.setDate(t.getDate() - dow);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  var titleEl  = document.getElementById('calTitle');
+  var activeEl = document.getElementById('calActiveDate');
+  if (_calMode === 'month') {
+    titleEl.textContent = MONTHS_FULL[_calMonthCursor.getMonth()] + ' ' + _calMonthCursor.getFullYear();
+    activeEl.textContent = '';
+    renderCalMonth();
+  } else if (_calMode === 'week') {
+    var end = new Date(_calWeekCursor); end.setDate(end.getDate() + 6);
+    var sameMonth = _calWeekCursor.getMonth() === end.getMonth();
+    titleEl.textContent = _calWeekCursor.getDate() + (sameMonth ? '' : ' ' + MONTHS[_calWeekCursor.getMonth()])
+      + ' – ' + end.getDate() + ' ' + MONTHS[end.getMonth()];
+    activeEl.textContent = _calWeekCursor.getFullYear();
+    renderCalWeek();
+  } else {
+    titleEl.textContent = DAYS_L[_calActive.getDay()] + ' ' + _calActive.getDate();
+    activeEl.textContent = MONTHS_FULL[_calActive.getMonth()] + ' ' + _calActive.getFullYear();
+    renderCalDay();
+  }
+}
+
+function renderCalMonth() {
+  var grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  var year  = _calMonthCursor.getFullYear();
+  var month = _calMonthCursor.getMonth();
+  var firstDay   = new Date(year, month, 1);
+  var startIndex = (firstDay.getDay() + 6) % 7;
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var totalCells = Math.ceil((startIndex + daysInMonth) / 7) * 7;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var todayIso  = isoDate(today);
+  var activeIso = isoDate(_calActive);
+
+  for (var i = 0; i < totalCells; i++) {
+    var cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cal-cell';
+    var dayNum = i - startIndex + 1;
+    if (i < startIndex || i >= startIndex + daysInMonth) {
+      cell.classList.add('muted');
+      var displayDate = new Date(year, month, dayNum);
+      cell.innerHTML = '<span class="cc-num">' + displayDate.getDate() + '</span>';
+      cell.disabled = true;
+      grid.appendChild(cell);
+      continue;
+    }
+    var cellDate = new Date(year, month, dayNum);
+    cellDate.setHours(0,0,0,0);
+    var iso  = isoDate(cellDate);
+    var fcIdx = findForecastIndexByDate(iso);
+    var w     = fcIdx !== null ? ST.forecast[fcIdx] : null;
+    var dayJobs = ST.tasks.filter(function(t) { return t.scheduledDate === iso; });
+
+    if (iso === todayIso)  cell.classList.add('today');
+    if (iso === activeIso) cell.classList.add('selected');
+
+    var html = '<span class="cc-num">' + dayNum + '</span>';
+    html += w
+      ? '<span class="cc-wx">' + wIcon(w.weathercode) + '</span>'
+      : '<span class="cc-wx" style="visibility:hidden">·</span>';
+
+    var dotsHtml = '<span class="cc-jobs">';
+    if (dayJobs.length) {
+      var maxDots = 3;
+      for (var j = 0; j < Math.min(dayJobs.length, maxDots); j++) {
+        var dCls = '';
+        if (w) {
+          var res = assess(dayJobs[j].type, w);
+          if (res.level === 'risk')   dCls = ' warn';
+          if (res.level === 'danger') dCls = ' bad';
+        }
+        dotsHtml += '<span class="cc-dot' + dCls + '"></span>';
+      }
+      if (dayJobs.length > maxDots) {
+        dotsHtml += '<span class="cc-more">+' + (dayJobs.length - maxDots) + '</span>';
+      }
+    }
+    dotsHtml += '</span>';
+    html += dotsHtml;
+    cell.innerHTML = html;
+
+    cell.onclick = (function(date, jobsCount) {
+      return function() {
+        _calActive = date;
+        if (jobsCount === 0) {
+          openAddTask(isoDate(date));
+        } else {
+          renderCalMonth();
+          renderCalMonthPreview();
+        }
+      };
+    })(cellDate, dayJobs.length);
+    grid.appendChild(cell);
+  }
+  renderCalMonthPreview();
+}
+
+function renderCalMonthPreview() {
+  var preview = document.getElementById('calMonthPreview');
+  preview.innerHTML = '';
+  var iso = isoDate(_calActive);
+  var fcIdx = findForecastIndexByDate(iso);
+  var w     = fcIdx !== null ? ST.forecast[fcIdx] : null;
+  var dayJobs = ST.tasks.filter(function(t) { return t.scheduledDate === iso; })
+    .sort(function(a, b) { return (a.time || '').localeCompare(b.time || ''); });
+
+  var headerHtml = '<div class="cal-month-preview-h"><b>' + DAYS_L[_calActive.getDay()] + ' ' + _calActive.getDate() + ' ' + MONTHS_FULL[_calActive.getMonth()] + '</b>';
+  if (w) headerHtml += '  ·  ' + wIcon(w.weathercode) + ' ' + w.temp_max + '° / ' + w.temp_min + '°';
+  headerHtml += '</div>';
+  preview.innerHTML = headerHtml;
+
+  if (!dayJobs.length) {
+    preview.innerHTML += '<button class="cal-add-btn" onclick="openAddTask(\'' + iso + '\')">+ Ajouter un chantier ce jour-là</button>';
+    return;
+  }
+  var jobs = getMergedJobTypes();
+  var listEl = document.createElement('div');
+  listEl.className = 'job-list';
+  dayJobs.forEach(function(task) {
+    listEl.appendChild(buildJobCard(task, w, jobs));
+  });
+  preview.appendChild(listEl);
+
+  var addBtn = document.createElement('button');
+  addBtn.className = 'cal-add-btn';
+  addBtn.textContent = '+ Ajouter un chantier';
+  addBtn.onclick = function() { openAddTask(iso); };
+  preview.appendChild(addBtn);
+}
+
+function renderCalWeek() {
+  var strip = document.getElementById('calWeekStrip');
+  var box   = document.getElementById('calWeekJobs');
+  strip.innerHTML = '';
+  box.innerHTML = '';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var todayIso  = isoDate(today);
+  var activeIso = isoDate(_calActive);
+
+  var weekDates = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(_calWeekCursor); d.setDate(d.getDate() + i);
+    weekDates.push(d);
+  }
+
+  weekDates.forEach(function(d) {
+    var iso = isoDate(d);
+    var jobsCount = ST.tasks.filter(function(t) { return t.scheduledDate === iso; }).length;
+    var fcIdx = findForecastIndexByDate(iso);
+    var w     = fcIdx !== null ? ST.forecast[fcIdx] : null;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-week-day';
+    if (iso === todayIso)  btn.classList.add('today');
+    if (iso === activeIso) btn.classList.add('selected');
+    btn.innerHTML =
+        '<span class="wd-name">' + DAYS_S[d.getDay()] + '</span>'
+      + '<span class="wd-num">'  + d.getDate() + '</span>'
+      + (w ? '<span class="wd-icon">' + wIcon(w.weathercode) + '</span>'
+           : '<span class="wd-icon" style="opacity:0.3">·</span>')
+      + (jobsCount > 0
+          ? '<span class="wd-count">' + jobsCount + '</span>'
+          : '<span class="wd-count zero">·</span>');
+    btn.onclick = (function(date) { return function() {
+      _calActive = date;
+      renderCalendar();
+    }; })(d);
+    strip.appendChild(btn);
+  });
+
+  // Build groups for the week
+  var groups = {};
+  ST.tasks.forEach(function(t) {
+    if (!t.scheduledDate) return;
+    var td = new Date(t.scheduledDate + 'T00:00:00');
+    var weekEnd = new Date(_calWeekCursor); weekEnd.setDate(weekEnd.getDate() + 6); weekEnd.setHours(23,59,59,999);
+    if (td >= _calWeekCursor && td <= weekEnd) {
+      if (!groups[t.scheduledDate]) groups[t.scheduledDate] = [];
+      groups[t.scheduledDate].push(t);
+    }
+  });
+
+  var groupKeys = Object.keys(groups).sort();
+  if (!groupKeys.length) {
+    box.innerHTML =
+      '<div class="empty-card">'
+      + '<div class="empty-icon">📭</div>'
+      + '<div class="empty-title">Aucun chantier cette semaine</div>'
+      + '<div class="empty-sub">Tapez le + en bas pour planifier.</div>'
+      + '</div>';
+    return;
+  }
+
+  var jobsDef = getMergedJobTypes();
+  groupKeys.forEach(function(dateIso) {
+    var dt = new Date(dateIso + 'T00:00:00');
+    var fcIdx = findForecastIndexByDate(dateIso);
+    var w     = fcIdx !== null ? ST.forecast[fcIdx] : null;
+    var sortedJobs = groups[dateIso].slice().sort(function(a,b) { return (a.time || '').localeCompare(b.time || ''); });
+
+    var group = document.createElement('div');
+    group.className = 'cal-week-group';
+    var head = document.createElement('div');
+    head.className = 'cal-week-group-h';
+    head.innerHTML =
+        '<span class="gh-num' + (dateIso === todayIso ? ' today' : '') + '">' + dt.getDate() + '</span>'
+      + '<span class="gh-day">' + DAYS_L[dt.getDay()] + '</span>'
+      + (w ? '<span class="gh-wx">' + wIcon(w.weathercode) + '</span>' : '')
+      + '<span class="gh-spacer"></span>'
+      + '<span class="gh-count">' + sortedJobs.length + ' chantier' + (sortedJobs.length > 1 ? 's' : '') + '</span>';
+    group.appendChild(head);
+
+    var list = document.createElement('div');
+    list.className = 'job-list';
+    sortedJobs.forEach(function(task) {
+      list.appendChild(buildJobCard(task, w, jobsDef));
+    });
+    group.appendChild(list);
+    box.appendChild(group);
+  });
+}
+
+function renderCalDay() {
+  var iso   = isoDate(_calActive);
+  var fcIdx = findForecastIndexByDate(iso);
+  var w     = fcIdx !== null ? ST.forecast[fcIdx] : null;
+
+  var heroWrap = document.getElementById('calDayHeroWrap');
+  if (w) {
+    var score = calcScore(w);
+    var sc = scoreCls(score);
+    heroWrap.innerHTML =
+      '<div class="cal-day-hero">'
+      + '<div class="cal-day-hero-row">'
+      + '<div class="cal-day-hero-icon">' + wIcon(w.weathercode) + '</div>'
+      + '<div class="cal-day-hero-info">'
+      + '<div class="cal-day-hero-temp">' + w.temp_max + '<em>°</em><span style="color:var(--t3); margin: 0 4px;">/</span>' + w.temp_min + '<em>°</em></div>'
+      + '<div class="cal-day-hero-label">' + wLabel(w.weathercode) + ' · ' + w.windspeed + ' km/h · ' + w.precipitation + ' mm</div>'
+      + '</div>'
+      + '<div class="cal-day-hero-score' + (sc ? ' ' + sc : '') + '"><b>' + score + '</b><em>/100</em></div>'
+      + '</div>'
+      + '</div>';
+  } else {
+    heroWrap.innerHTML = '<div class="cal-day-no-wx">Météo non disponible (au-delà de la fenêtre de prévision)</div>';
+  }
+
+  var jobsList = document.getElementById('calDayJobs');
+  jobsList.innerHTML = '';
+  var dayJobs = ST.tasks.filter(function(t) { return t.scheduledDate === iso; })
+    .sort(function(a, b) { return (a.time || '').localeCompare(b.time || ''); });
+
+  if (!dayJobs.length) {
+    jobsList.innerHTML =
+      '<div class="empty-card">'
+      + '<div class="empty-icon">📭</div>'
+      + '<div class="empty-title">Aucun chantier ce jour</div>'
+      + '<div class="empty-sub">Tapez ci-dessous pour en ajouter un.</div>'
+      + '</div>'
+      + '<button class="cal-add-btn" onclick="openAddTask(\'' + iso + '\')">+ Ajouter un chantier</button>';
+    return;
+  }
+
+  var jobsDef = getMergedJobTypes();
+  dayJobs.forEach(function(task) {
+    var row = document.createElement('div');
+    row.className = 'cal-day-job';
+    var timeHtml;
+    if (task.time) {
+      var parts = task.time.split(':');
+      var h = parts[0]; var m = parts[1] || '00';
+      timeHtml = '<div class="cal-day-job-time">' + h + 'h' + (m === '00' ? '' : m) + '</div>';
+    } else {
+      timeHtml = '<div class="cal-day-job-time"><span class="tt-no">Sans heure</span></div>';
+    }
+    row.innerHTML = timeHtml;
+    var card = buildJobCard(task, w, jobsDef);
+    row.appendChild(card);
+    jobsList.appendChild(row);
+  });
+
+  var addBtn = document.createElement('button');
+  addBtn.className = 'cal-add-btn';
+  addBtn.textContent = '+ Ajouter un chantier';
+  addBtn.onclick = function() { openAddTask(iso); };
+  jobsList.appendChild(addBtn);
+}
+
+function buildJobCard(task, w, jobsDef) {
+  jobsDef = jobsDef || getMergedJobTypes();
+  var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
+  var levelCls = '';
+  if (w) {
+    var res = assess(task.type, w);
+    if (res.level === 'risk')   levelCls = ' warn';
+    if (res.level === 'danger') levelCls = ' bad';
+  }
+  var card = document.createElement('button');
+  card.type = 'button';
+  card.className = 'job-card' + levelCls;
+  card.dataset.taskId = task.id;
+  var meta = '';
+  if (task.client)   meta += '<span>👤 ' + esc(task.client) + '</span>';
+  meta += '<span>🔧 ' + esc(jd.short || jd.name) + '</span>';
+  if (task.location) meta += '<span>📍 ' + esc(task.location) + '</span>';
+  var timeChip = task.time ? '<span class="job-time">' + esc(task.time) + '</span>' : '';
+  card.innerHTML =
+      '<div class="job-thumb">' + jd.icon + '</div>'
+    + '<div class="job-body">'
+    + '<div class="job-title">' + esc(task.name) + '</div>'
+    + '<div class="job-meta">' + meta + '</div>'
+    + '</div>'
+    + timeChip;
+  card.onclick = (function(id) { return function() { openEditTask(id); }; })(task.id);
+  return card;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1910,7 +2667,7 @@ function optimizeWeek() {
     task.scheduledDate = isoDate(ST.forecast[bestIdx].date);
     changed = true;
   });
-  if (changed) { saveST(); renderHome(); }
+  if (changed) { saveST(); renderActive(); }
   var content;
   if (!moved.length) {
     content = '<div style="text-align:center; padding:24px 10px; color:var(--t2)">'
@@ -2197,7 +2954,7 @@ function createPhotoDraft() {
   });
   saveST();
   closeModal('photoOverlay');
-  renderHome();
+  renderActive();
   toast('✓ Brouillon ajouté à la banque de jobs');
 }
 
@@ -2339,7 +3096,7 @@ function saveTask() {
   }
   saveST();
   closeModal('taskOverlay');
-  renderHome();
+  renderActive();
 }
 
 function showDelConfirm() {
@@ -2355,7 +3112,7 @@ function confirmDelTask() {
   ST.tasks = ST.tasks.filter(function(t) { return t.id !== _editingId; });
   saveST();
   closeModal('taskOverlay');
-  renderHome();
+  renderActive();
   toast('Chantier supprimé');
 }
 
@@ -2454,7 +3211,7 @@ async function setLoc(lat, lon, name) {
 async function loadWeather() {
   setDot('loading');
   ST.forecast = null;
-  renderHome();
+  renderActive();
   try {
     ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon);
     setDot('ok');
@@ -2464,7 +3221,7 @@ async function loadWeather() {
     setDot('offline');
     toast('⚠ Météo simulée — vérifiez la connexion');
   }
-  renderHome();
+  renderActive();
 }
 
 function setDot(state) {
@@ -2523,6 +3280,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadCustomJobs();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;
+  // Pre-render calendar so its title is set even before first navigation
+  renderCalendar();
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

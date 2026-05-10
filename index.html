@@ -572,6 +572,8 @@
       background: var(--t-5);
       flex-shrink: 0;
     }
+    .job-meta .meta-duration { font-weight: 600; color: var(--t-2); font-variant-numeric: tabular-nums; }
+    .job-meta .meta-duration.meta-soft { color: var(--t-4); font-style: italic; font-weight: 500; }
     .job-time {
       flex-shrink: 0;
       padding: 7px 12px;
@@ -1521,6 +1523,70 @@
     }
 
     /* ════════════════════════════════════════════════════════════════
+       WEATHER RULES (per-task collapsible)
+    ════════════════════════════════════════════════════════════════ */
+    .weather-rules {
+      margin-bottom: var(--s3);
+      background: var(--surface-2);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      overflow: hidden;
+    }
+    .weather-rules summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--t-2);
+      letter-spacing: -0.005em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .weather-rules summary::-webkit-details-marker { display: none; }
+    .weather-rules summary::after {
+      content: '+';
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--t-3);
+      line-height: 1;
+      transition: transform var(--t-fast) var(--ease);
+    }
+    .weather-rules[open] summary::after {
+      transform: rotate(45deg);
+    }
+    .weather-rules-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s2);
+      padding: 0 14px 12px;
+    }
+    .weather-rules-grid .fg { margin-bottom: 0; }
+    .weather-rules-hint {
+      padding: 0 14px 12px;
+      font-size: 12px;
+      color: var(--t-3);
+      line-height: 1.4;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       STATUS PILL (terrain-grade replacement for /100 score)
+    ════════════════════════════════════════════════════════════════ */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--r-pill);
+      font-size: 12px; font-weight: 800;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+    }
+    .status-pill .sp-icon { font-size: 13px; line-height: 1; }
+    .status-pill.ok   { background: var(--ok-bg);   border: 1px solid var(--ok-bd);   color: var(--green); }
+    .status-pill.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--orange); }
+    .status-pill.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
+
+    /* ════════════════════════════════════════════════════════════════
        TOAST
     ════════════════════════════════════════════════════════════════ */
     #toast {
@@ -1585,7 +1651,7 @@
 
       <!-- Greeting -->
       <div class="greeting">
-        <span class="greet-eyebrow" id="greetEyebrow">Tableau de bord</span>
+        <span class="greet-eyebrow" id="greetEyebrow"></span>
         <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
         <div class="greet-sub" id="greetSub">—</div>
       </div>
@@ -1594,7 +1660,7 @@
       <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
         <div class="hero-row-1">
           <span class="hero-eyebrow"><span id="heroEyebrowDay">Aujourd'hui</span> · <b id="heroEyebrowDate">—</b></span>
-          <span class="hero-score" id="heroScore"><b>—</b><em>/100</em></span>
+          <span class="hero-score status-pill" id="heroScore"><span class="sp-icon">⏳</span><span>…</span></span>
         </div>
         <div class="hero-row-2">
           <span class="hero-icon" id="heroIcon">☀️</span>
@@ -1739,7 +1805,7 @@
     <section class="view" id="viewBank" data-view="bank">
       <div class="ph">
         <div class="ph-icon">📋</div>
-        <span class="ph-tag">Bientôt · PR3</span>
+        <span class="ph-tag">Bientôt disponible</span>
         <h1 class="ph-title">Banque de jobs</h1>
         <p class="ph-sub">Vrai backlog chantier façon Kanban mobile. Cartes premium avec image, statut, type, client et CTA planifier.</p>
         <ul class="ph-feat">
@@ -1755,7 +1821,7 @@
     <section class="view" id="viewField" data-view="field">
       <div class="ph">
         <div class="ph-icon">🦺</div>
-        <span class="ph-tag">Bientôt · PR4</span>
+        <span class="ph-tag">Bientôt disponible</span>
         <h1 class="ph-title">Mode terrain</h1>
         <p class="ph-sub">Dashboard noir/vert ultra-contraste, énormes touch targets, utilisable au soleil et avec des gants.</p>
         <ul class="ph-feat">
@@ -1831,11 +1897,11 @@
     </div>
     <span class="sheet-opt-arrow">›</span>
   </button>
-  <button class="sheet-opt" onclick="closeNewJobSheet(); openVoice()">
+  <button class="sheet-opt" id="sheetOptVoice" onclick="closeNewJobSheet(); openVoice()">
     <div class="sheet-opt-icon green">🎤</div>
     <div class="sheet-opt-body">
       <div class="sheet-opt-title">Dictée vocale</div>
-      <div class="sheet-opt-sub">« Asphaltage chez Tremblay samedi à 8h »</div>
+      <div class="sheet-opt-sub" id="sheetOptVoiceSub">« Asphaltage chez Tremblay samedi à 8h »</div>
     </div>
     <span class="sheet-opt-arrow">›</span>
   </button>
@@ -1919,6 +1985,28 @@
         <option value="low">🟢 Basse</option>
       </select>
     </div>
+    <details class="weather-rules">
+      <summary>☁ Conditions météo acceptables (optionnel)</summary>
+      <div class="weather-rules-grid">
+        <div class="fg">
+          <label>Temp. min (°C)</label>
+          <input type="number" id="tMinTemp" placeholder="ex : 5" min="-30" max="50">
+        </div>
+        <div class="fg">
+          <label>Temp. max (°C)</label>
+          <input type="number" id="tMaxTemp" placeholder="ex : 30" min="-30" max="50">
+        </div>
+        <div class="fg">
+          <label>Pluie max (mm)</label>
+          <input type="number" id="tMaxRain" placeholder="ex : 5" min="0" max="100">
+        </div>
+        <div class="fg">
+          <label>Vent max (km/h)</label>
+          <input type="number" id="tMaxWind" placeholder="ex : 30" min="0" max="200">
+        </div>
+      </div>
+      <p class="weather-rules-hint">Si laissés vides, les règles par défaut du métier s'appliquent.</p>
+    </details>
     <div class="del-confirm" id="delConfirm" style="display:none">
       <span>⚠ Supprimer ce chantier définitivement ?</span>
       <button class="btn-del-no"  onclick="hideDelConfirm()">Non</button>
@@ -2188,6 +2276,22 @@ function scoreCls(s) {
   return 'bad';
 }
 
+/* Simple terrain-grade status — replaces the gadget /100 score in the UI.
+   Based purely on rain / wind / temperature thresholds. */
+function simpleStatus(w) {
+  if (!w) return { level: 'ok', icon: '⏳', label: 'Météo en chargement' };
+  if (w.weathercode >= 95) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
+  if (w.precipitation > 5) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
+  if (w.windspeed     > 40) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
+  if (w.temp_min      < 0)  return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
+  if (w.temp_max      > 35) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
+  if (w.precipitation > 0)  return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
+  if (w.windspeed     > 25) return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
+  if (w.temp_min      < 5)  return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
+  if (w.temp_max      > 30) return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
+  return { level: 'ok', icon: '✅', label: 'Bonnes conditions' };
+}
+
 /* ════════════════════════════════════════════════════════════════
    CUSTOM JOBS
 ════════════════════════════════════════════════════════════════ */
@@ -2385,7 +2489,12 @@ function mockForecast() {
 /* ════════════════════════════════════════════════════════════════
    RISK ENGINE
 ════════════════════════════════════════════════════════════════ */
-function assess(jobType, w) {
+function assess(jobType, w, taskOverride) {
+  // Per-task weather rules take priority when provided
+  if (taskOverride && hasWeatherOverride(taskOverride)) {
+    var ovRes = assessOverride(taskOverride, w);
+    if (ovRes) return ovRes;
+  }
   var rules = RISK_RULES[jobType] || [];
   var level = 'ok', msg = '✓ Conditions favorables';
   for (var i = 0; i < rules.length; i++) {
@@ -2395,6 +2504,27 @@ function assess(jobType, w) {
     if (level !== 'danger') { level = 'risk'; msg = r.m; }
   }
   return { level: level, msg: msg };
+}
+
+function hasWeatherOverride(o) {
+  if (!o) return false;
+  return o.minTemp != null || o.maxTemp != null || o.maxRain != null || o.maxWind != null;
+}
+
+function assessOverride(o, w) {
+  if (o.maxRain != null && w.precipitation > o.maxRain) {
+    return { level: 'danger', msg: 'Pluie ' + w.precipitation + 'mm > ' + o.maxRain + 'mm' };
+  }
+  if (o.maxWind != null && w.windspeed > o.maxWind) {
+    return { level: 'danger', msg: 'Vent ' + w.windspeed + 'km/h > ' + o.maxWind + 'km/h' };
+  }
+  if (o.minTemp != null && w.temp_min < o.minTemp) {
+    return { level: 'danger', msg: 'Température min ' + w.temp_min + '°C < ' + o.minTemp + '°C' };
+  }
+  if (o.maxTemp != null && w.temp_max > o.maxTemp) {
+    return { level: 'danger', msg: 'Température max ' + w.temp_max + '°C > ' + o.maxTemp + '°C' };
+  }
+  return { level: 'ok', msg: '✓ Conditions favorables' };
 }
 
 function dayOverallRisk(w) {
@@ -2531,7 +2661,7 @@ function renderCalMonth() {
       for (var j = 0; j < Math.min(dayJobs.length, maxDots); j++) {
         var dCls = '';
         if (w) {
-          var res = assess(dayJobs[j].type, w);
+          var res = assess(dayJobs[j].type, w, dayJobs[j].weather);
           if (res.level === 'risk')   dCls = ' warn';
           if (res.level === 'danger') dCls = ' bad';
         }
@@ -2693,17 +2823,16 @@ function renderCalDay() {
 
   var heroWrap = document.getElementById('calDayHeroWrap');
   if (w) {
-    var score = calcScore(w);
-    var sc = scoreCls(score);
+    var st = simpleStatus(w);
     heroWrap.innerHTML =
       '<div class="cal-day-hero">'
       + '<div class="cal-day-hero-row">'
       + '<div class="cal-day-hero-icon">' + wIcon(w.weathercode) + '</div>'
       + '<div class="cal-day-hero-info">'
-      + '<div class="cal-day-hero-temp">' + w.temp_max + '<em>°</em><span style="color:var(--t3); margin: 0 4px;">/</span>' + w.temp_min + '<em>°</em></div>'
+      + '<div class="cal-day-hero-temp">' + w.temp_max + '<em>°</em><span style="color:var(--t-3); margin: 0 4px;">/</span>' + w.temp_min + '<em>°</em></div>'
       + '<div class="cal-day-hero-label">' + wLabel(w.weathercode) + ' · ' + w.windspeed + ' km/h · ' + w.precipitation + ' mm</div>'
       + '</div>'
-      + '<div class="cal-day-hero-score' + (sc ? ' ' + sc : '') + '"><b>' + score + '</b><em>/100</em></div>'
+      + '<span class="status-pill ' + st.level + '"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
       + '</div>'
       + '</div>';
   } else {
@@ -2758,7 +2887,7 @@ function buildJobCard(task, w, jobsDef, opts) {
   var levelCls = '';
   var statusMsg = 'Conditions favorables';
   if (w) {
-    var res = assess(task.type, w);
+    var res = assess(task.type, w, task.weather);
     if (res.level === 'risk')   { levelCls = ' warn'; statusMsg = res.msg || 'Vigilance requise'; }
     if (res.level === 'danger') { levelCls = ' bad';  statusMsg = res.msg || 'Conditions défavorables'; }
   } else {
@@ -2778,6 +2907,9 @@ function buildJobCard(task, w, jobsDef, opts) {
   if (task.client)   meta.push('<span>' + esc(task.client) + '</span>');
   meta.push('<span>' + esc(jd.short || jd.name) + '</span>');
   if (task.location) meta.push('<span>' + esc(task.location) + '</span>');
+  var durLabel = task.duration ? esc(task.duration) : 'Durée non définie';
+  var durCls = task.duration ? '' : ' meta-soft';
+  meta.push('<span class="meta-duration' + durCls + '">⏱ ' + durLabel + '</span>');
   var metaHtml = meta.join('<span class="meta-sep"></span>');
 
   var timeChip = task.time
@@ -2834,7 +2966,7 @@ function renderGreeting() {
                    : risk === 'risk' ? 'Vigilance requise'
                    : 'Alerte météo';
   } else {
-    eb.textContent = 'Tableau de bord';
+    eb.textContent = '';
   }
 }
 
@@ -2861,10 +2993,7 @@ function renderHero() {
     return;
   }
   var d = fc[0];
-  var score = calcScore(d);
-  var sc = scoreCls(score);
-  var risk = dayOverallRisk(d);
-  var statusLabel = risk === 'ok' ? 'Conditions favorables · Tous métiers' : risk === 'risk' ? 'Vigilance requise pour certains métiers' : 'Conditions défavorables · Plusieurs métiers à risque';
+  var st = simpleStatus(d);
   var dateLabel = DAYS_S[d.date.getDay()] + ' ' + d.date.getDate() + ' ' + MONTHS[d.date.getMonth()];
 
   card.dataset.mood = moodFromCode(d.weathercode);
@@ -2874,14 +3003,14 @@ function renderHero() {
   document.getElementById('heroTempMax').textContent = d.temp_max;
   document.getElementById('heroTempMin').textContent = d.temp_min + '°';
   document.getElementById('heroLabel').textContent = wLabel(d.weathercode);
-  document.getElementById('heroLabelSub').textContent = statusLabel;
+  document.getElementById('heroLabelSub').textContent = d.windspeed + ' km/h vent · ' + d.precipitation + ' mm pluie';
   document.getElementById('heroWind').innerHTML = d.windspeed + '<span>km/h</span>';
   document.getElementById('heroRain').innerHTML = d.precipitation + '<span>mm</span>';
   document.getElementById('heroProb').innerHTML = d.rain_prob + '<span>%</span>';
 
   var scoreEl = document.getElementById('heroScore');
-  scoreEl.className = 'hero-score' + (sc ? ' ' + sc : '');
-  scoreEl.innerHTML = '<b>' + score + '</b><em>/100</em>';
+  scoreEl.className = 'hero-score status-pill ' + st.level;
+  scoreEl.innerHTML = '<span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span>';
 }
 
 function renderDayStrip() {
@@ -2900,7 +3029,8 @@ function renderDayStrip() {
     return;
   }
   fc.forEach(function(d, idx) {
-    var sc = scoreCls(calcScore(d));
+    var st = simpleStatus(d);
+    var sc = st.level === 'ok' ? '' : st.level;
     var btn = document.createElement('button');
     btn.className = 'strip-day' + (idx === 0 ? ' today' : '') + (sc ? ' ' + sc : '');
     var dayName = idx === 0 ? "Auj." : DAYS_S[d.date.getDay()];
@@ -2952,15 +3082,15 @@ function renderInsights() {
     }
     return false;
   });
-  // Tile 2: average score over forecast window
-  var avgScore = '—';
-  if (fc.length) {
-    var sum = 0;
-    fc.forEach(function(d) { sum += calcScore(d); });
-    avgScore = Math.round(sum / fc.length);
-  }
-  var avgSc = avgScore === '—' ? '' : (avgScore >= 75 ? 'good' : avgScore >= 50 ? 'warn' : 'bad');
-  var avgTrendCls = avgScore === '—' ? '' : (avgScore >= 60 ? '' : 'bad');
+  // Tile 2: terrain-grade days (good / warn / bad)
+  var goodDays = 0, warnDays = 0, badDays = 0;
+  fc.forEach(function(d) {
+    var s = simpleStatus(d);
+    if (s.level === 'ok')   goodDays++;
+    else if (s.level === 'warn') warnDays++;
+    else                         badDays++;
+  });
+  var tone = (warnDays + badDays > goodDays) ? 'orange' : 'green';
 
   grid.innerHTML =
       '<div class="insight-tile" data-tone="violet">'
@@ -2968,10 +3098,10 @@ function renderInsights() {
     +   '<div class="it-num">' + weekTasks.length + '<em> chantier' + (weekTasks.length > 1 ? 's' : '') + '</em></div>'
     +   '<div class="it-label">Planifiés sur 7 jours</div>'
     + '</div>'
-    + '<div class="insight-tile" data-tone="' + (avgSc === 'bad' ? 'orange' : 'green') + '">'
-    +   '<div class="it-eyebrow"><span class="it-icon">📊</span> Score moyen</div>'
-    +   '<div class="it-num">' + avgScore + '<em>/100</em></div>'
-    +   '<div class="it-label">Météo des 7 prochains jours</div>'
+    + '<div class="insight-tile" data-tone="' + tone + '">'
+    +   '<div class="it-eyebrow"><span class="it-icon">⛅</span> Jours favorables</div>'
+    +   '<div class="it-num">' + goodDays + '<em>/' + fc.length + '</em></div>'
+    +   '<div class="it-label">' + warnDays + ' à risque · ' + badDays + ' défavorables</div>'
     + '</div>';
 }
 
@@ -3018,11 +3148,11 @@ function renderOptimization() {
     if (task.dayIndex == null) return;
     var cur = fc[task.dayIndex];
     if (!cur) return;
-    var curRes = assess(task.type, cur);
+    var curRes = assess(task.type, cur, task.weather);
     if (curRes.level === 'ok') return;
     for (var i = 0; i < fc.length; i++) {
       if (i === task.dayIndex) continue;
-      var res = assess(task.type, fc[i]);
+      var res = assess(task.type, fc[i], task.weather);
       if (res.level === 'ok') { movable++; return; }
     }
   });
@@ -3044,18 +3174,16 @@ function openDayDetail(di) {
   var day = ST.forecast[di];
   var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
   document.getElementById('ddTitle').textContent = dayName;
-  var score = calcScore(day);
-  var sc = scoreCls(score);
+  var st = simpleStatus(day);
   var html =
     '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px">'
     + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline)">'
     + '<div style="font-size:2.6rem; line-height:1">' + wIcon(day.weathercode) + '</div>'
     + '<div style="font-weight:700; margin-top:8px">' + wLabel(day.weathercode) + '</div>'
     + '</div>'
-    + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline)">'
-    + '<div style="font-size:.68rem; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.07em">Score météo</div>'
-    + '<div class="hero-score ' + sc + '" style="font-size:1.4rem; padding:6px 14px; margin:8px auto; display:inline-flex"><b>' + score + '</b><em>/100</em></div>'
-    + '<div style="font-size:.78rem; color:var(--t3)">' + (score >= 75 ? 'Favorable' : score >= 50 ? 'Risqué' : 'Défavorable') + '</div>'
+    + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px">'
+    + '<div style="font-size:.68rem; font-weight:700; color:var(--t-3); text-transform:uppercase; letter-spacing:.07em">Conditions terrain</div>'
+    + '<span class="status-pill ' + st.level + '" style="padding:8px 14px"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
     + '</div>'
     + '</div>'
     + '<div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-bottom:14px">'
@@ -3103,19 +3231,19 @@ function optimizeWeek() {
     if (task.dayIndex == null) return;
     var cur = ST.forecast[task.dayIndex];
     if (!cur) return;
-    var curRes = assess(task.type, cur);
+    var curRes = assess(task.type, cur, task.weather);
     if (curRes.level === 'ok') return;
     var bestIdx = null, bestScore = -1;
     for (var i = 0; i < ST.forecast.length; i++) {
       if (i === task.dayIndex) continue;
-      var res = assess(task.type, ST.forecast[i]);
+      var res = assess(task.type, ST.forecast[i], task.weather);
       var s   = calcScore(ST.forecast[i]);
       if (res.level === 'ok' && s > bestScore) { bestScore = s; bestIdx = i; }
     }
     if (bestIdx === null) {
       for (var i = 0; i < ST.forecast.length; i++) {
         if (i === task.dayIndex) continue;
-        var res = assess(task.type, ST.forecast[i]);
+        var res = assess(task.type, ST.forecast[i], task.weather);
         var s   = calcScore(ST.forecast[i]);
         if (res.level === 'risk' && s > bestScore) { bestScore = s; bestIdx = i; }
       }
@@ -3172,6 +3300,18 @@ function voiceStatusElement() {
 
 function getSpeechRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+function applyVoiceSupportUI() {
+  var supported = !!getSpeechRecognitionCtor();
+  var sub = document.getElementById('sheetOptVoiceSub');
+  var btn = document.getElementById('sheetOptVoice');
+  if (!supported) {
+    if (sub) sub.textContent = "Non supportée sur ce navigateur — saisie manuelle";
+    if (btn) btn.style.opacity = '0.55';
+  } else {
+    if (sub) sub.textContent = "« Asphaltage chez Tremblay samedi à 8h »";
+    if (btn) btn.style.opacity = '';
+  }
 }
 function isIOSSafari() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent || '')
@@ -3534,6 +3674,10 @@ function openAddTask(dayIdx) {
   document.getElementById('tDuration').value = '';
   document.getElementById('tTime').value     = dayIdx == null ? '' : '08:00';
   document.getElementById('tPrio').value     = 'medium';
+  document.getElementById('tMinTemp').value  = '';
+  document.getElementById('tMaxTemp').value  = '';
+  document.getElementById('tMaxRain').value  = '';
+  document.getElementById('tMaxWind').value  = '';
   buildTypeGrid();
   var dateValue = '';
   if (typeof dayIdx === 'string' && dayIdx) dateValue = dayIdx;
@@ -3562,6 +3706,11 @@ function openEditTask(id, title) {
   document.getElementById('tDuration').value = task.duration || '';
   document.getElementById('tTime').value     = task.time     || '';
   document.getElementById('tPrio').value     = task.priority || 'medium';
+  var tw = task.weather || {};
+  document.getElementById('tMinTemp').value  = tw.minTemp != null ? tw.minTemp : '';
+  document.getElementById('tMaxTemp').value  = tw.maxTemp != null ? tw.maxTemp : '';
+  document.getElementById('tMaxRain').value  = tw.maxRain != null ? tw.maxRain : '';
+  document.getElementById('tMaxWind').value  = tw.maxWind != null ? tw.maxWind : '';
   buildTypeGrid(task.type);
   populateDateInput(task.status === 'backlog' ? '' : (task.scheduledDate || ''));
   setTaskMode('manual');
@@ -3609,10 +3758,24 @@ function saveTask() {
   if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
   var status = scheduledDate ? 'scheduled' : 'backlog';
   var source = _taskSource || 'manual';
+  function _num(id) {
+    var v = document.getElementById(id).value;
+    if (v === '' || v == null) return null;
+    var n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+  var weather = {
+    minTemp: _num('tMinTemp'),
+    maxTemp: _num('tMaxTemp'),
+    maxRain: _num('tMaxRain'),
+    maxWind: _num('tMaxWind'),
+  };
+  var hasW = weather.minTemp != null || weather.maxTemp != null || weather.maxRain != null || weather.maxWind != null;
   var patch = {
     name: name, title: name, client: client, location: location, duration: duration,
     time: time, scheduledTime: time, scheduledDate: scheduledDate,
-    type: sel.dataset.type, priority: prio, dayIndex: dayIdx, status: status, source: source
+    type: sel.dataset.type, priority: prio, dayIndex: dayIdx, status: status, source: source,
+    weather: hasW ? weather : null,
   };
   if (_taskPhotoPreview !== null) patch.photoPreview = _taskPhotoPreview;
   if (_editingId) {
@@ -3817,6 +3980,8 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('locName').textContent = ST.loc.name;
   // Pre-render calendar so its title is set even before first navigation
   renderCalendar();
+  // Detect dictation support and adapt UI
+  applyVoiceSupportUI();
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

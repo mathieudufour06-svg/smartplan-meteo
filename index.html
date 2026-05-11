@@ -840,6 +840,82 @@
     }
     .opti-cta:active { transform: scale(0.97); }
 
+    /* ════════════════════════════════════════════════════════════════
+       WEEK TIMELINE — vertical, mobile-first
+    ════════════════════════════════════════════════════════════════ */
+    .week-timeline { display: flex; flex-direction: column; gap: 8px; }
+    .wt-day {
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-xl);
+      padding: 13px var(--s4);
+      cursor: pointer;
+      transition: background var(--t-fast) var(--ease);
+      position: relative; overflow: hidden;
+      text-align: left; width: 100%;
+    }
+    .wt-day:active { background: var(--surface-2); }
+    .wt-day.wt-warn { border-color: rgba(255,159,67,0.25); }
+    .wt-day.wt-bad  { border-color: rgba(255,85,102,0.25); }
+    .wt-day.wt-warn::before,
+    .wt-day.wt-bad::before,
+    .wt-day.wt-today::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius: var(--r-xl) 0 0 var(--r-xl); }
+    .wt-day.wt-warn::before  { background: var(--orange); }
+    .wt-day.wt-bad::before   { background: var(--red); }
+    .wt-day.wt-today         { border-color: rgba(118,150,255,0.30); }
+    .wt-day.wt-today::before { background: var(--tint); }
+    .wt-day-head {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .wt-day-info { display: flex; align-items: baseline; gap: 7px; }
+    .wt-day-name { font-size: 13.5px; font-weight: 700; color: var(--t-2); letter-spacing: -0.01em; }
+    .wt-day.wt-today .wt-day-name { color: var(--tint); }
+    .wt-day-date  { font-size: 11.5px; color: var(--t-4); font-weight: 500; }
+    .wt-wx {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11.5px; font-weight: 600; color: var(--t-3);
+    }
+    .wt-wx.wt-wx-warn { color: var(--orange); }
+    .wt-wx.wt-wx-bad  { color: var(--red); }
+    .wt-jobs { display: flex; flex-direction: column; gap: 4px; }
+    .wt-job-pill {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 600; color: var(--t-2);
+      padding: 6px 10px;
+      background: var(--glass-2);
+      border-radius: var(--r-md);
+      letter-spacing: -0.01em;
+    }
+    .wt-pill-time {
+      margin-left: auto;
+      font-size: 11px; font-weight: 700;
+      color: var(--t-4); font-variant-numeric: tabular-nums;
+    }
+    .wt-no-jobs { font-size: 12px; color: var(--t-5); font-style: italic; padding: 2px 4px; }
+
+    /* ════════════════════════════════════════════════════════════════
+       BANQUE DE TRAVAUX — liste backlog
+    ════════════════════════════════════════════════════════════════ */
+    .btl-list { display: flex; flex-direction: column; gap: 6px; margin-top: var(--s3); }
+    .btl-item {
+      display: flex; align-items: center; gap: var(--s3);
+      padding: 12px 14px;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+      width: 100%; text-align: left;
+      transition: background var(--t-fast) var(--ease);
+    }
+    .btl-item:active { background: var(--surface-2); }
+    .btl-icon { font-size: 20px; flex-shrink: 0; }
+    .btl-body { flex: 1 1 0; min-width: 0; }
+    .btl-name { display: block; font-size: 14px; font-weight: 700; color: var(--t-1); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btl-meta { display: block; font-size: 11.5px; color: var(--t-3); margin-top: 2px; }
+    .btl-action { font-size: 14px; color: var(--t-4); flex-shrink: 0; }
+    .btl-empty { font-size: 13px; color: var(--t-4); font-style: italic; padding: 10px 2px; margin-top: var(--s2); }
+
     /* alerts (discreet by default, banner only for real danger) */
     .alerts { display: flex; flex-direction: column; gap: 6px; }
     .alert {
@@ -1877,7 +1953,7 @@
           <h2 class="section-title">Ma semaine</h2>
           <button class="section-link" onclick="switchTab('calendar')">Calendrier →</button>
         </div>
-        <div class="strip" id="dayStrip"></div>
+        <div class="week-timeline" id="dayStrip"></div>
       </div>
 
       <!-- Vue chantier (3 stats — inline avec la semaine) -->
@@ -1903,6 +1979,7 @@
       <div class="section">
         <div class="section-head">
           <h2 class="section-title">Banque de travaux</h2>
+          <span class="section-count" id="btlCount"></span>
         </div>
         <div class="quick">
           <button class="quick-btn" data-tone="green" onclick="openVoice()">
@@ -1918,6 +1995,7 @@
             <span class="quick-btn-label">Manuel</span>
           </button>
         </div>
+        <div class="btl-list" id="btlList"></div>
       </div>
 
       <!-- 4. MÉTÉO DÉTAILLÉE -->
@@ -1958,13 +2036,6 @@
         </button>
       </div>
 
-      <!-- Alertes météo (conditionnelles, sous la météo) -->
-      <div class="section" id="alertsSection" style="display:none">
-        <div class="section-head">
-          <h2 class="section-title">Alertes météo</h2>
-        </div>
-        <div class="alerts" id="alertsList"></div>
-      </div>
 
     </section>
 
@@ -3156,9 +3227,9 @@ function renderHome() {
   renderGreeting();
   renderVueChantier();
   renderHero();
-  renderDayStrip();
   renderTodayJobs();
-  renderAlerts();
+  renderDayStrip();
+  renderBanqueTravaux();
   renderOptimization();
 }
 
@@ -3232,31 +3303,116 @@ function renderHero() {
 
 function renderDayStrip() {
   var strip = document.getElementById('dayStrip');
+  if (!strip) return;
   strip.innerHTML = '';
   var fc = ST.forecast;
   if (!fc || !fc.length) {
-    for (var i = 0; i < 7; i++) {
+    for (var i = 0; i < 5; i++) {
       var sk = document.createElement('div');
-      sk.className = 'strip-day';
-      sk.innerHTML = '<div class="skel" style="width:32px;height:10px"></div>'
-                   + '<div class="skel" style="width:34px;height:24px;margin:6px 0"></div>'
-                   + '<div class="skel" style="width:38px;height:12px"></div>';
+      sk.className = 'wt-day';
+      sk.innerHTML = '<div class="wt-day-head"><div class="skel" style="width:80px;height:13px"></div><div class="skel" style="width:100px;height:13px"></div></div>'
+                   + '<div class="skel" style="width:100%;height:32px;margin-top:8px;border-radius:8px"></div>';
       strip.appendChild(sk);
     }
     return;
   }
+  var jobsDef = getMergedJobTypes();
+  var todayIso = isoDate(new Date());
   fc.forEach(function(d, idx) {
+    var dIso = isoDate(d.date);
+    var isToday = dIso === todayIso;
     var st = simpleStatus(d);
-    var sc = st.level === 'ok' ? '' : st.level;
-    var btn = document.createElement('button');
-    btn.className = 'strip-day' + (idx === 0 ? ' today' : '') + (sc ? ' ' + sc : '');
-    var dayName = idx === 0 ? "Auj." : DAYS_S[d.date.getDay()];
-    btn.innerHTML =
-        '<span class="sd-name">' + dayName + '</span>'
-      + '<span class="sd-icon">' + wIcon(d.weathercode) + '</span>'
-      + '<span class="sd-temp">' + d.temp_max + '°<em>/' + d.temp_min + '°</em></span>';
-    btn.onclick = (function(i) { return function() { openDayDetail(i); }; })(idx);
-    strip.appendChild(btn);
+
+    // Tasks on this day
+    var dayTasks = ST.tasks.filter(function(t) {
+      return (t.scheduledDate === dIso) ||
+             (t.dayIndex === idx && !t.scheduledDate && t.status !== 'backlog');
+    }).sort(function(a, b) {
+      if (a.time && b.time) return a.time.localeCompare(b.time);
+      if (a.time) return -1; if (b.time) return 1; return 0;
+    });
+
+    // Short weather message
+    var wxIcon = st.level === 'ok' ? '✅' : (st.level === 'warn' ? '⚠️' : '⛔');
+    var wxMsg;
+    if (d.weathercode >= 95)      wxMsg = 'Orage';
+    else if (d.precipitation > 10) wxMsg = 'Pluie ' + d.precipitation + 'mm';
+    else if (d.windspeed > 40)     wxMsg = 'Vent ' + d.windspeed + 'km/h';
+    else if (d.temp_min < 0)       wxMsg = 'Gel ' + d.temp_min + '°';
+    else if (d.precipitation > 0)  wxMsg = 'Pluie ' + d.precipitation + 'mm';
+    else if (d.windspeed > 25)     wxMsg = 'Vent ' + d.windspeed + 'km/h';
+    else if (d.temp_min < 5)       wxMsg = 'Froid ' + d.temp_min + '°';
+    else                           wxMsg = d.temp_max + '°/' + d.temp_min + '°';
+
+    var dayName = isToday ? "Aujourd'hui" : DAYS_L[d.date.getDay()];
+    var dateStr = d.date.getDate() + ' ' + MONTHS[d.date.getMonth()];
+
+    var levelCls = st.level !== 'ok' ? ' wt-' + st.level : '';
+    var todayCls = isToday ? ' wt-today' : '';
+    var entry = document.createElement('button');
+    entry.type = 'button';
+    entry.className = 'wt-day' + todayCls + levelCls;
+
+    var jobsHtml;
+    if (dayTasks.length) {
+      jobsHtml = dayTasks.map(function(t) {
+        var jd = jobsDef[t.type] || { icon: '🔧' };
+        var timeStr = t.time ? ' <span class="wt-pill-time">' + esc(t.time) + '</span>' : '';
+        return '<div class="wt-job-pill">' + jd.icon + ' ' + esc(t.name) + timeStr + '</div>';
+      }).join('');
+    } else {
+      jobsHtml = '<div class="wt-no-jobs">Aucun chantier planifié</div>';
+    }
+
+    var wxCls = st.level !== 'ok' ? ' wt-wx-' + st.level : '';
+    entry.innerHTML =
+        '<div class="wt-day-head">'
+      +   '<div class="wt-day-info">'
+      +     '<span class="wt-day-name">' + dayName + '</span>'
+      +     '<span class="wt-day-date">' + dateStr + '</span>'
+      +   '</div>'
+      +   '<div class="wt-wx' + wxCls + '">'
+      +     '<span>' + wxIcon + '</span>'
+      +     '<span class="wt-wx-msg">' + wxMsg + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="wt-jobs">' + jobsHtml + '</div>';
+
+    entry.onclick = (function(i) { return function() { openDayDetail(i); }; })(idx);
+    strip.appendChild(entry);
+  });
+}
+
+function renderBanqueTravaux() {
+  var list = document.getElementById('btlList');
+  var countEl = document.getElementById('btlCount');
+  if (!list) return;
+  var backlog = ST.tasks.filter(function(t) {
+    return t.status === 'backlog' || (!t.scheduledDate && t.dayIndex == null);
+  });
+  if (countEl) countEl.textContent = backlog.length ? backlog.length + '' : '';
+  list.innerHTML = '';
+  if (!backlog.length) {
+    list.innerHTML = '<div class="btl-empty">Tous les travaux sont planifiés.</div>';
+    return;
+  }
+  var jobsDef = getMergedJobTypes();
+  backlog.forEach(function(task) {
+    var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
+    var item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'btl-item';
+    var durStr = task.duration ? ' · ⏱ ' + esc(task.duration) : '';
+    var locStr = task.client ? ' · ' + esc(task.client) : '';
+    item.innerHTML =
+        '<span class="btl-icon">' + jd.icon + '</span>'
+      + '<span class="btl-body">'
+      +   '<span class="btl-name">' + esc(task.name) + '</span>'
+      +   '<span class="btl-meta">' + esc(jd.short || jd.name) + locStr + durStr + '</span>'
+      + '</span>'
+      + '<span class="btl-action">→</span>';
+    item.onclick = (function(id) { return function() { openEditTask(id); }; })(task.id);
+    list.appendChild(item);
   });
 }
 
@@ -3631,7 +3787,12 @@ function openVoice() {
   _micUserStopped = false;
   setMicState('idle', 'Toucher pour parler');
   openModal('voiceOverlay');
-  setTimeout(function() { startMic(); }, 350);
+  // iOS Safari: do NOT auto-start here — the 350ms timeout breaks the user-gesture
+  // chain required for microphone access. User taps the mic button instead.
+  // Desktop: start automatically for convenience.
+  if (!isIOSSafari()) {
+    startMic();
+  }
 }
 
 function voiceTextElement() {
@@ -3767,7 +3928,8 @@ function _micAttemptStart() {
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = lang;
-  _micRec.interimResults = true;
+  // iOS Safari: interimResults can prevent isFinal from ever firing — disable it.
+  _micRec.interimResults = !isIOSSafari();
   _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
 
@@ -3922,7 +4084,7 @@ function _taskMicAttempt(textEl) {
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = lang;
-  _micRec.interimResults = true;
+  _micRec.interimResults = !isIOSSafari();
   _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
   _micStarting = true;

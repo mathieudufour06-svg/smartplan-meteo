@@ -410,6 +410,8 @@
       margin-bottom: var(--s4);
       padding: 0 2px;
     }
+    .section-head--today { align-items: flex-start; }
+    .sh-left { display: flex; flex-direction: column; gap: 2px; }
     .section-title {
       font-size: 22px;
       font-weight: 800;
@@ -425,6 +427,29 @@
       transition: opacity var(--t-fast) var(--ease);
     }
     .section-link:active { opacity: 0.5; }
+
+    /* Mini météo — compact top-right du hero */
+    .mini-wx {
+      display: flex; flex-direction: column; align-items: flex-end;
+      gap: 1px; flex-shrink: 0; padding-top: 2px;
+    }
+    .mwx-temp {
+      font-size: 21px; font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1;
+      color: var(--t-1); font-variant-numeric: tabular-nums;
+    }
+    .mwx-status {
+      font-size: 11.5px; font-weight: 700;
+      color: var(--t-3); letter-spacing: 0.005em;
+      white-space: nowrap;
+    }
+    .mwx-status.ok   { color: var(--green); }
+    .mwx-status.warn { color: var(--orange); }
+    .mwx-status.bad  { color: var(--red); }
+    .mwx-loc {
+      font-size: 10.5px; font-weight: 500;
+      color: var(--t-4); white-space: nowrap;
+    }
 
     /* ════════════════════════════════════════════════════════════════
        7-DAY STRIP — premium pills
@@ -1940,9 +1965,16 @@
 
       <!-- 1. JOBS AUJOURD'HUI -->
       <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Aujourd'hui</h2>
-          <span class="section-count" id="todayCount">—</span>
+        <div class="section-head section-head--today">
+          <div class="sh-left">
+            <h2 class="section-title">Aujourd'hui</h2>
+            <span class="section-count" id="todayCount">—</span>
+          </div>
+          <div class="mini-wx" id="miniWeather">
+            <span class="mwx-temp" id="mwxTemp">—°</span>
+            <span class="mwx-status" id="mwxStatus">⏳</span>
+            <span class="mwx-loc" id="mwxLoc">—</span>
+          </div>
         </div>
         <div class="today-list" id="todayList"></div>
       </div>
@@ -3225,12 +3257,48 @@ function buildJobCard(task, w, jobsDef, opts) {
 ════════════════════════════════════════════════════════════════ */
 function renderHome() {
   renderGreeting();
+  renderMiniWeather();
   renderVueChantier();
   renderHero();
   renderTodayJobs();
   renderDayStrip();
   renderBanqueTravaux();
   renderOptimization();
+}
+
+function renderMiniWeather() {
+  var tempEl   = document.getElementById('mwxTemp');
+  var statusEl = document.getElementById('mwxStatus');
+  var locEl    = document.getElementById('mwxLoc');
+  if (!tempEl) return;
+
+  var w = ST.forecast && ST.forecast[0];
+  var locName = (ST.loc && ST.loc.name) ? ST.loc.name : '';
+
+  if (!w) {
+    tempEl.textContent   = '—°';
+    statusEl.textContent = '⏳';
+    statusEl.className   = 'mwx-status';
+    locEl.textContent    = locName;
+    return;
+  }
+
+  tempEl.textContent = w.temp_max + '°';
+
+  var st = simpleStatus(w);
+  var shortMsg;
+  if (w.weathercode >= 95)      shortMsg = '⛔ Orage';
+  else if (w.precipitation > 10) shortMsg = '⛔ Pluie ' + w.precipitation + 'mm';
+  else if (w.windspeed > 40)     shortMsg = '⛔ Vent fort';
+  else if (w.temp_min < 0)       shortMsg = '⛔ Gel';
+  else if (w.precipitation > 0)  shortMsg = '⚠ Pluie ' + w.precipitation + 'mm';
+  else if (w.windspeed > 25)     shortMsg = '⚠ Vent ' + w.windspeed + 'km/h';
+  else if (w.temp_min < 5)       shortMsg = '⚠ Froid';
+  else                           shortMsg = '✅ Favorable';
+
+  statusEl.textContent = shortMsg;
+  statusEl.className   = 'mwx-status ' + st.level;
+  locEl.textContent    = locName;
 }
 
 function renderGreeting() {

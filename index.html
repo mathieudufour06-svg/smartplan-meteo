@@ -744,20 +744,76 @@
     }
     .opti-cta:active { transform: scale(0.97); }
 
-    /* alerts (kept compact) */
-    .alerts { display: flex; flex-direction: column; gap: var(--s2); }
+    /* alerts (discreet by default, banner only for real danger) */
+    .alerts { display: flex; flex-direction: column; gap: 6px; }
     .alert {
-      display: flex; gap: var(--s3); align-items: flex-start;
+      display: flex; gap: 10px; align-items: center;
+      padding: 10px 12px;
+      background: rgba(255,159,67,0.06);
+      border: 1px solid rgba(255,159,67,0.18);
+      border-radius: var(--r-md);
+    }
+    .alert.bad {
+      background: rgba(255,85,102,0.08);
+      border-color: rgba(255,85,102,0.22);
+    }
+    .alert.critical {
       padding: var(--s4);
-      background: var(--warn-bg);
-      border: 1px solid var(--warn-bd);
+      background: var(--bad-bg);
+      border: 1px solid var(--bad-bd);
       border-radius: var(--r-lg);
       box-shadow: var(--sh-1);
     }
-    .alert.bad { background: var(--bad-bg); border-color: var(--bad-bd); }
-    .alert-icon { font-size: 18px; line-height: 1.2; flex-shrink: 0; }
-    .alert-text { font-size: 14px; line-height: 1.4; color: var(--t-1); letter-spacing: -0.01em; }
-    .alert-text b { font-weight: 800; }
+    .alert-icon { font-size: 15px; line-height: 1.2; flex-shrink: 0; opacity: 0.85; }
+    .alert.critical .alert-icon { font-size: 18px; opacity: 1; }
+    .alert-text { font-size: 13px; line-height: 1.4; color: var(--t-2); letter-spacing: -0.005em; }
+    .alert.critical .alert-text { font-size: 14px; color: var(--t-1); }
+    .alert-text b { font-weight: 700; color: var(--t-1); }
+    .alert.critical .alert-text b { font-weight: 800; }
+
+    /* Vue chantier — compact 3-stat strip */
+    .vue-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: var(--s2);
+      padding: var(--s3) var(--s2);
+      border-radius: var(--r-xl);
+      background: linear-gradient(160deg, var(--surface-2) 0%, var(--surface-1) 100%);
+      border: 1px solid var(--line-2);
+      box-shadow: var(--sh-1);
+    }
+    .vue-cell {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px;
+      padding: var(--s2) 6px;
+      position: relative;
+    }
+    .vue-cell + .vue-cell::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 18%; bottom: 18%;
+      width: 1px;
+      background: var(--line-1);
+    }
+    .vue-cell-num {
+      font-size: 26px; font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      display: inline-flex; align-items: baseline; gap: 4px;
+    }
+    .vue-cell-num em { font-style: normal; font-size: 13px; color: var(--t-4); font-weight: 700; }
+    .vue-cell.ok   .vue-cell-num { color: var(--green); }
+    .vue-cell.warn .vue-cell-num { color: var(--orange); }
+    .vue-cell.bad  .vue-cell-num { color: var(--red); }
+    .vue-cell-lbl {
+      font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--t-3);
+      text-align: center;
+      line-height: 1.2;
+    }
+    .vue-cell-icon { font-size: 12px; opacity: 0.85; margin-right: 2px; }
 
     /* ════════════════════════════════════════════════════════════════
        QUICK ACTIONS — premium tiles
@@ -1105,6 +1161,60 @@
     .mode-note { font-size: 13px; color: var(--t-3); line-height: 1.4; margin-bottom: var(--s2); }
     .voice-line { display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s2); }
     .voice-status { font-size: 18px; }
+
+    /* Mic button — premium states */
+    .mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 14px 0 16px; }
+    .mic-btn {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 26px; line-height: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--line-2);
+      color: var(--t-1);
+      cursor: pointer;
+      position: relative;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+      user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .mic-btn:active { transform: scale(0.96); }
+    .mic-btn[disabled], .mic-btn.is-disabled { opacity: 0.55; cursor: not-allowed; }
+    .mic-btn.is-listening {
+      background: linear-gradient(160deg, rgba(212,175,55,0.22) 0%, rgba(212,175,55,0.08) 100%);
+      border-color: rgba(212,175,55,0.55);
+      color: #f4d469;
+      box-shadow: 0 0 0 0 rgba(212,175,55,0.45), 0 8px 24px -10px rgba(212,175,55,0.45);
+      animation: micPulse 1.6s ease-in-out infinite;
+    }
+    .mic-btn.is-processing {
+      background: rgba(118,150,255,0.10);
+      border-color: rgba(118,150,255,0.35);
+      color: #a9c0ff;
+    }
+    .mic-btn.is-error {
+      background: rgba(255,85,102,0.08);
+      border-color: rgba(255,85,102,0.30);
+      color: var(--red);
+    }
+    @keyframes micPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.45), 0 8px 24px -10px rgba(212,175,55,0.45); }
+      50%      { box-shadow: 0 0 0 10px rgba(212,175,55,0.0),  0 8px 24px -10px rgba(212,175,55,0.45); }
+    }
+    .mic-label {
+      font-size: 12.5px; font-weight: 600;
+      color: var(--t-3);
+      letter-spacing: -0.005em;
+      text-align: center;
+      min-height: 16px;
+      transition: color var(--t-fast) var(--ease);
+    }
+    .mic-label.is-error { color: var(--red); }
+    .mic-label.is-listening { color: #f4d469; }
+    .mic-label.is-processing { color: #a9c0ff; }
+
+    /* Inline mic (in task overlay) */
+    .voice-line .voice-status.is-listening { color: #f4d469; animation: micPulse 1.6s ease-in-out infinite; border-radius: 50%; }
+    .voice-line .voice-status.is-processing { color: #a9c0ff; }
+    .voice-line .voice-status.is-error { color: var(--red); }
 
     .mf {
       display: flex; gap: var(--s2);
@@ -1656,6 +1766,15 @@
         <div class="greet-sub" id="greetSub">—</div>
       </div>
 
+      <!-- Vue chantier (semaine en un coup d'œil) -->
+      <div class="section" id="vueChantierSection">
+        <div class="section-head">
+          <h2 class="section-title">Vue chantier</h2>
+          <span class="section-count" id="vueChantierCount">7 j</span>
+        </div>
+        <div class="vue-strip" id="vueChantierStrip"></div>
+      </div>
+
       <!-- Hero weather (premium) -->
       <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
         <div class="hero-row-1">
@@ -1715,19 +1834,13 @@
         <div class="alerts" id="alertsList"></div>
       </div>
 
-      <!-- Insights bento + Optimization -->
-      <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Insights</h2>
-        </div>
-        <div class="insights-grid" id="insightsGrid"></div>
-        <div id="optiSection" style="display:none; margin-top: var(--s3);">
-          <div class="opti">
-            <span class="opti-eyebrow">⚡ Optimisation</span>
-            <div class="opti-title" id="optiTitle">Réorganiser la semaine</div>
-            <div class="opti-sub" id="optiSub">SmartPlan peut déplacer vos chantiers vers les meilleures journées météo.</div>
-            <button class="opti-cta" onclick="optimizeWeek()">Optimiser maintenant →</button>
-          </div>
+      <!-- Optimization -->
+      <div class="section" id="optiSection" style="display:none">
+        <div class="opti">
+          <span class="opti-eyebrow">⚡ Optimisation</span>
+          <div class="opti-title" id="optiTitle">Réorganiser la semaine</div>
+          <div class="opti-sub" id="optiSub">SmartPlan peut déplacer vos chantiers vers les meilleures journées météo.</div>
+          <button class="opti-cta" onclick="optimizeWeek()">Optimiser maintenant →</button>
         </div>
       </div>
 
@@ -2062,7 +2175,10 @@
   <div class="modal" role="dialog" aria-modal="true">
     <h3>🎙 Dicter un chantier</h3>
     <p style="font-size:.84rem;color:var(--t3);margin-bottom:12px">Ex : <em>"Asphaltage chez Tremblay samedi à 8h priorité haute"</em></p>
-    <div class="voice-status" id="voiceStatus" onclick="toggleMic()" title="Cliquer pour démarrer" style="font-size: 2.2rem; text-align: center; margin: 12px 0;">🎤</div>
+    <div class="mic-wrap">
+      <button type="button" class="mic-btn" id="voiceStatus" onclick="toggleMic()" aria-label="Démarrer la dictée">🎤</button>
+      <div class="mic-label" id="voiceLabel">Toucher pour parler</div>
+    </div>
     <div class="fg">
       <label>Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
@@ -2937,11 +3053,11 @@ function buildJobCard(task, w, jobsDef, opts) {
 ════════════════════════════════════════════════════════════════ */
 function renderHome() {
   renderGreeting();
+  renderVueChantier();
   renderHero();
   renderDayStrip();
   renderTodayJobs();
   renderAlerts();
-  renderInsights();
   renderOptimization();
 }
 
@@ -3070,19 +3186,11 @@ function renderTodayJobs() {
   });
 }
 
-function renderInsights() {
-  var grid = document.getElementById('insightsGrid');
-  if (!grid) return;
+function renderVueChantier() {
+  var strip = document.getElementById('vueChantierStrip');
+  var countEl = document.getElementById('vueChantierCount');
+  if (!strip) return;
   var fc = ST.forecast || [];
-  // Tile 1: jobs scheduled in the 7-day window
-  var weekTasks = ST.tasks.filter(function(t) {
-    if (!t.scheduledDate) return false;
-    for (var i = 0; i < fc.length; i++) {
-      if (isoDate(fc[i].date) === t.scheduledDate) return true;
-    }
-    return false;
-  });
-  // Tile 2: terrain-grade days (good / warn / bad)
   var goodDays = 0, warnDays = 0, badDays = 0;
   fc.forEach(function(d) {
     var s = simpleStatus(d);
@@ -3090,18 +3198,19 @@ function renderInsights() {
     else if (s.level === 'warn') warnDays++;
     else                         badDays++;
   });
-  var tone = (warnDays + badDays > goodDays) ? 'orange' : 'green';
-
-  grid.innerHTML =
-      '<div class="insight-tile" data-tone="violet">'
-    +   '<div class="it-eyebrow"><span class="it-icon">📅</span> Cette semaine</div>'
-    +   '<div class="it-num">' + weekTasks.length + '<em> chantier' + (weekTasks.length > 1 ? 's' : '') + '</em></div>'
-    +   '<div class="it-label">Planifiés sur 7 jours</div>'
+  if (countEl) countEl.textContent = fc.length ? fc.length + ' j' : '—';
+  strip.innerHTML =
+      '<div class="vue-cell ok">'
+    +   '<div class="vue-cell-num"><span class="vue-cell-icon">✅</span>' + goodDays + '</div>'
+    +   '<div class="vue-cell-lbl">Favorables</div>'
     + '</div>'
-    + '<div class="insight-tile" data-tone="' + tone + '">'
-    +   '<div class="it-eyebrow"><span class="it-icon">⛅</span> Jours favorables</div>'
-    +   '<div class="it-num">' + goodDays + '<em>/' + fc.length + '</em></div>'
-    +   '<div class="it-label">' + warnDays + ' à risque · ' + badDays + ' défavorables</div>'
+    + '<div class="vue-cell warn">'
+    +   '<div class="vue-cell-num"><span class="vue-cell-icon">⚠️</span>' + warnDays + '</div>'
+    +   '<div class="vue-cell-lbl">À risque</div>'
+    + '</div>'
+    + '<div class="vue-cell bad">'
+    +   '<div class="vue-cell-num"><span class="vue-cell-icon">⛔</span>' + badDays + '</div>'
+    +   '<div class="vue-cell-lbl">Défavorables</div>'
     + '</div>';
 }
 
@@ -3116,6 +3225,11 @@ function renderAlerts() {
     var d = fc[i];
     var risk = dayOverallRisk(d);
     if (risk === 'ok') continue;
+    // Critical = real danger only: storm, heavy rain (>10mm), extreme wind (>40km/h), critical frost (<0°C)
+    var critical = (d.weathercode >= 95)
+                || (d.precipitation > 10)
+                || (d.windspeed > 40)
+                || (d.temp_min < 0);
     var dayName = i === 0 ? "Aujourd'hui" : (i === 1 ? "Demain" : DAYS_L[d.date.getDay()]);
     var msg = '';
     if (d.weathercode >= 95) msg = 'Orage prévu — interdiction de plusieurs métiers.';
@@ -3123,17 +3237,22 @@ function renderAlerts() {
     else if (d.precipitation > 5) msg = 'Pluie ' + d.precipitation + 'mm — vigilance pour le béton.';
     else if (d.windspeed > 40) msg = 'Vent ' + d.windspeed + 'km/h — danger en hauteur.';
     else if (d.windspeed > 25) msg = 'Vent ' + d.windspeed + 'km/h — vigilance.';
-    else if (d.temp_min < 5) msg = 'Froid (' + d.temp_min + '°C) — prise du béton compromise.';
+    else if (d.temp_min < 0)  msg = 'Gel (' + d.temp_min + '°C) — prise du béton impossible.';
+    else if (d.temp_min < 5)  msg = 'Froid (' + d.temp_min + '°C) — prise du béton compromise.';
     else msg = 'Conditions risquées pour certains métiers.';
-    alerts.push({ level: risk, dayName: dayName, msg: msg });
+    alerts.push({ level: risk, dayName: dayName, msg: msg, critical: critical });
   }
   if (!alerts.length) { section.style.display = 'none'; return; }
   section.style.display = '';
   alerts.slice(0, 3).forEach(function(a) {
     var el = document.createElement('div');
-    el.className = 'alert' + (a.level === 'danger' ? ' bad' : '');
+    var cls = 'alert';
+    if (a.critical) cls += ' critical';
+    if (a.level === 'danger' && !a.critical) cls += ' bad';
+    el.className = cls;
+    var icon = a.critical ? '🚨' : (a.level === 'danger' ? '⛔' : '⚠️');
     el.innerHTML =
-      '<span class="alert-icon">' + (a.level === 'danger' ? '🚨' : '⚠️') + '</span>'
+      '<span class="alert-icon">' + icon + '</span>'
       + '<span class="alert-text"><b>' + a.dayName + '</b> · ' + esc(a.msg) + '</span>';
     list.appendChild(el);
   });
@@ -3282,13 +3401,21 @@ function optimizeWeek() {
 var _micActive = false;
 var _micRec    = null;
 var _micStopping = false;
+var _micStarting = false;       // debounce: prevent double-start
+var _micStartedAt = 0;          // for Safari premature end detection
+var _micGotResult = false;      // track if recognition actually produced output
+var _micStartFallback = null;   // timer to detect onstart never firing
 
 function openVoice() {
   document.getElementById('voiceText').value = '';
-  document.getElementById('voiceStatus').textContent = '🎤';
   _micActive = false;
+  _micStopping = false;
+  _micStarting = false;
+  _micGotResult = false;
+  setMicState('idle', 'Toucher pour parler');
   openModal('voiceOverlay');
-  setTimeout(startMic, 300);
+  // small delay so Safari has time to attach overlay before requesting mic
+  setTimeout(function() { startMic(); }, 350);
 }
 
 function voiceTextElement() {
@@ -3296,6 +3423,9 @@ function voiceTextElement() {
 }
 function voiceStatusElement() {
   return document.getElementById('taskVoiceStatus') || document.getElementById('voiceStatus');
+}
+function voiceLabelElement() {
+  return document.getElementById('voiceLabel');
 }
 
 function getSpeechRecognitionCtor() {
@@ -3318,94 +3448,182 @@ function isIOSSafari() {
     && /Safari/.test(navigator.userAgent || '')
     && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent || '');
 }
-function setVoiceStatus(content, title) {
-  var statusEl = voiceStatusElement();
-  if (!statusEl) return;
-  statusEl.innerHTML = content;
-  statusEl.title = title || '';
+
+// Unified state setter for the dictation modal
+// state: 'idle' | 'listening' | 'processing' | 'error'
+function setMicState(state, labelText, icon) {
+  var btn = document.getElementById('voiceStatus');
+  var lbl = voiceLabelElement();
+  if (btn) {
+    btn.classList.remove('is-idle','is-listening','is-processing','is-error');
+    if (state === 'listening')  { btn.classList.add('is-listening');  btn.textContent = icon || '🔴'; btn.title = 'Toucher pour arrêter'; }
+    else if (state === 'processing') { btn.classList.add('is-processing'); btn.textContent = icon || '✨'; btn.title = 'Transcription en cours'; }
+    else if (state === 'error') { btn.classList.add('is-error'); btn.textContent = icon || '⚠'; btn.title = 'Toucher pour réessayer'; }
+    else                         { btn.textContent = icon || '🎤'; btn.title = 'Toucher pour parler'; }
+  }
+  if (lbl) {
+    lbl.classList.remove('is-listening','is-processing','is-error');
+    if (state === 'listening')   lbl.classList.add('is-listening');
+    else if (state === 'processing') lbl.classList.add('is-processing');
+    else if (state === 'error')  lbl.classList.add('is-error');
+    if (labelText != null) lbl.textContent = labelText;
+  }
 }
+
+// Inline mic (task overlay) — visual state only, single icon span
+function setInlineMicState(state, icon) {
+  var el = document.getElementById('taskVoiceStatus');
+  if (!el) return;
+  el.classList.remove('is-listening','is-processing','is-error');
+  if (state === 'listening')      { el.classList.add('is-listening');  el.textContent = icon || '🔴'; }
+  else if (state === 'processing'){ el.classList.add('is-processing'); el.textContent = icon || '✨'; }
+  else if (state === 'error')     { el.classList.add('is-error');      el.textContent = icon || '⚠'; }
+  else                            { el.textContent = icon || '🎤'; }
+}
+
+function clearMicStartFallback() {
+  if (_micStartFallback) { clearTimeout(_micStartFallback); _micStartFallback = null; }
+}
+
 function toggleMic() {
+  // Hard debounce — ignore taps closer than 250ms or while starting
+  if (_micStarting) return;
   if (_micActive) {
     _micStopping = true;
     if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    setVoiceStatus('🎤', 'Toucher pour reprendre');
+    setMicState('idle', 'Toucher pour parler');
     return;
   }
   startMic();
 }
+
 function startMic() {
+  if (_micStarting || _micActive) return;
   var SR = getSpeechRecognitionCtor();
-  var statusEl = voiceStatusElement();
   var textEl = voiceTextElement();
   if (!SR) {
-    setVoiceStatus('<span style="font-size:.82rem; color:var(--t3)">Dictée vocale non disponible<br>Saisir ci-dessous</span>');
+    setMicState('error', 'Dictée non disponible — saisir ci-dessous', '⚠');
     _micActive = false;
     return;
   }
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+  _micStarting = true;
+  if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
   _micRec.interimResults = true;
+  _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
   _micStopping = false;
-  _micActive = true;
-  if (statusEl) { statusEl.textContent = '🔴'; statusEl.title = 'Toucher pour arrêter'; }
+  _micGotResult = false;
+
+  setMicState('listening', 'Écoute...', '🎙');
+
+  _micRec.onstart = function() {
+    _micStarting = false;
+    _micActive = true;
+    _micStartedAt = Date.now();
+    clearMicStartFallback();
+    setMicState('listening', 'Parlez maintenant', '🔴');
+  };
   _micRec.onresult = function(e) {
+    _micGotResult = true;
     var finalText = '';
+    var hasInterim = false;
     for (var i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+      else hasInterim = true;
     }
-    if (!finalText) return;
-    var nextText = finalText.trim();
-    if (textEl) {
-      var current = textEl.value.trim();
-      textEl.value = current ? current + ' ' + nextText : nextText;
+    if (finalText) {
+      var nextText = finalText.trim();
+      if (textEl) {
+        var current = textEl.value.trim();
+        textEl.value = current ? current + ' ' + nextText : nextText;
+      }
+      setMicState('processing', 'Transcription...', '✨');
+    } else if (hasInterim) {
+      setMicState('listening', 'Parlez maintenant', '🔴');
     }
-    if (statusEl) { statusEl.textContent = '✅'; statusEl.title = 'Toucher pour reprendre'; }
-    _micActive = false;
   };
   _micRec.onerror = function(e) {
     var err = e && e.error;
-    if (_micStopping || err === 'aborted' || err === 'no-speech') {
+    clearMicStartFallback();
+    _micStarting = false;
+    if (_micStopping || err === 'aborted') {
       _micActive = false;
       _micStopping = false;
-      setVoiceStatus('🎤', 'Toucher pour reprendre');
+      setMicState('idle', 'Toucher pour parler');
       return;
     }
-    var msg = 'Micro indisponible<br>Saisir ci-dessous';
-    if (err === 'not-allowed' || err === 'service-not-allowed') msg = 'Autorisez le micro dans Safari<br>puis touchez pour reprendre';
-    else if (err === 'audio-capture') msg = 'Micro introuvable<br>Saisir ci-dessous';
-    else if (err === 'network') msg = 'Service vocal hors ligne<br>Saisir ci-dessous';
-    setVoiceStatus('<span style="font-size:.82rem; color:var(--t3)">' + msg + '</span>');
+    if (err === 'no-speech') {
+      _micActive = false;
+      setMicState('idle', 'Rien entendu — toucher pour réessayer');
+      return;
+    }
+    var msg = 'Micro indisponible — saisir ci-dessous';
+    if (err === 'not-allowed' || err === 'service-not-allowed') msg = 'Autorisez le micro dans Safari, puis réessayer';
+    else if (err === 'audio-capture') msg = 'Micro introuvable — saisir ci-dessous';
+    else if (err === 'network')       msg = 'Service vocal hors ligne — saisir ci-dessous';
+    setMicState('error', msg, '⚠');
     _micActive = false;
   };
   _micRec.onend = function() {
+    clearMicStartFallback();
+    _micStarting = false;
+    var wasActive = _micActive;
     _micActive = false;
     if (_micStopping) {
       _micStopping = false;
-      setVoiceStatus('🎤', 'Toucher pour reprendre');
+      setMicState('idle', _micGotResult ? 'Toucher pour reprendre' : 'Toucher pour parler');
+      return;
     }
+    // Safari may end prematurely (< 700ms) without firing onresult
+    var elapsed = _micStartedAt ? (Date.now() - _micStartedAt) : 0;
+    if (wasActive && !_micGotResult && elapsed > 0 && elapsed < 700) {
+      setMicState('idle', 'Coupé prématurément — toucher pour réessayer');
+      return;
+    }
+    setMicState('idle', _micGotResult ? 'Toucher pour reprendre' : 'Toucher pour parler');
   };
+
   try {
     _micRec.start();
+    // Safari iPhone fallback: if onstart never fires within 1500ms, mark as error
+    _micStartFallback = setTimeout(function() {
+      if (_micStarting && !_micActive) {
+        _micStarting = false;
+        try { _micRec.stop(); } catch(e) {}
+        setMicState('error', 'Le micro ne répond pas — vérifiez les permissions Safari', '⚠');
+      }
+    }, 1800);
   } catch(e) {
+    _micStarting = false;
     _micActive = false;
-    setVoiceStatus('<span style="font-size:.82rem; color:var(--t3)">Dictée déjà en cours<br>Toucher pour reprendre</span>');
+    setMicState('error', 'Dictée déjà active — toucher pour reprendre', '⚠');
   }
 }
 
 function startTaskMic() {
+  if (_micStarting || _micActive) return;
   var SR = getSpeechRecognitionCtor();
-  var statusEl = document.getElementById('taskVoiceStatus');
   var textEl = document.getElementById('taskVoiceText');
-  if (!SR) { if (statusEl) statusEl.textContent = '⚠'; return; }
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+  if (!SR) { setInlineMicState('error', '⚠'); return; }
+  if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
   _micRec.interimResults = true;
+  _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
-  if (statusEl) statusEl.textContent = '🔴';
+  _micStarting = true;
+  _micGotResult = false;
+  setInlineMicState('listening', '🎙');
+
+  _micRec.onstart = function() {
+    _micStarting = false;
+    _micActive = true;
+    setInlineMicState('listening', '🔴');
+  };
   _micRec.onresult = function(e) {
+    _micGotResult = true;
     var finalText = '';
     for (var i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
@@ -3416,15 +3634,24 @@ function startTaskMic() {
       var current = textEl.value.trim();
       textEl.value = current ? current + ' ' + nextText : nextText;
     }
-    if (statusEl) statusEl.textContent = '✅';
+    setInlineMicState('processing', '✨');
   };
   _micRec.onerror = function(e) {
-    if (statusEl) statusEl.textContent = '⚠';
+    _micStarting = false;
+    _micActive = false;
+    setInlineMicState('error', '⚠');
   };
   _micRec.onend = function() {
-    if (statusEl) statusEl.textContent = '🎤';
+    _micStarting = false;
+    _micActive = false;
+    setInlineMicState('idle', _micGotResult ? '✅' : '🎤');
   };
-  _micRec.start();
+  try { _micRec.start(); }
+  catch(e) {
+    _micStarting = false;
+    _micActive = false;
+    setInlineMicState('error', '⚠');
+  }
 }
 
 function analyzeAndCreate() {

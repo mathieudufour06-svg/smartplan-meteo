@@ -1766,58 +1766,7 @@
         <div class="greet-sub" id="greetSub">—</div>
       </div>
 
-      <!-- Vue chantier (semaine en un coup d'œil) -->
-      <div class="section" id="vueChantierSection">
-        <div class="section-head">
-          <h2 class="section-title">Vue chantier</h2>
-          <span class="section-count" id="vueChantierCount">7 j</span>
-        </div>
-        <div class="vue-strip" id="vueChantierStrip"></div>
-      </div>
-
-      <!-- Hero weather (premium) -->
-      <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
-        <div class="hero-row-1">
-          <span class="hero-eyebrow"><span id="heroEyebrowDay">Aujourd'hui</span> · <b id="heroEyebrowDate">—</b></span>
-          <span class="hero-score status-pill" id="heroScore"><span class="sp-icon">⏳</span><span>…</span></span>
-        </div>
-        <div class="hero-row-2">
-          <span class="hero-icon" id="heroIcon">☀️</span>
-          <div>
-            <div class="hero-temp"><span id="heroTempMax">—</span><em>°</em><span class="min" id="heroTempMin">—°</span></div>
-          </div>
-        </div>
-        <div class="hero-label" id="heroLabel">—</div>
-        <div class="hero-sub" id="heroLabelSub">Chargement de la météo…</div>
-        <div class="hero-stats">
-          <div class="hs-cell">
-            <span class="hs-cell-icon">💨</span>
-            <span class="hs-cell-lbl">Vent</span>
-            <span class="hs-cell-val" id="heroWind">—<span>km/h</span></span>
-          </div>
-          <div class="hs-cell">
-            <span class="hs-cell-icon">💧</span>
-            <span class="hs-cell-lbl">Pluie</span>
-            <span class="hs-cell-val" id="heroRain">—<span>mm</span></span>
-          </div>
-          <div class="hs-cell">
-            <span class="hs-cell-icon">☔</span>
-            <span class="hs-cell-lbl">Probabilité</span>
-            <span class="hs-cell-val" id="heroProb">—<span>%</span></span>
-          </div>
-        </div>
-      </button>
-
-      <!-- 7-day strip -->
-      <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Ma semaine</h2>
-          <button class="section-link" onclick="switchTab('calendar')">Calendrier →</button>
-        </div>
-        <div class="strip" id="dayStrip"></div>
-      </div>
-
-      <!-- Today's jobs -->
+      <!-- 1. JOBS AUJOURD'HUI -->
       <div class="section">
         <div class="section-head">
           <h2 class="section-title">Aujourd'hui</h2>
@@ -1826,15 +1775,25 @@
         <div class="job-list" id="todayList"></div>
       </div>
 
-      <!-- Smart alerts -->
-      <div class="section" id="alertsSection" style="display:none">
+      <!-- 2. JOBS DE LA SEMAINE -->
+      <div class="section">
         <div class="section-head">
-          <h2 class="section-title">Alertes météo</h2>
+          <h2 class="section-title">Ma semaine</h2>
+          <button class="section-link" onclick="switchTab('calendar')">Calendrier →</button>
         </div>
-        <div class="alerts" id="alertsList"></div>
+        <div class="strip" id="dayStrip"></div>
       </div>
 
-      <!-- Optimization -->
+      <!-- Vue chantier (3 stats — inline avec la semaine) -->
+      <div class="section" id="vueChantierSection">
+        <div class="section-head">
+          <h2 class="section-title">Vue chantier</h2>
+          <span class="section-count" id="vueChantierCount">7 j</span>
+        </div>
+        <div class="vue-strip" id="vueChantierStrip"></div>
+      </div>
+
+      <!-- Optimization (conditionnel) -->
       <div class="section" id="optiSection" style="display:none">
         <div class="opti">
           <span class="opti-eyebrow">⚡ Optimisation</span>
@@ -1844,10 +1803,10 @@
         </div>
       </div>
 
-      <!-- Quick actions -->
+      <!-- 3. BANQUE DE TRAVAUX -->
       <div class="section">
         <div class="section-head">
-          <h2 class="section-title">Création rapide</h2>
+          <h2 class="section-title">Banque de travaux</h2>
         </div>
         <div class="quick">
           <button class="quick-btn" data-tone="green" onclick="openVoice()">
@@ -1863,6 +1822,52 @@
             <span class="quick-btn-label">Manuel</span>
           </button>
         </div>
+      </div>
+
+      <!-- 4. MÉTÉO DÉTAILLÉE -->
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Météo détaillée</h2>
+        </div>
+        <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
+          <div class="hero-row-1">
+            <span class="hero-eyebrow"><span id="heroEyebrowDay">Aujourd'hui</span> · <b id="heroEyebrowDate">—</b></span>
+            <span class="hero-score status-pill" id="heroScore"><span class="sp-icon">⏳</span><span>…</span></span>
+          </div>
+          <div class="hero-row-2">
+            <span class="hero-icon" id="heroIcon">☀️</span>
+            <div>
+              <div class="hero-temp"><span id="heroTempMax">—</span><em>°</em><span class="min" id="heroTempMin">—°</span></div>
+            </div>
+          </div>
+          <div class="hero-label" id="heroLabel">—</div>
+          <div class="hero-sub" id="heroLabelSub">Chargement de la météo…</div>
+          <div class="hero-stats">
+            <div class="hs-cell">
+              <span class="hs-cell-icon">💨</span>
+              <span class="hs-cell-lbl">Vent</span>
+              <span class="hs-cell-val" id="heroWind">—<span>km/h</span></span>
+            </div>
+            <div class="hs-cell">
+              <span class="hs-cell-icon">💧</span>
+              <span class="hs-cell-lbl">Pluie</span>
+              <span class="hs-cell-val" id="heroRain">—<span>mm</span></span>
+            </div>
+            <div class="hs-cell">
+              <span class="hs-cell-icon">☔</span>
+              <span class="hs-cell-lbl">Probabilité</span>
+              <span class="hs-cell-val" id="heroProb">—<span>%</span></span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Alertes météo (conditionnelles, sous la météo) -->
+      <div class="section" id="alertsSection" style="display:none">
+        <div class="section-head">
+          <h2 class="section-title">Alertes météo</h2>
+        </div>
+        <div class="alerts" id="alertsList"></div>
       </div>
 
     </section>

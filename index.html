@@ -622,6 +622,102 @@
     }
     .empty-icon { font-size: 36px; margin-bottom: var(--s3); opacity: 0.55; }
     .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--t-1); letter-spacing: -0.01em; }
+
+    /* ════════════════════════════════════════════════════════════════
+       TODAY HERO CARDS — premier écran chantier
+    ════════════════════════════════════════════════════════════════ */
+    .today-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .today-card {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: var(--s3);
+      padding: 14px var(--s4);
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-xl);
+      box-shadow: var(--sh-1);
+      width: 100%; text-align: left;
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+      overflow: hidden;
+      min-height: 80px;
+    }
+    .today-card:active { transform: scale(0.985); background: var(--surface-2); box-shadow: var(--sh-2); }
+    .today-card.warn { border-color: rgba(255,159,67,0.28); }
+    .today-card.bad  { border-color: rgba(255,85,102,0.28); }
+    /* left accent bar */
+    .today-card.warn::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--orange); border-radius: var(--r-xl) 0 0 var(--r-xl); }
+    .today-card.bad::before  { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--red);    border-radius: var(--r-xl) 0 0 var(--r-xl); }
+    .today-card { position: relative; }
+
+    .tc-thumb {
+      align-self: center;
+      width: 50px; height: 50px;
+      display: grid; place-items: center;
+      font-size: 24px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, var(--thumb-c1, var(--surface-3)) 0%, var(--thumb-c2, var(--surface-2)) 100%);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.08) inset;
+      overflow: hidden; flex-shrink: 0;
+      position: relative;
+    }
+    .tc-thumb::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(60% 50% at 50% -10%, rgba(255,255,255,0.16), transparent 70%);
+      pointer-events: none;
+    }
+    .tc-thumb img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; border-radius: inherit; }
+    /* reuse job-thumb gradient vars */
+    .tc-thumb[data-type="beton"]      { --thumb-c1: #4a5163; --thumb-c2: #2c303d; }
+    .tc-thumb[data-type="hauteur"]    { --thumb-c1: #ff9f43; --thumb-c2: #cc6e1d; }
+    .tc-thumb[data-type="pave"]       { --thumb-c1: #8b6843; --thumb-c2: #5a4128; }
+    .tc-thumb[data-type="excavation"] { --thumb-c1: #c08a3e; --thumb-c2: #7a5523; }
+    .tc-thumb[data-type="paysagisme"] { --thumb-c1: #2dd483; --thumb-c2: #1a7a4a; }
+    .tc-thumb[data-type="electrique"] { --thumb-c1: #ffd75a; --thumb-c2: #b39222; }
+    .tc-thumb[data-type="toiture"]    { --thumb-c1: #e4583c; --thumb-c2: #8a2c1a; }
+    .tc-thumb[data-type="peinture"]   { --thumb-c1: #ff71a8; --thumb-c2: #a23266; }
+
+    .tc-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+
+    .tc-row1 {
+      display: flex; align-items: baseline;
+      justify-content: space-between; gap: var(--s2);
+    }
+    .tc-title {
+      font-size: 15.5px; font-weight: 700;
+      color: var(--t-1); letter-spacing: -0.018em;
+      line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      flex: 1 1 0; min-width: 0;
+    }
+    .tc-time {
+      flex-shrink: 0;
+      font-size: 12px; font-weight: 800;
+      color: var(--t-3);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.01em;
+      padding: 3px 8px;
+      background: var(--glass-2);
+      border: 1px solid var(--glass-bd-2);
+      border-radius: var(--r-pill);
+    }
+    .today-card.warn .tc-time { color: var(--orange); background: rgba(255,159,67,0.10); border-color: rgba(255,159,67,0.28); }
+    .today-card.bad  .tc-time { color: var(--red);    background: rgba(255,85,102,0.10);  border-color: rgba(255,85,102,0.28); }
+
+    .tc-meta {
+      font-size: 12px; color: var(--t-3);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      line-height: 1.3;
+    }
+
+    .tc-weather {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600;
+      color: var(--t-3);
+      margin-top: 2px;
+    }
+    .today-card.warn .tc-weather { color: var(--orange); }
+    .today-card.bad  .tc-weather { color: var(--red); }
     .empty-sub { font-size: 13px; color: var(--t-3); }
 
     /* ════════════════════════════════════════════════════════════════
@@ -743,6 +839,82 @@
       transition: transform var(--t-fast) var(--ease);
     }
     .opti-cta:active { transform: scale(0.97); }
+
+    /* ════════════════════════════════════════════════════════════════
+       WEEK TIMELINE — vertical, mobile-first
+    ════════════════════════════════════════════════════════════════ */
+    .week-timeline { display: flex; flex-direction: column; gap: 8px; }
+    .wt-day {
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-xl);
+      padding: 13px var(--s4);
+      cursor: pointer;
+      transition: background var(--t-fast) var(--ease);
+      position: relative; overflow: hidden;
+      text-align: left; width: 100%;
+    }
+    .wt-day:active { background: var(--surface-2); }
+    .wt-day.wt-warn { border-color: rgba(255,159,67,0.25); }
+    .wt-day.wt-bad  { border-color: rgba(255,85,102,0.25); }
+    .wt-day.wt-warn::before,
+    .wt-day.wt-bad::before,
+    .wt-day.wt-today::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius: var(--r-xl) 0 0 var(--r-xl); }
+    .wt-day.wt-warn::before  { background: var(--orange); }
+    .wt-day.wt-bad::before   { background: var(--red); }
+    .wt-day.wt-today         { border-color: rgba(118,150,255,0.30); }
+    .wt-day.wt-today::before { background: var(--tint); }
+    .wt-day-head {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .wt-day-info { display: flex; align-items: baseline; gap: 7px; }
+    .wt-day-name { font-size: 13.5px; font-weight: 700; color: var(--t-2); letter-spacing: -0.01em; }
+    .wt-day.wt-today .wt-day-name { color: var(--tint); }
+    .wt-day-date  { font-size: 11.5px; color: var(--t-4); font-weight: 500; }
+    .wt-wx {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11.5px; font-weight: 600; color: var(--t-3);
+    }
+    .wt-wx.wt-wx-warn { color: var(--orange); }
+    .wt-wx.wt-wx-bad  { color: var(--red); }
+    .wt-jobs { display: flex; flex-direction: column; gap: 4px; }
+    .wt-job-pill {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 600; color: var(--t-2);
+      padding: 6px 10px;
+      background: var(--glass-2);
+      border-radius: var(--r-md);
+      letter-spacing: -0.01em;
+    }
+    .wt-pill-time {
+      margin-left: auto;
+      font-size: 11px; font-weight: 700;
+      color: var(--t-4); font-variant-numeric: tabular-nums;
+    }
+    .wt-no-jobs { font-size: 12px; color: var(--t-5); font-style: italic; padding: 2px 4px; }
+
+    /* ════════════════════════════════════════════════════════════════
+       BANQUE DE TRAVAUX — liste backlog
+    ════════════════════════════════════════════════════════════════ */
+    .btl-list { display: flex; flex-direction: column; gap: 6px; margin-top: var(--s3); }
+    .btl-item {
+      display: flex; align-items: center; gap: var(--s3);
+      padding: 12px 14px;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+      width: 100%; text-align: left;
+      transition: background var(--t-fast) var(--ease);
+    }
+    .btl-item:active { background: var(--surface-2); }
+    .btl-icon { font-size: 20px; flex-shrink: 0; }
+    .btl-body { flex: 1 1 0; min-width: 0; }
+    .btl-name { display: block; font-size: 14px; font-weight: 700; color: var(--t-1); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btl-meta { display: block; font-size: 11.5px; color: var(--t-3); margin-top: 2px; }
+    .btl-action { font-size: 14px; color: var(--t-4); flex-shrink: 0; }
+    .btl-empty { font-size: 13px; color: var(--t-4); font-style: italic; padding: 10px 2px; margin-top: var(--s2); }
 
     /* alerts (discreet by default, banner only for real danger) */
     .alerts { display: flex; flex-direction: column; gap: 6px; }
@@ -1766,7 +1938,25 @@
         <div class="greet-sub" id="greetSub">—</div>
       </div>
 
-      <!-- Vue chantier (semaine en un coup d'œil) -->
+      <!-- 1. JOBS AUJOURD'HUI -->
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Aujourd'hui</h2>
+          <span class="section-count" id="todayCount">—</span>
+        </div>
+        <div class="today-list" id="todayList"></div>
+      </div>
+
+      <!-- 2. JOBS DE LA SEMAINE -->
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Ma semaine</h2>
+          <button class="section-link" onclick="switchTab('calendar')">Calendrier →</button>
+        </div>
+        <div class="week-timeline" id="dayStrip"></div>
+      </div>
+
+      <!-- Vue chantier (3 stats — inline avec la semaine) -->
       <div class="section" id="vueChantierSection">
         <div class="section-head">
           <h2 class="section-title">Vue chantier</h2>
@@ -1775,66 +1965,7 @@
         <div class="vue-strip" id="vueChantierStrip"></div>
       </div>
 
-      <!-- Hero weather (premium) -->
-      <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
-        <div class="hero-row-1">
-          <span class="hero-eyebrow"><span id="heroEyebrowDay">Aujourd'hui</span> · <b id="heroEyebrowDate">—</b></span>
-          <span class="hero-score status-pill" id="heroScore"><span class="sp-icon">⏳</span><span>…</span></span>
-        </div>
-        <div class="hero-row-2">
-          <span class="hero-icon" id="heroIcon">☀️</span>
-          <div>
-            <div class="hero-temp"><span id="heroTempMax">—</span><em>°</em><span class="min" id="heroTempMin">—°</span></div>
-          </div>
-        </div>
-        <div class="hero-label" id="heroLabel">—</div>
-        <div class="hero-sub" id="heroLabelSub">Chargement de la météo…</div>
-        <div class="hero-stats">
-          <div class="hs-cell">
-            <span class="hs-cell-icon">💨</span>
-            <span class="hs-cell-lbl">Vent</span>
-            <span class="hs-cell-val" id="heroWind">—<span>km/h</span></span>
-          </div>
-          <div class="hs-cell">
-            <span class="hs-cell-icon">💧</span>
-            <span class="hs-cell-lbl">Pluie</span>
-            <span class="hs-cell-val" id="heroRain">—<span>mm</span></span>
-          </div>
-          <div class="hs-cell">
-            <span class="hs-cell-icon">☔</span>
-            <span class="hs-cell-lbl">Probabilité</span>
-            <span class="hs-cell-val" id="heroProb">—<span>%</span></span>
-          </div>
-        </div>
-      </button>
-
-      <!-- 7-day strip -->
-      <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Ma semaine</h2>
-          <button class="section-link" onclick="switchTab('calendar')">Calendrier →</button>
-        </div>
-        <div class="strip" id="dayStrip"></div>
-      </div>
-
-      <!-- Today's jobs -->
-      <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Aujourd'hui</h2>
-          <span class="section-count" id="todayCount">—</span>
-        </div>
-        <div class="job-list" id="todayList"></div>
-      </div>
-
-      <!-- Smart alerts -->
-      <div class="section" id="alertsSection" style="display:none">
-        <div class="section-head">
-          <h2 class="section-title">Alertes météo</h2>
-        </div>
-        <div class="alerts" id="alertsList"></div>
-      </div>
-
-      <!-- Optimization -->
+      <!-- Optimization (conditionnel) -->
       <div class="section" id="optiSection" style="display:none">
         <div class="opti">
           <span class="opti-eyebrow">⚡ Optimisation</span>
@@ -1844,10 +1975,11 @@
         </div>
       </div>
 
-      <!-- Quick actions -->
+      <!-- 3. BANQUE DE TRAVAUX -->
       <div class="section">
         <div class="section-head">
-          <h2 class="section-title">Création rapide</h2>
+          <h2 class="section-title">Banque de travaux</h2>
+          <span class="section-count" id="btlCount"></span>
         </div>
         <div class="quick">
           <button class="quick-btn" data-tone="green" onclick="openVoice()">
@@ -1863,7 +1995,47 @@
             <span class="quick-btn-label">Manuel</span>
           </button>
         </div>
+        <div class="btl-list" id="btlList"></div>
       </div>
+
+      <!-- 4. MÉTÉO DÉTAILLÉE -->
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Météo détaillée</h2>
+        </div>
+        <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
+          <div class="hero-row-1">
+            <span class="hero-eyebrow"><span id="heroEyebrowDay">Aujourd'hui</span> · <b id="heroEyebrowDate">—</b></span>
+            <span class="hero-score status-pill" id="heroScore"><span class="sp-icon">⏳</span><span>…</span></span>
+          </div>
+          <div class="hero-row-2">
+            <span class="hero-icon" id="heroIcon">☀️</span>
+            <div>
+              <div class="hero-temp"><span id="heroTempMax">—</span><em>°</em><span class="min" id="heroTempMin">—°</span></div>
+            </div>
+          </div>
+          <div class="hero-label" id="heroLabel">—</div>
+          <div class="hero-sub" id="heroLabelSub">Chargement de la météo…</div>
+          <div class="hero-stats">
+            <div class="hs-cell">
+              <span class="hs-cell-icon">💨</span>
+              <span class="hs-cell-lbl">Vent</span>
+              <span class="hs-cell-val" id="heroWind">—<span>km/h</span></span>
+            </div>
+            <div class="hs-cell">
+              <span class="hs-cell-icon">💧</span>
+              <span class="hs-cell-lbl">Pluie</span>
+              <span class="hs-cell-val" id="heroRain">—<span>mm</span></span>
+            </div>
+            <div class="hs-cell">
+              <span class="hs-cell-icon">☔</span>
+              <span class="hs-cell-lbl">Probabilité</span>
+              <span class="hs-cell-val" id="heroProb">—<span>%</span></span>
+            </div>
+          </div>
+        </button>
+      </div>
+
 
     </section>
 
@@ -3055,9 +3227,9 @@ function renderHome() {
   renderGreeting();
   renderVueChantier();
   renderHero();
-  renderDayStrip();
   renderTodayJobs();
-  renderAlerts();
+  renderDayStrip();
+  renderBanqueTravaux();
   renderOptimization();
 }
 
@@ -3131,31 +3303,116 @@ function renderHero() {
 
 function renderDayStrip() {
   var strip = document.getElementById('dayStrip');
+  if (!strip) return;
   strip.innerHTML = '';
   var fc = ST.forecast;
   if (!fc || !fc.length) {
-    for (var i = 0; i < 7; i++) {
+    for (var i = 0; i < 5; i++) {
       var sk = document.createElement('div');
-      sk.className = 'strip-day';
-      sk.innerHTML = '<div class="skel" style="width:32px;height:10px"></div>'
-                   + '<div class="skel" style="width:34px;height:24px;margin:6px 0"></div>'
-                   + '<div class="skel" style="width:38px;height:12px"></div>';
+      sk.className = 'wt-day';
+      sk.innerHTML = '<div class="wt-day-head"><div class="skel" style="width:80px;height:13px"></div><div class="skel" style="width:100px;height:13px"></div></div>'
+                   + '<div class="skel" style="width:100%;height:32px;margin-top:8px;border-radius:8px"></div>';
       strip.appendChild(sk);
     }
     return;
   }
+  var jobsDef = getMergedJobTypes();
+  var todayIso = isoDate(new Date());
   fc.forEach(function(d, idx) {
+    var dIso = isoDate(d.date);
+    var isToday = dIso === todayIso;
     var st = simpleStatus(d);
-    var sc = st.level === 'ok' ? '' : st.level;
-    var btn = document.createElement('button');
-    btn.className = 'strip-day' + (idx === 0 ? ' today' : '') + (sc ? ' ' + sc : '');
-    var dayName = idx === 0 ? "Auj." : DAYS_S[d.date.getDay()];
-    btn.innerHTML =
-        '<span class="sd-name">' + dayName + '</span>'
-      + '<span class="sd-icon">' + wIcon(d.weathercode) + '</span>'
-      + '<span class="sd-temp">' + d.temp_max + '°<em>/' + d.temp_min + '°</em></span>';
-    btn.onclick = (function(i) { return function() { openDayDetail(i); }; })(idx);
-    strip.appendChild(btn);
+
+    // Tasks on this day
+    var dayTasks = ST.tasks.filter(function(t) {
+      return (t.scheduledDate === dIso) ||
+             (t.dayIndex === idx && !t.scheduledDate && t.status !== 'backlog');
+    }).sort(function(a, b) {
+      if (a.time && b.time) return a.time.localeCompare(b.time);
+      if (a.time) return -1; if (b.time) return 1; return 0;
+    });
+
+    // Short weather message
+    var wxIcon = st.level === 'ok' ? '✅' : (st.level === 'warn' ? '⚠️' : '⛔');
+    var wxMsg;
+    if (d.weathercode >= 95)      wxMsg = 'Orage';
+    else if (d.precipitation > 10) wxMsg = 'Pluie ' + d.precipitation + 'mm';
+    else if (d.windspeed > 40)     wxMsg = 'Vent ' + d.windspeed + 'km/h';
+    else if (d.temp_min < 0)       wxMsg = 'Gel ' + d.temp_min + '°';
+    else if (d.precipitation > 0)  wxMsg = 'Pluie ' + d.precipitation + 'mm';
+    else if (d.windspeed > 25)     wxMsg = 'Vent ' + d.windspeed + 'km/h';
+    else if (d.temp_min < 5)       wxMsg = 'Froid ' + d.temp_min + '°';
+    else                           wxMsg = d.temp_max + '°/' + d.temp_min + '°';
+
+    var dayName = isToday ? "Aujourd'hui" : DAYS_L[d.date.getDay()];
+    var dateStr = d.date.getDate() + ' ' + MONTHS[d.date.getMonth()];
+
+    var levelCls = st.level !== 'ok' ? ' wt-' + st.level : '';
+    var todayCls = isToday ? ' wt-today' : '';
+    var entry = document.createElement('button');
+    entry.type = 'button';
+    entry.className = 'wt-day' + todayCls + levelCls;
+
+    var jobsHtml;
+    if (dayTasks.length) {
+      jobsHtml = dayTasks.map(function(t) {
+        var jd = jobsDef[t.type] || { icon: '🔧' };
+        var timeStr = t.time ? ' <span class="wt-pill-time">' + esc(t.time) + '</span>' : '';
+        return '<div class="wt-job-pill">' + jd.icon + ' ' + esc(t.name) + timeStr + '</div>';
+      }).join('');
+    } else {
+      jobsHtml = '<div class="wt-no-jobs">Aucun chantier planifié</div>';
+    }
+
+    var wxCls = st.level !== 'ok' ? ' wt-wx-' + st.level : '';
+    entry.innerHTML =
+        '<div class="wt-day-head">'
+      +   '<div class="wt-day-info">'
+      +     '<span class="wt-day-name">' + dayName + '</span>'
+      +     '<span class="wt-day-date">' + dateStr + '</span>'
+      +   '</div>'
+      +   '<div class="wt-wx' + wxCls + '">'
+      +     '<span>' + wxIcon + '</span>'
+      +     '<span class="wt-wx-msg">' + wxMsg + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="wt-jobs">' + jobsHtml + '</div>';
+
+    entry.onclick = (function(i) { return function() { openDayDetail(i); }; })(idx);
+    strip.appendChild(entry);
+  });
+}
+
+function renderBanqueTravaux() {
+  var list = document.getElementById('btlList');
+  var countEl = document.getElementById('btlCount');
+  if (!list) return;
+  var backlog = ST.tasks.filter(function(t) {
+    return t.status === 'backlog' || (!t.scheduledDate && t.dayIndex == null);
+  });
+  if (countEl) countEl.textContent = backlog.length ? backlog.length + '' : '';
+  list.innerHTML = '';
+  if (!backlog.length) {
+    list.innerHTML = '<div class="btl-empty">Tous les travaux sont planifiés.</div>';
+    return;
+  }
+  var jobsDef = getMergedJobTypes();
+  backlog.forEach(function(task) {
+    var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
+    var item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'btl-item';
+    var durStr = task.duration ? ' · ⏱ ' + esc(task.duration) : '';
+    var locStr = task.client ? ' · ' + esc(task.client) : '';
+    item.innerHTML =
+        '<span class="btl-icon">' + jd.icon + '</span>'
+      + '<span class="btl-body">'
+      +   '<span class="btl-name">' + esc(task.name) + '</span>'
+      +   '<span class="btl-meta">' + esc(jd.short || jd.name) + locStr + durStr + '</span>'
+      + '</span>'
+      + '<span class="btl-action">→</span>';
+    item.onclick = (function(id) { return function() { openEditTask(id); }; })(task.id);
+    list.appendChild(item);
   });
 }
 
@@ -3166,10 +3423,32 @@ function renderTodayJobs() {
   var todayTasks = ST.tasks.filter(function(t) {
     return t.scheduledDate === todayIso || (t.dayIndex === 0 && t.status !== 'backlog');
   });
-  document.getElementById('todayCount').textContent =
-    todayTasks.length === 0 ? 'Aucun chantier' :
-    todayTasks.length === 1 ? '1 chantier' :
-    todayTasks.length + ' chantiers';
+  // Sort by time (tasks with time first, sorted asc; then tasks without time)
+  todayTasks.sort(function(a, b) {
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    if (a.time)  return -1;
+    if (b.time)  return  1;
+    return 0;
+  });
+  var jobsDef = getMergedJobTypes();
+  var todayW  = ST.forecast && ST.forecast[0];
+  // Count at-risk
+  var atRisk = 0;
+  if (todayW) {
+    todayTasks.forEach(function(t) {
+      var r = assess(t.type, todayW, t.weather);
+      if (r.level !== 'ok') atRisk++;
+    });
+  }
+  // Header count
+  var countEl = document.getElementById('todayCount');
+  if (countEl) {
+    var n = todayTasks.length;
+    var label = n === 0 ? 'Aucun' : n === 1 ? '1 job' : n + ' jobs';
+    if (atRisk > 0) label += ' · ' + atRisk + ' à risque';
+    countEl.textContent = label;
+    countEl.style.color = atRisk > 0 ? 'var(--orange)' : '';
+  }
   if (!todayTasks.length) {
     list.innerHTML =
       '<div class="empty-card">'
@@ -3179,11 +3458,72 @@ function renderTodayJobs() {
       + '</div>';
     return;
   }
-  var jobsDef = getMergedJobTypes();
-  var todayW = ST.forecast && ST.forecast[0];
   todayTasks.forEach(function(task) {
-    list.appendChild(buildJobCard(task, todayW, jobsDef, { withStatus: true }));
+    list.appendChild(buildTodayCard(task, todayW, jobsDef));
   });
+}
+
+function buildTodayCard(task, w, jobsDef) {
+  jobsDef = jobsDef || getMergedJobTypes();
+  var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
+
+  // Assess weather for this specific job
+  var levelCls = '', wxIcon = '✅', wxMsg = 'Conditions favorables';
+  if (w) {
+    var res = assess(task.type, w, task.weather);
+    if (res.level === 'risk') {
+      levelCls = ' warn'; wxIcon = '⚠️';
+      wxMsg = res.msg || 'Vigilance requise';
+      if (task.time) wxMsg = wxMsg.replace(/\.$/, '') + ' à ' + task.time;
+    } else if (res.level === 'danger') {
+      levelCls = ' bad'; wxIcon = '⛔';
+      wxMsg = res.msg || 'Conditions défavorables';
+      if (task.time) wxMsg = wxMsg.replace(/\.$/, '') + ' à ' + task.time;
+    }
+  } else {
+    wxIcon = '⏳'; wxMsg = 'Météo indisponible';
+  }
+
+  var card = document.createElement('button');
+  card.type = 'button';
+  card.className = 'today-card' + levelCls;
+  card.dataset.taskId = task.id;
+
+  // Thumb
+  var thumbHtml = '<div class="tc-thumb" data-type="' + esc(task.type) + '">';
+  if (task.photoPreview) thumbHtml += '<img src="' + esc(task.photoPreview) + '" alt="">';
+  else thumbHtml += jd.icon;
+  thumbHtml += '</div>';
+
+  // Time chip
+  var timeHtml = task.time
+    ? '<span class="tc-time">' + esc(task.time) + '</span>'
+    : '';
+
+  // Meta: lieu · durée
+  var metaParts = [];
+  if (task.client)   metaParts.push(esc(task.client));
+  if (task.location) metaParts.push(esc(task.location));
+  if (task.duration) metaParts.push('⏱ ' + esc(task.duration));
+  else               metaParts.push('<em style="color:var(--t-4);font-style:italic">durée non définie</em>');
+  var metaHtml = metaParts.join(' · ');
+
+  card.innerHTML =
+      thumbHtml
+    + '<div class="tc-body">'
+    +   '<div class="tc-row1">'
+    +     '<div class="tc-title">' + esc(task.name) + '</div>'
+    +     timeHtml
+    +   '</div>'
+    +   '<div class="tc-meta">' + metaHtml + '</div>'
+    +   '<div class="tc-weather">'
+    +     '<span>' + wxIcon + '</span>'
+    +     '<span>' + esc(wxMsg) + '</span>'
+    +   '</div>'
+    + '</div>';
+
+  card.onclick = (function(id) { return function() { openEditTask(id); }; })(task.id);
+  return card;
 }
 
 function renderVueChantier() {
@@ -3402,20 +3742,57 @@ var _micActive = false;
 var _micRec    = null;
 var _micStopping = false;
 var _micStarting = false;       // debounce: prevent double-start
-var _micStartedAt = 0;          // for Safari premature end detection
-var _micGotResult = false;      // track if recognition actually produced output
-var _micStartFallback = null;   // timer to detect onstart never firing
+var _micStartedAt = 0;
+var _micGotResult = false;      // ANY transcript (final or interim) received
+var _micStartFallback = null;
+var _micUserStopped = false;
+var _micRetryScheduled = false;
+
+// Transcript accumulation (fix iOS Safari "no isFinal" issue)
+var _micBaseline      = '';   // textarea content before listening started
+var _micFinalAccum    = '';   // confirmed final segments
+var _micLatestInterim = '';   // latest interim chunk
+
+// Language fallback chain (iOS Safari sometimes silently fails on fr-CA)
+var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
+var _micLangIdx   = 0;
+
+// Verbose debug logging (visible in Safari Web Inspector)
+function micLog() {
+  try { console.log.apply(console, ['[mic]'].concat([].slice.call(arguments))); } catch(e) {}
+}
+
+function micCheckHTTPS() {
+  var p = location.protocol;
+  var h = location.hostname;
+  if (p !== 'https:' && h !== 'localhost' && h !== '127.0.0.1' && h !== '') {
+    micLog('WARN page non HTTPS — Safari peut bloquer le micro (protocol=' + p + ')');
+    return false;
+  }
+  return true;
+}
 
 function openVoice() {
-  document.getElementById('voiceText').value = '';
+  var ta = document.getElementById('voiceText');
+  if (ta) ta.value = '';
   _micActive = false;
   _micStopping = false;
   _micStarting = false;
   _micGotResult = false;
+  _micBaseline = '';
+  _micFinalAccum = '';
+  _micLatestInterim = '';
+  _micLangIdx = 0;
+  _micRetryScheduled = false;
+  _micUserStopped = false;
   setMicState('idle', 'Toucher pour parler');
   openModal('voiceOverlay');
-  // small delay so Safari has time to attach overlay before requesting mic
-  setTimeout(function() { startMic(); }, 350);
+  // iOS Safari: do NOT auto-start here — the 350ms timeout breaks the user-gesture
+  // chain required for microphone access. User taps the mic button instead.
+  // Desktop: start automatically for convenience.
+  if (!isIOSSafari()) {
+    startMic();
+  }
 }
 
 function voiceTextElement() {
@@ -3486,35 +3863,75 @@ function clearMicStartFallback() {
 }
 
 function toggleMic() {
-  // Hard debounce — ignore taps closer than 250ms or while starting
   if (_micStarting) return;
   if (_micActive) {
+    _micUserStopped = true;
     _micStopping = true;
     if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    setMicState('idle', 'Toucher pour parler');
     return;
   }
   startMic();
 }
 
+// Write live preview to textarea (baseline + final + interim)
+function _micWriteLive() {
+  var textEl = voiceTextElement();
+  if (!textEl) return;
+  var parts = [];
+  if (_micBaseline) parts.push(_micBaseline);
+  var combined = (_micFinalAccum + ' ' + _micLatestInterim).replace(/\s+/g, ' ').trim();
+  if (combined) parts.push(combined);
+  textEl.value = parts.join(' ');
+  // Notify any listeners (form validation, state, etc.)
+  try { textEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+}
+
+// Returns true if anything was committed
+function _micCommitFinal() {
+  var t = (_micFinalAccum || _micLatestInterim || '').trim();
+  if (!t) return false;
+  // Final write — make sure interim is included if no final came
+  _micFinalAccum = t;
+  _micLatestInterim = '';
+  _micWriteLive();
+  return true;
+}
+
 function startMic() {
   if (_micStarting || _micActive) return;
   var SR = getSpeechRecognitionCtor();
-  var textEl = voiceTextElement();
   if (!SR) {
     setMicState('error', 'Dictée non disponible — saisir ci-dessous', '⚠');
-    _micActive = false;
     return;
   }
+  micCheckHTTPS();
+  // Fresh user-initiated start — reset accumulators (unless this is an internal retry)
+  if (!_micRetryScheduled) {
+    var textEl = voiceTextElement();
+    _micBaseline = textEl ? textEl.value.trim() : '';
+    _micFinalAccum = '';
+    _micLatestInterim = '';
+    _micLangIdx = 0;
+    _micUserStopped = false;
+  }
+  _micRetryScheduled = false;
+  _micAttemptStart();
+}
+
+function _micAttemptStart() {
+  var SR = getSpeechRecognitionCtor();
+  var lang = _micLangChain[_micLangIdx] || 'fr-FR';
+  micLog('attempt start lang=' + lang + ' idx=' + _micLangIdx + ' iOS=' + isIOSSafari());
   _micStarting = true;
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
-  _micRec = new SR();
-  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
-  _micRec.interimResults = true;
-  _micRec.continuous = false;
-  _micRec.maxAlternatives = 1;
   _micStopping = false;
   _micGotResult = false;
+  if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
+  _micRec = new SR();
+  _micRec.lang = lang;
+  // iOS Safari: interimResults can prevent isFinal from ever firing — disable it.
+  _micRec.interimResults = !isIOSSafari();
+  _micRec.continuous = false;
+  _micRec.maxAlternatives = 1;
 
   setMicState('listening', 'Écoute...', '🎙');
 
@@ -3523,74 +3940,115 @@ function startMic() {
     _micActive = true;
     _micStartedAt = Date.now();
     clearMicStartFallback();
+    micLog('onstart lang=' + lang);
     setMicState('listening', 'Parlez maintenant', '🔴');
   };
+  _micRec.onspeechstart = function() { micLog('onspeechstart'); };
+  _micRec.onspeechend   = function() { micLog('onspeechend'); };
+  _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
+  _micRec.onaudioend    = function() { micLog('onaudioend'); };
+
   _micRec.onresult = function(e) {
-    _micGotResult = true;
-    var finalText = '';
-    var hasInterim = false;
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-      else hasInterim = true;
+    var nRes = e && e.results ? e.results.length : 0;
+    micLog('onresult results=' + nRes + ' resultIndex=' + (e && e.resultIndex));
+    if (!nRes) return;
+    var newFinal = '';
+    var interim  = '';
+    for (var i = 0; i < e.results.length; i++) {
+      var res = e.results[i];
+      if (!res || !res[0]) continue;
+      var t = (res[0].transcript || '');
+      micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' transcript=' + JSON.stringify(t));
+      if (res.isFinal) newFinal += t + ' ';
+      else interim    += t + ' ';
     }
-    if (finalText) {
-      var nextText = finalText.trim();
-      if (textEl) {
-        var current = textEl.value.trim();
-        textEl.value = current ? current + ' ' + nextText : nextText;
-      }
-      setMicState('processing', 'Transcription...', '✨');
-    } else if (hasInterim) {
-      setMicState('listening', 'Parlez maintenant', '🔴');
+    newFinal = newFinal.trim();
+    interim  = interim.trim();
+    if (newFinal) {
+      _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
+      _micGotResult = true;
+    }
+    if (interim) {
+      _micLatestInterim = interim;
+      _micGotResult = true;
+    }
+    if (newFinal || interim) {
+      _micWriteLive();
+      if (newFinal) setMicState('processing', 'Transcription...', '✨');
+      else          setMicState('listening',  'Parlez maintenant', '🔴');
     }
   };
+
   _micRec.onerror = function(e) {
     var err = e && e.error;
     clearMicStartFallback();
     _micStarting = false;
-    if (_micStopping || err === 'aborted') {
-      _micActive = false;
-      _micStopping = false;
-      setMicState('idle', 'Toucher pour parler');
+    micLog('onerror ' + err);
+    if (err === 'aborted' || _micStopping || _micUserStopped) {
+      // Handled in onend
       return;
     }
-    if (err === 'no-speech') {
+    if (err === 'not-allowed' || err === 'service-not-allowed') {
       _micActive = false;
-      setMicState('idle', 'Rien entendu — toucher pour réessayer');
+      setMicState('error', 'Autorisez le micro dans Safari, puis réessayer', '⚠');
       return;
     }
-    var msg = 'Micro indisponible — saisir ci-dessous';
-    if (err === 'not-allowed' || err === 'service-not-allowed') msg = 'Autorisez le micro dans Safari, puis réessayer';
-    else if (err === 'audio-capture') msg = 'Micro introuvable — saisir ci-dessous';
-    else if (err === 'network')       msg = 'Service vocal hors ligne — saisir ci-dessous';
-    setMicState('error', msg, '⚠');
-    _micActive = false;
+    if (err === 'audio-capture') {
+      _micActive = false;
+      setMicState('error', 'Micro introuvable — saisir ci-dessous', '⚠');
+      return;
+    }
+    if (err === 'network') {
+      _micActive = false;
+      setMicState('error', 'Service vocal hors ligne — saisir ci-dessous', '⚠');
+      return;
+    }
+    // 'no-speech' and other recoverable errors → onend handles retry
   };
+
   _micRec.onend = function() {
     clearMicStartFallback();
     _micStarting = false;
     var wasActive = _micActive;
     _micActive = false;
-    if (_micStopping) {
+    micLog('onend wasActive=' + wasActive + ' gotResult=' + _micGotResult
+           + ' final=' + JSON.stringify(_micFinalAccum)
+           + ' interim=' + JSON.stringify(_micLatestInterim));
+
+    // User explicitly stopped → commit whatever we have
+    if (_micUserStopped || _micStopping) {
       _micStopping = false;
-      setMicState('idle', _micGotResult ? 'Toucher pour reprendre' : 'Toucher pour parler');
+      _micUserStopped = false;
+      var committed = _micCommitFinal();
+      setMicState('idle', committed ? 'Toucher pour reprendre' : 'Toucher pour parler');
       return;
     }
-    // Safari may end prematurely (< 700ms) without firing onresult
-    var elapsed = _micStartedAt ? (Date.now() - _micStartedAt) : 0;
-    if (wasActive && !_micGotResult && elapsed > 0 && elapsed < 700) {
-      setMicState('idle', 'Coupé prématurément — toucher pour réessayer');
+    // Natural end → commit interim if final never came
+    if (_micCommitFinal()) {
+      setMicState('idle', 'Toucher pour reprendre');
       return;
     }
-    setMicState('idle', _micGotResult ? 'Toucher pour reprendre' : 'Toucher pour parler');
+    // No transcript captured → try next language in chain
+    if (_micLangIdx + 1 < _micLangChain.length) {
+      _micLangIdx++;
+      _micRetryScheduled = true;
+      var nextLang = _micLangChain[_micLangIdx];
+      micLog('no transcript → retry with ' + nextLang);
+      setMicState('listening', 'Nouvel essai (' + nextLang + ')…', '🎙');
+      setTimeout(function() { _micAttemptStart(); }, 250);
+      return;
+    }
+    // All languages exhausted with no transcript
+    micLog('all langs exhausted, no transcript');
+    setMicState('error', 'Transcription indisponible sur cet appareil', '⚠');
   };
 
   try {
     _micRec.start();
-    // Safari iPhone fallback: if onstart never fires within 1500ms, mark as error
     _micStartFallback = setTimeout(function() {
       if (_micStarting && !_micActive) {
         _micStarting = false;
+        micLog('onstart never fired within 1800ms');
         try { _micRec.stop(); } catch(e) {}
         setMicState('error', 'Le micro ne répond pas — vérifiez les permissions Safari', '⚠');
       }
@@ -3598,6 +4056,7 @@ function startMic() {
   } catch(e) {
     _micStarting = false;
     _micActive = false;
+    micLog('start() threw: ' + (e && e.message));
     setMicState('error', 'Dictée déjà active — toucher pour reprendre', '⚠');
   }
 }
@@ -3607,49 +4066,107 @@ function startTaskMic() {
   var SR = getSpeechRecognitionCtor();
   var textEl = document.getElementById('taskVoiceText');
   if (!SR) { setInlineMicState('error', '⚠'); return; }
+  micCheckHTTPS();
+  if (!_micRetryScheduled) {
+    _micBaseline = textEl ? textEl.value.trim() : '';
+    _micFinalAccum = '';
+    _micLatestInterim = '';
+    _micLangIdx = 0;
+    _micUserStopped = false;
+  }
+  _micRetryScheduled = false;
+  _taskMicAttempt(textEl);
+}
+
+function _taskMicAttempt(textEl) {
+  var SR = getSpeechRecognitionCtor();
+  var lang = _micLangChain[_micLangIdx] || 'fr-FR';
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
-  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
-  _micRec.interimResults = true;
+  _micRec.lang = lang;
+  _micRec.interimResults = !isIOSSafari();
   _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
   _micStarting = true;
   _micGotResult = false;
+  micLog('task attempt lang=' + lang);
   setInlineMicState('listening', '🎙');
 
-  _micRec.onstart = function() {
-    _micStarting = false;
-    _micActive = true;
-    setInlineMicState('listening', '🔴');
-  };
+  function writeLive() {
+    if (!textEl) return;
+    var parts = [];
+    if (_micBaseline) parts.push(_micBaseline);
+    var combined = (_micFinalAccum + ' ' + _micLatestInterim).replace(/\s+/g, ' ').trim();
+    if (combined) parts.push(combined);
+    textEl.value = parts.join(' ');
+    try { textEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+  }
+  function commit() {
+    var t = (_micFinalAccum || _micLatestInterim || '').trim();
+    if (!t) return false;
+    _micFinalAccum = t;
+    _micLatestInterim = '';
+    writeLive();
+    return true;
+  }
+
+  _micRec.onstart       = function() { _micStarting = false; _micActive = true; setInlineMicState('listening', '🔴'); micLog('task onstart'); };
+  _micRec.onspeechstart = function() { micLog('task onspeechstart'); };
+  _micRec.onspeechend   = function() { micLog('task onspeechend'); };
+
   _micRec.onresult = function(e) {
-    _micGotResult = true;
-    var finalText = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+    var nRes = e && e.results ? e.results.length : 0;
+    micLog('task onresult results=' + nRes);
+    if (!nRes) return;
+    var newFinal = '', interim = '';
+    for (var i = 0; i < e.results.length; i++) {
+      var res = e.results[i];
+      if (!res || !res[0]) continue;
+      var t = res[0].transcript || '';
+      if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
     }
-    if (!finalText) return;
-    var nextText = finalText.trim();
-    if (textEl) {
-      var current = textEl.value.trim();
-      textEl.value = current ? current + ' ' + nextText : nextText;
+    newFinal = newFinal.trim(); interim = interim.trim();
+    if (newFinal) { _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim(); _micGotResult = true; }
+    if (interim)  { _micLatestInterim = interim; _micGotResult = true; }
+    if (newFinal || interim) {
+      writeLive();
+      setInlineMicState(newFinal ? 'processing' : 'listening', newFinal ? '✨' : '🔴');
     }
-    setInlineMicState('processing', '✨');
   };
+
   _micRec.onerror = function(e) {
     _micStarting = false;
-    _micActive = false;
-    setInlineMicState('error', '⚠');
+    micLog('task onerror ' + (e && e.error));
+    var err = e && e.error;
+    if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
+      _micActive = false;
+      setInlineMicState('error', '⚠');
+    }
+    // 'no-speech' / 'aborted' → handled in onend (lang fallback)
   };
+
   _micRec.onend = function() {
     _micStarting = false;
     _micActive = false;
-    setInlineMicState('idle', _micGotResult ? '✅' : '🎤');
+    micLog('task onend gotResult=' + _micGotResult);
+    if (commit()) { setInlineMicState('idle', '✅'); return; }
+    if (_micLangIdx + 1 < _micLangChain.length) {
+      _micLangIdx++;
+      _micRetryScheduled = true;
+      micLog('task no result → retry ' + _micLangChain[_micLangIdx]);
+      setInlineMicState('listening', '🎙');
+      setTimeout(function() { _taskMicAttempt(textEl); }, 250);
+      return;
+    }
+    setInlineMicState('error', '⚠');
+    toast('⚠ Transcription indisponible sur cet appareil');
   };
+
   try { _micRec.start(); }
   catch(e) {
     _micStarting = false;
     _micActive = false;
+    micLog('task start() threw: ' + (e && e.message));
     setInlineMicState('error', '⚠');
   }
 }

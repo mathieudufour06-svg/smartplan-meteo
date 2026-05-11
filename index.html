@@ -3402,19 +3402,51 @@ var _micActive = false;
 var _micRec    = null;
 var _micStopping = false;
 var _micStarting = false;       // debounce: prevent double-start
-var _micStartedAt = 0;          // for Safari premature end detection
-var _micGotResult = false;      // track if recognition actually produced output
-var _micStartFallback = null;   // timer to detect onstart never firing
+var _micStartedAt = 0;
+var _micGotResult = false;      // ANY transcript (final or interim) received
+var _micStartFallback = null;
+var _micUserStopped = false;
+var _micRetryScheduled = false;
+
+// Transcript accumulation (fix iOS Safari "no isFinal" issue)
+var _micBaseline      = '';   // textarea content before listening started
+var _micFinalAccum    = '';   // confirmed final segments
+var _micLatestInterim = '';   // latest interim chunk
+
+// Language fallback chain (iOS Safari sometimes silently fails on fr-CA)
+var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
+var _micLangIdx   = 0;
+
+// Verbose debug logging (visible in Safari Web Inspector)
+function micLog() {
+  try { console.log.apply(console, ['[mic]'].concat([].slice.call(arguments))); } catch(e) {}
+}
+
+function micCheckHTTPS() {
+  var p = location.protocol;
+  var h = location.hostname;
+  if (p !== 'https:' && h !== 'localhost' && h !== '127.0.0.1' && h !== '') {
+    micLog('WARN page non HTTPS — Safari peut bloquer le micro (protocol=' + p + ')');
+    return false;
+  }
+  return true;
+}
 
 function openVoice() {
-  document.getElementById('voiceText').value = '';
+  var ta = document.getElementById('voiceText');
+  if (ta) ta.value = '';
   _micActive = false;
   _micStopping = false;
   _micStarting = false;
   _micGotResult = false;
+  _micBaseline = '';
+  _micFinalAccum = '';
+  _micLatestInterim = '';
+  _micLangIdx = 0;
+  _micRetryScheduled = false;
+  _micUserStopped = false;
   setMicState('idle', 'Toucher pour parler');
   openModal('voiceOverlay');
-  // small delay so Safari has time to attach overlay before requesting mic
   setTimeout(function() { startMic(); }, 350);
 }
 
@@ -3486,35 +3518,74 @@ function clearMicStartFallback() {
 }
 
 function toggleMic() {
-  // Hard debounce — ignore taps closer than 250ms or while starting
   if (_micStarting) return;
   if (_micActive) {
+    _micUserStopped = true;
     _micStopping = true;
     if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    setMicState('idle', 'Toucher pour parler');
     return;
   }
   startMic();
 }
 
+// Write live preview to textarea (baseline + final + interim)
+function _micWriteLive() {
+  var textEl = voiceTextElement();
+  if (!textEl) return;
+  var parts = [];
+  if (_micBaseline) parts.push(_micBaseline);
+  var combined = (_micFinalAccum + ' ' + _micLatestInterim).replace(/\s+/g, ' ').trim();
+  if (combined) parts.push(combined);
+  textEl.value = parts.join(' ');
+  // Notify any listeners (form validation, state, etc.)
+  try { textEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+}
+
+// Returns true if anything was committed
+function _micCommitFinal() {
+  var t = (_micFinalAccum || _micLatestInterim || '').trim();
+  if (!t) return false;
+  // Final write — make sure interim is included if no final came
+  _micFinalAccum = t;
+  _micLatestInterim = '';
+  _micWriteLive();
+  return true;
+}
+
 function startMic() {
   if (_micStarting || _micActive) return;
   var SR = getSpeechRecognitionCtor();
-  var textEl = voiceTextElement();
   if (!SR) {
     setMicState('error', 'Dictée non disponible — saisir ci-dessous', '⚠');
-    _micActive = false;
     return;
   }
+  micCheckHTTPS();
+  // Fresh user-initiated start — reset accumulators (unless this is an internal retry)
+  if (!_micRetryScheduled) {
+    var textEl = voiceTextElement();
+    _micBaseline = textEl ? textEl.value.trim() : '';
+    _micFinalAccum = '';
+    _micLatestInterim = '';
+    _micLangIdx = 0;
+    _micUserStopped = false;
+  }
+  _micRetryScheduled = false;
+  _micAttemptStart();
+}
+
+function _micAttemptStart() {
+  var SR = getSpeechRecognitionCtor();
+  var lang = _micLangChain[_micLangIdx] || 'fr-FR';
+  micLog('attempt start lang=' + lang + ' idx=' + _micLangIdx + ' iOS=' + isIOSSafari());
   _micStarting = true;
+  _micStopping = false;
+  _micGotResult = false;
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
-  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
+  _micRec.lang = lang;
   _micRec.interimResults = true;
   _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
-  _micStopping = false;
-  _micGotResult = false;
 
   setMicState('listening', 'Écoute...', '🎙');
 
@@ -3523,74 +3594,115 @@ function startMic() {
     _micActive = true;
     _micStartedAt = Date.now();
     clearMicStartFallback();
+    micLog('onstart lang=' + lang);
     setMicState('listening', 'Parlez maintenant', '🔴');
   };
+  _micRec.onspeechstart = function() { micLog('onspeechstart'); };
+  _micRec.onspeechend   = function() { micLog('onspeechend'); };
+  _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
+  _micRec.onaudioend    = function() { micLog('onaudioend'); };
+
   _micRec.onresult = function(e) {
-    _micGotResult = true;
-    var finalText = '';
-    var hasInterim = false;
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-      else hasInterim = true;
+    var nRes = e && e.results ? e.results.length : 0;
+    micLog('onresult results=' + nRes + ' resultIndex=' + (e && e.resultIndex));
+    if (!nRes) return;
+    var newFinal = '';
+    var interim  = '';
+    for (var i = 0; i < e.results.length; i++) {
+      var res = e.results[i];
+      if (!res || !res[0]) continue;
+      var t = (res[0].transcript || '');
+      micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' transcript=' + JSON.stringify(t));
+      if (res.isFinal) newFinal += t + ' ';
+      else interim    += t + ' ';
     }
-    if (finalText) {
-      var nextText = finalText.trim();
-      if (textEl) {
-        var current = textEl.value.trim();
-        textEl.value = current ? current + ' ' + nextText : nextText;
-      }
-      setMicState('processing', 'Transcription...', '✨');
-    } else if (hasInterim) {
-      setMicState('listening', 'Parlez maintenant', '🔴');
+    newFinal = newFinal.trim();
+    interim  = interim.trim();
+    if (newFinal) {
+      _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
+      _micGotResult = true;
+    }
+    if (interim) {
+      _micLatestInterim = interim;
+      _micGotResult = true;
+    }
+    if (newFinal || interim) {
+      _micWriteLive();
+      if (newFinal) setMicState('processing', 'Transcription...', '✨');
+      else          setMicState('listening',  'Parlez maintenant', '🔴');
     }
   };
+
   _micRec.onerror = function(e) {
     var err = e && e.error;
     clearMicStartFallback();
     _micStarting = false;
-    if (_micStopping || err === 'aborted') {
-      _micActive = false;
-      _micStopping = false;
-      setMicState('idle', 'Toucher pour parler');
+    micLog('onerror ' + err);
+    if (err === 'aborted' || _micStopping || _micUserStopped) {
+      // Handled in onend
       return;
     }
-    if (err === 'no-speech') {
+    if (err === 'not-allowed' || err === 'service-not-allowed') {
       _micActive = false;
-      setMicState('idle', 'Rien entendu — toucher pour réessayer');
+      setMicState('error', 'Autorisez le micro dans Safari, puis réessayer', '⚠');
       return;
     }
-    var msg = 'Micro indisponible — saisir ci-dessous';
-    if (err === 'not-allowed' || err === 'service-not-allowed') msg = 'Autorisez le micro dans Safari, puis réessayer';
-    else if (err === 'audio-capture') msg = 'Micro introuvable — saisir ci-dessous';
-    else if (err === 'network')       msg = 'Service vocal hors ligne — saisir ci-dessous';
-    setMicState('error', msg, '⚠');
-    _micActive = false;
+    if (err === 'audio-capture') {
+      _micActive = false;
+      setMicState('error', 'Micro introuvable — saisir ci-dessous', '⚠');
+      return;
+    }
+    if (err === 'network') {
+      _micActive = false;
+      setMicState('error', 'Service vocal hors ligne — saisir ci-dessous', '⚠');
+      return;
+    }
+    // 'no-speech' and other recoverable errors → onend handles retry
   };
+
   _micRec.onend = function() {
     clearMicStartFallback();
     _micStarting = false;
     var wasActive = _micActive;
     _micActive = false;
-    if (_micStopping) {
+    micLog('onend wasActive=' + wasActive + ' gotResult=' + _micGotResult
+           + ' final=' + JSON.stringify(_micFinalAccum)
+           + ' interim=' + JSON.stringify(_micLatestInterim));
+
+    // User explicitly stopped → commit whatever we have
+    if (_micUserStopped || _micStopping) {
       _micStopping = false;
-      setMicState('idle', _micGotResult ? 'Toucher pour reprendre' : 'Toucher pour parler');
+      _micUserStopped = false;
+      var committed = _micCommitFinal();
+      setMicState('idle', committed ? 'Toucher pour reprendre' : 'Toucher pour parler');
       return;
     }
-    // Safari may end prematurely (< 700ms) without firing onresult
-    var elapsed = _micStartedAt ? (Date.now() - _micStartedAt) : 0;
-    if (wasActive && !_micGotResult && elapsed > 0 && elapsed < 700) {
-      setMicState('idle', 'Coupé prématurément — toucher pour réessayer');
+    // Natural end → commit interim if final never came
+    if (_micCommitFinal()) {
+      setMicState('idle', 'Toucher pour reprendre');
       return;
     }
-    setMicState('idle', _micGotResult ? 'Toucher pour reprendre' : 'Toucher pour parler');
+    // No transcript captured → try next language in chain
+    if (_micLangIdx + 1 < _micLangChain.length) {
+      _micLangIdx++;
+      _micRetryScheduled = true;
+      var nextLang = _micLangChain[_micLangIdx];
+      micLog('no transcript → retry with ' + nextLang);
+      setMicState('listening', 'Nouvel essai (' + nextLang + ')…', '🎙');
+      setTimeout(function() { _micAttemptStart(); }, 250);
+      return;
+    }
+    // All languages exhausted with no transcript
+    micLog('all langs exhausted, no transcript');
+    setMicState('error', 'Transcription indisponible sur cet appareil', '⚠');
   };
 
   try {
     _micRec.start();
-    // Safari iPhone fallback: if onstart never fires within 1500ms, mark as error
     _micStartFallback = setTimeout(function() {
       if (_micStarting && !_micActive) {
         _micStarting = false;
+        micLog('onstart never fired within 1800ms');
         try { _micRec.stop(); } catch(e) {}
         setMicState('error', 'Le micro ne répond pas — vérifiez les permissions Safari', '⚠');
       }
@@ -3598,6 +3710,7 @@ function startMic() {
   } catch(e) {
     _micStarting = false;
     _micActive = false;
+    micLog('start() threw: ' + (e && e.message));
     setMicState('error', 'Dictée déjà active — toucher pour reprendre', '⚠');
   }
 }
@@ -3607,49 +3720,107 @@ function startTaskMic() {
   var SR = getSpeechRecognitionCtor();
   var textEl = document.getElementById('taskVoiceText');
   if (!SR) { setInlineMicState('error', '⚠'); return; }
+  micCheckHTTPS();
+  if (!_micRetryScheduled) {
+    _micBaseline = textEl ? textEl.value.trim() : '';
+    _micFinalAccum = '';
+    _micLatestInterim = '';
+    _micLangIdx = 0;
+    _micUserStopped = false;
+  }
+  _micRetryScheduled = false;
+  _taskMicAttempt(textEl);
+}
+
+function _taskMicAttempt(textEl) {
+  var SR = getSpeechRecognitionCtor();
+  var lang = _micLangChain[_micLangIdx] || 'fr-FR';
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
-  _micRec.lang = isIOSSafari() ? 'fr-CA' : 'fr-FR';
+  _micRec.lang = lang;
   _micRec.interimResults = true;
   _micRec.continuous = false;
   _micRec.maxAlternatives = 1;
   _micStarting = true;
   _micGotResult = false;
+  micLog('task attempt lang=' + lang);
   setInlineMicState('listening', '🎙');
 
-  _micRec.onstart = function() {
-    _micStarting = false;
-    _micActive = true;
-    setInlineMicState('listening', '🔴');
-  };
+  function writeLive() {
+    if (!textEl) return;
+    var parts = [];
+    if (_micBaseline) parts.push(_micBaseline);
+    var combined = (_micFinalAccum + ' ' + _micLatestInterim).replace(/\s+/g, ' ').trim();
+    if (combined) parts.push(combined);
+    textEl.value = parts.join(' ');
+    try { textEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+  }
+  function commit() {
+    var t = (_micFinalAccum || _micLatestInterim || '').trim();
+    if (!t) return false;
+    _micFinalAccum = t;
+    _micLatestInterim = '';
+    writeLive();
+    return true;
+  }
+
+  _micRec.onstart       = function() { _micStarting = false; _micActive = true; setInlineMicState('listening', '🔴'); micLog('task onstart'); };
+  _micRec.onspeechstart = function() { micLog('task onspeechstart'); };
+  _micRec.onspeechend   = function() { micLog('task onspeechend'); };
+
   _micRec.onresult = function(e) {
-    _micGotResult = true;
-    var finalText = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+    var nRes = e && e.results ? e.results.length : 0;
+    micLog('task onresult results=' + nRes);
+    if (!nRes) return;
+    var newFinal = '', interim = '';
+    for (var i = 0; i < e.results.length; i++) {
+      var res = e.results[i];
+      if (!res || !res[0]) continue;
+      var t = res[0].transcript || '';
+      if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
     }
-    if (!finalText) return;
-    var nextText = finalText.trim();
-    if (textEl) {
-      var current = textEl.value.trim();
-      textEl.value = current ? current + ' ' + nextText : nextText;
+    newFinal = newFinal.trim(); interim = interim.trim();
+    if (newFinal) { _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim(); _micGotResult = true; }
+    if (interim)  { _micLatestInterim = interim; _micGotResult = true; }
+    if (newFinal || interim) {
+      writeLive();
+      setInlineMicState(newFinal ? 'processing' : 'listening', newFinal ? '✨' : '🔴');
     }
-    setInlineMicState('processing', '✨');
   };
+
   _micRec.onerror = function(e) {
     _micStarting = false;
-    _micActive = false;
-    setInlineMicState('error', '⚠');
+    micLog('task onerror ' + (e && e.error));
+    var err = e && e.error;
+    if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
+      _micActive = false;
+      setInlineMicState('error', '⚠');
+    }
+    // 'no-speech' / 'aborted' → handled in onend (lang fallback)
   };
+
   _micRec.onend = function() {
     _micStarting = false;
     _micActive = false;
-    setInlineMicState('idle', _micGotResult ? '✅' : '🎤');
+    micLog('task onend gotResult=' + _micGotResult);
+    if (commit()) { setInlineMicState('idle', '✅'); return; }
+    if (_micLangIdx + 1 < _micLangChain.length) {
+      _micLangIdx++;
+      _micRetryScheduled = true;
+      micLog('task no result → retry ' + _micLangChain[_micLangIdx]);
+      setInlineMicState('listening', '🎙');
+      setTimeout(function() { _taskMicAttempt(textEl); }, 250);
+      return;
+    }
+    setInlineMicState('error', '⚠');
+    toast('⚠ Transcription indisponible sur cet appareil');
   };
+
   try { _micRec.start(); }
   catch(e) {
     _micStarting = false;
     _micActive = false;
+    micLog('task start() threw: ' + (e && e.message));
     setInlineMicState('error', '⚠');
   }
 }

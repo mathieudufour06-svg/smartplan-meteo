@@ -1035,7 +1035,7 @@
     /* ════════════════════════════════════════════════════════════════
        BANQUE DE TRAVAUX — liste backlog
     ════════════════════════════════════════════════════════════════ */
-    .btl-list { display: flex; flex-direction: column; gap: 6px; margin-top: var(--s3); }
+    .btl-list { display: flex; flex-direction: column; gap: 8px; margin-top: var(--s3); }
     .btl-item {
       display: flex; align-items: center; gap: var(--s3);
       padding: 12px 14px;
@@ -1051,7 +1051,84 @@
     .btl-name { display: block; font-size: 14px; font-weight: 700; color: var(--t-1); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .btl-meta { display: block; font-size: 11.5px; color: var(--t-3); margin-top: 2px; }
     .btl-action { font-size: 14px; color: var(--t-4); flex-shrink: 0; }
-    .btl-empty { font-size: 13px; color: var(--t-4); font-style: italic; padding: 10px 2px; margin-top: var(--s2); }
+    .btl-empty { font-size: 13px; color: var(--t-4); font-style: italic; padding: 10px 2px; margin-top: var(--s2); text-align: center; }
+
+    /* Work bank cards (reusable templates) */
+    .wb-card {
+      display: flex; align-items: stretch;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .wb-card:active { background: var(--surface-2); }
+    .wb-main {
+      flex: 1 1 0; min-width: 0;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 12px 12px 14px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .wb-icon { font-size: 22px; line-height: 1; flex-shrink: 0; padding-top: 2px; }
+    .wb-body { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .wb-name { font-size: 14px; font-weight: 700; color: var(--t-1); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wb-meta { font-size: 11.5px; color: var(--t-3); }
+    .wb-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .wb-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 3px 7px;
+      background: var(--glass-2); border: 1px solid var(--glass-bd-2);
+      border-radius: var(--r-pill);
+      color: var(--t-2);
+    }
+    .wb-badge.ok { background: var(--ok-bg); border-color: var(--ok-bd); color: var(--green); }
+    .wb-plan {
+      align-self: stretch;
+      padding: 0 16px;
+      background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
+      color: #fff;
+      font-size: 12px; font-weight: 800;
+      letter-spacing: 0.02em;
+      border-left: 1px solid var(--line-2);
+      transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+      white-space: nowrap;
+    }
+    .wb-plan:active { opacity: 0.85; transform: scale(0.97); }
+    .wb-add {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1px dashed var(--line-3);
+      border-radius: var(--r-lg);
+      color: var(--t-2);
+      font-size: 13px; font-weight: 700;
+      letter-spacing: -0.01em;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .wb-add:active { background: var(--surface-1); border-color: var(--tint); color: var(--t-1); }
+
+    .wb-toggle-row { display: flex; gap: 8px; }
+    .wb-toggle {
+      flex: 1;
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-md);
+      font-size: 13px; font-weight: 600;
+      color: var(--t-2);
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .wb-toggle.active {
+      background: linear-gradient(135deg, rgba(118,150,255,0.18), rgba(167,139,255,0.10));
+      border-color: var(--tint);
+      color: var(--t-1);
+    }
+    .wb-flex-label { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px 0; }
+    .wb-flex-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--tint); flex-shrink: 0; }
+    .wb-flex-label span { font-size: 13px; color: var(--t-1); }
 
     /* alerts (discreet by default, banner only for real danger) */
     .alerts { display: flex; flex-direction: column; gap: 6px; }
@@ -2673,6 +2750,48 @@
   </div>
 </div>
 
+<!-- WORK BANK MODAL — create/edit reusable templates -->
+<div class="overlay" id="workBankOverlay" onclick="overlayClick(event,'workBankOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('workBankOverlay')" aria-label="Fermer">✕</button>
+    <h3 id="wbModalTitle">Nouveau travail</h3>
+    <div class="fg">
+      <label>Titre</label>
+      <input type="text" id="wbName" placeholder="Ex: Inspection intérieure" />
+    </div>
+    <div class="fg">
+      <label>Type de métier</label>
+      <select id="wbType"></select>
+    </div>
+    <div class="fg">
+      <label>Durée estimée</label>
+      <input type="text" id="wbDuration" placeholder="Ex: 2h" />
+    </div>
+    <div class="fg">
+      <label>Lieu</label>
+      <div class="wb-toggle-row">
+        <button type="button" class="wb-toggle" data-wb-loc="outdoor" onclick="setWbLocation(false)">🌤 Extérieur</button>
+        <button type="button" class="wb-toggle" data-wb-loc="indoor" onclick="setWbLocation(true)">🏠 Intérieur</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="wb-flex-label">
+        <input type="checkbox" id="wbFlexible" />
+        <span>Flexible météo (peut être déplacé)</span>
+      </label>
+    </div>
+    <div class="fg">
+      <label>Notes</label>
+      <textarea id="wbNotes" rows="2" placeholder="Notes optionnelles…"></textarea>
+    </div>
+    <div class="mf">
+      <button type="button" class="btn-cancel" id="wbDeleteBtn" onclick="deleteWorkBankItem()" style="display:none">Supprimer</button>
+      <button type="button" class="btn-cancel" onclick="closeModal('workBankOverlay')">Annuler</button>
+      <button type="button" class="btn-primary" onclick="saveWorkBankItem()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- VOICE MODAL -->
 <div class="overlay" id="voiceOverlay" onclick="overlayClick(event,'voiceOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
@@ -3802,37 +3921,196 @@ function renderDayStrip() {
   });
 }
 
+/* ════════════════════════════════════════════════════════════════
+   WORK BANK — reusable work templates (localStorage)
+════════════════════════════════════════════════════════════════ */
+var _workBank = [];
+var _wbEditingId = null;
+var _wbCurrentIndoor = null; // null = unset, true = indoor, false = outdoor
+
+function loadWorkBank() {
+  try {
+    var raw = localStorage.getItem('spm_workbank');
+    _workBank = raw ? (JSON.parse(raw) || []) : [];
+  } catch(e) { _workBank = []; }
+}
+function saveWorkBank() {
+  try { localStorage.setItem('spm_workbank', JSON.stringify(_workBank)); } catch(e) {}
+}
+function _wbNewId() { return 'wb_' + Date.now() + '_' + Math.floor(Math.random() * 1000); }
+
+function setWbLocation(indoor) {
+  _wbCurrentIndoor = indoor;
+  _wbUpdateIndoorUI();
+}
+function _wbUpdateIndoorUI() {
+  document.querySelectorAll('.wb-toggle[data-wb-loc]').forEach(function(btn) {
+    btn.classList.remove('active');
+    var v = btn.getAttribute('data-wb-loc');
+    if ((v === 'indoor' && _wbCurrentIndoor === true) ||
+        (v === 'outdoor' && _wbCurrentIndoor === false)) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+function openWorkBankForm(id) {
+  _wbEditingId = id || null;
+  var titleEl = document.getElementById('wbModalTitle');
+  var nameEl  = document.getElementById('wbName');
+  var typeEl  = document.getElementById('wbType');
+  var durEl   = document.getElementById('wbDuration');
+  var notesEl = document.getElementById('wbNotes');
+  var flexEl  = document.getElementById('wbFlexible');
+  var delBtn  = document.getElementById('wbDeleteBtn');
+
+  // Populate type select
+  var jobsDef = getMergedJobTypes();
+  var keys = Object.keys(jobsDef);
+  typeEl.innerHTML = '';
+  if (!keys.length) {
+    var opt = document.createElement('option');
+    opt.value = ''; opt.textContent = '— Aucun métier configuré —';
+    typeEl.appendChild(opt);
+  } else {
+    keys.forEach(function(k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = jobsDef[k].icon + ' ' + jobsDef[k].name;
+      typeEl.appendChild(o);
+    });
+  }
+
+  if (_wbEditingId) {
+    var item = _workBank.find(function(w) { return w.id === _wbEditingId; }) || {};
+    titleEl.textContent = 'Modifier travail';
+    nameEl.value  = item.name || '';
+    typeEl.value  = item.type && jobsDef[item.type] ? item.type : (keys[0] || '');
+    durEl.value   = item.duration || '';
+    notesEl.value = item.notes || '';
+    flexEl.checked = !!item.flexible;
+    _wbCurrentIndoor = (item.indoor === true) ? true : (item.indoor === false ? false : null);
+    if (delBtn) delBtn.style.display = '';
+  } else {
+    titleEl.textContent = 'Nouveau travail';
+    nameEl.value = ''; typeEl.value = keys[0] || '';
+    durEl.value = ''; notesEl.value = ''; flexEl.checked = false;
+    _wbCurrentIndoor = null;
+    if (delBtn) delBtn.style.display = 'none';
+  }
+  _wbUpdateIndoorUI();
+  openModal('workBankOverlay');
+  setTimeout(function() { nameEl.focus(); }, 120);
+}
+
+function saveWorkBankItem() {
+  var name = (document.getElementById('wbName').value || '').trim();
+  if (!name) { toast('⚠ Titre requis'); return; }
+  var rec = {
+    id: _wbEditingId || _wbNewId(),
+    name: name,
+    type: document.getElementById('wbType').value || '',
+    duration: (document.getElementById('wbDuration').value || '').trim(),
+    notes: (document.getElementById('wbNotes').value || '').trim(),
+    flexible: !!document.getElementById('wbFlexible').checked,
+    indoor: _wbCurrentIndoor
+  };
+  if (_wbEditingId) {
+    var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
+    if (idx >= 0) _workBank[idx] = rec; else _workBank.push(rec);
+  } else {
+    _workBank.push(rec);
+  }
+  saveWorkBank();
+  closeModal('workBankOverlay');
+  renderBanqueTravaux();
+  toast(_wbEditingId ? '✓ Travail mis à jour' : '✓ Ajouté à la banque');
+}
+
+function deleteWorkBankItem() {
+  if (!_wbEditingId) return;
+  var item = _workBank.find(function(w) { return w.id === _wbEditingId; });
+  if (!confirm('Supprimer « ' + (item ? item.name : 'ce travail') + ' » de la banque ?')) return;
+  _workBank = _workBank.filter(function(w) { return w.id !== _wbEditingId; });
+  saveWorkBank();
+  closeModal('workBankOverlay');
+  renderBanqueTravaux();
+  toast('✓ Supprimé');
+}
+
+function useWorkBankItem(id) {
+  var item = _workBank.find(function(w) { return w.id === id; });
+  if (!item) return;
+  openAddTask(null);
+  // Pre-fill after openAddTask resets the form
+  setTimeout(function() {
+    var nameEl = document.getElementById('tName');
+    var durEl  = document.getElementById('tDuration');
+    var descEl = document.getElementById('tDesc');
+    if (nameEl) nameEl.value = item.name || '';
+    if (durEl)  durEl.value  = item.duration || '';
+    if (descEl && item.notes) descEl.value = item.notes;
+    // Pre-select job type in the grid
+    if (item.type) buildTypeGrid(item.type);
+  }, 30);
+  toast('Travail préparé — choisissez la date');
+}
+
 function renderBanqueTravaux() {
   var list = document.getElementById('btlList');
   var countEl = document.getElementById('btlCount');
   if (!list) return;
-  var backlog = ST.tasks.filter(function(t) {
-    return t.status === 'backlog' || (!t.scheduledDate && t.dayIndex == null);
-  });
-  if (countEl) countEl.textContent = backlog.length ? backlog.length + '' : '';
+  if (countEl) countEl.textContent = _workBank.length ? _workBank.length + '' : '';
   list.innerHTML = '';
-  if (!backlog.length) {
-    list.innerHTML = '<div class="btl-empty">Tous les travaux sont planifiés.</div>';
-    return;
-  }
+
   var jobsDef = getMergedJobTypes();
-  backlog.forEach(function(task) {
-    var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
-    var item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'btl-item';
-    var durStr = task.duration ? ' · ⏱ ' + esc(task.duration) : '';
-    var locStr = task.client ? ' · ' + esc(task.client) : '';
-    item.innerHTML =
-        '<span class="btl-icon">' + jd.icon + '</span>'
-      + '<span class="btl-body">'
-      +   '<span class="btl-name">' + esc(task.name) + '</span>'
-      +   '<span class="btl-meta">' + esc(jd.short || jd.name) + locStr + durStr + '</span>'
-      + '</span>'
-      + '<span class="btl-action">→</span>';
-    item.onclick = (function(id) { return function() { openEditTask(id); }; })(task.id);
-    list.appendChild(item);
-  });
+
+  if (!_workBank.length) {
+    list.innerHTML = '<div class="btl-empty">Aucun travail enregistré.<br>Créez vos modèles réutilisables.</div>';
+  } else {
+    _workBank.forEach(function(w) {
+      var jd = jobsDef[w.type] || { icon: '🔧', name: w.type || 'Travail', short: w.type || '' };
+      var card = document.createElement('div');
+      card.className = 'wb-card';
+      var dur = w.duration ? '⏱ ' + esc(w.duration) : '';
+      var typeStr = esc(jd.short || jd.name || '');
+      var metaParts = [];
+      if (typeStr) metaParts.push(typeStr);
+      if (dur)     metaParts.push(dur);
+      var badges = '';
+      if (w.indoor === true)  badges += '<span class="wb-badge">🏠 Intérieur</span>';
+      if (w.indoor === false) badges += '<span class="wb-badge">🌤 Extérieur</span>';
+      if (w.flexible)         badges += '<span class="wb-badge ok">☂ Flexible météo</span>';
+      card.innerHTML =
+          '<button type="button" class="wb-main" data-wb-edit="' + w.id + '">'
+        +   '<span class="wb-icon">' + jd.icon + '</span>'
+        +   '<span class="wb-body">'
+        +     '<span class="wb-name">' + esc(w.name) + '</span>'
+        +     (metaParts.length ? '<span class="wb-meta">' + metaParts.join(' · ') + '</span>' : '')
+        +     (badges ? '<span class="wb-badges">' + badges + '</span>' : '')
+        +   '</span>'
+        + '</button>'
+        + '<button type="button" class="wb-plan" data-wb-plan="' + w.id + '">Planifier</button>';
+      list.appendChild(card);
+    });
+    // Delegate clicks (avoid inline handlers with id interpolation issues)
+    list.querySelectorAll('[data-wb-edit]').forEach(function(b) {
+      b.addEventListener('click', function() { openWorkBankForm(b.getAttribute('data-wb-edit')); });
+    });
+    list.querySelectorAll('[data-wb-plan]').forEach(function(b) {
+      b.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        useWorkBankItem(b.getAttribute('data-wb-plan'));
+      });
+    });
+  }
+
+  // "+ Nouveau travail" button
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'wb-add';
+  addBtn.textContent = '+ Nouveau travail';
+  addBtn.onclick = function() { openWorkBankForm(null); };
+  list.appendChild(addBtn);
 }
 
 function renderTodayJobs() {
@@ -5532,6 +5810,7 @@ function isoDate(d) {
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
   loadCustomJobs();
+  loadWorkBank();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;
   // Pre-render calendar so its title is set even before first navigation

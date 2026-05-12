@@ -270,7 +270,7 @@
     ════════════════════════════════════════════════════════════════ */
     .greeting {
       padding: var(--s4) 0 var(--s6);
-      display: flex; align-items: center;
+      display: flex; align-items: flex-start;
       gap: var(--s4);
     }
     .greet-text { flex: 1; min-width: 0; }
@@ -446,27 +446,24 @@
 
     /* Widget météo — intégré au hero, à côté du "Bonjour" */
     .wx-widget {
-      display: inline-flex; align-items: center; gap: 12px;
-      padding: 12px 16px 12px 12px;
-      min-width: 152px;
-      min-height: 76px;
-      background:
-        linear-gradient(160deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
+      display: flex; flex-direction: column; gap: 0;
+      padding: 12px 14px 11px;
+      min-width: 148px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
       border: 1px solid rgba(255,255,255,0.11);
       border-radius: var(--r-xl);
       color: var(--t-1);
       box-shadow:
         0 4px 20px rgba(0,0,0,0.30),
-        0 1px 0 rgba(255,255,255,0.08) inset,
-        0 0 0 1px rgba(255,255,255,0.04) inset;
+        0 1px 0 rgba(255,255,255,0.08) inset;
       backdrop-filter: blur(28px) saturate(180%);
       -webkit-backdrop-filter: blur(28px) saturate(180%);
       cursor: pointer;
       flex-shrink: 0;
       position: relative;
       overflow: hidden;
-      transition: transform var(--t-fast) var(--ease),
-                  box-shadow var(--t-fast) var(--ease);
+      text-align: left;
+      transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
     }
     .wx-widget::before {
       content: '';
@@ -476,52 +473,80 @@
     }
     .wx-widget:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.34), 0 1px 0 rgba(255,255,255,0.10) inset; }
     .wx-widget:active { transform: scale(0.97); }
+
+    .wx-top {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 9px;
+    }
     .wx-orb {
-      width: 42px; height: 42px;
+      width: 38px; height: 38px;
       display: grid; place-items: center;
-      border-radius: 14px;
+      border-radius: 12px;
       background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
                   linear-gradient(145deg, #3a8eff, #1e4fa8);
-      box-shadow: 0 0 14px rgba(58,142,255,0.30), 0 1px 0 rgba(255,255,255,0.14) inset;
+      box-shadow: 0 0 12px rgba(58,142,255,0.28), 0 1px 0 rgba(255,255,255,0.14) inset;
       flex-shrink: 0;
       transition: background var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
     }
     .wx-orb[data-level="ok"] {
       background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 70%),
                   linear-gradient(145deg, #2dd483, #1a7a4a);
-      box-shadow: 0 0 14px rgba(45,212,131,0.32), 0 1px 0 rgba(255,255,255,0.14) inset;
+      box-shadow: 0 0 12px rgba(45,212,131,0.30), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
     .wx-orb[data-level="warn"] {
       background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 70%),
                   linear-gradient(145deg, #ff9f43, #cc6e1d);
-      box-shadow: 0 0 14px rgba(255,159,67,0.32), 0 1px 0 rgba(255,255,255,0.14) inset;
+      box-shadow: 0 0 12px rgba(255,159,67,0.30), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
     .wx-orb[data-level="bad"] {
       background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 70%),
                   linear-gradient(145deg, #ff5566, #8a2c1a);
-      box-shadow: 0 0 16px rgba(255,85,102,0.36), 0 1px 0 rgba(255,255,255,0.14) inset;
+      box-shadow: 0 0 14px rgba(255,85,102,0.34), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
-    .wx-orb-icon { font-size: 22px; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35)); }
+    .wx-orb-icon { font-size: 20px; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35)); }
+
     .wx-info {
-      display: flex; flex-direction: column;
-      gap: 3px; line-height: 1;
-      min-width: 0;
+      display: flex; flex-direction: column; gap: 2px; line-height: 1;
     }
     .wx-temp {
       font-size: 26px; font-weight: 800;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.04em; line-height: 1;
       color: var(--t-1);
       font-variant-numeric: tabular-nums;
-      line-height: 1;
     }
     .wx-detail {
-      font-size: 11px; font-weight: 600;
+      font-size: 10.5px; font-weight: 600;
       color: var(--t-4);
       letter-spacing: -0.01em;
       font-variant-numeric: tabular-nums;
     }
+
+    .wx-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 40%, rgba(255,255,255,0.07) 60%, transparent);
+      margin-bottom: 9px;
+    }
+
+    .wx-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px 6px;
+      margin-bottom: 9px;
+    }
+    .wx-stat { display: flex; flex-direction: column; gap: 1px; }
+    .wx-stat-lbl {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t-4);
+    }
+    .wx-stat-val {
+      font-size: 12px; font-weight: 700;
+      color: var(--t-2);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+
     .wx-status {
-      font-size: 10px; font-weight: 700;
+      font-size: 9.5px; font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--t-3);
@@ -2225,14 +2250,27 @@
           <div class="greet-sub" id="greetSub">—</div>
         </div>
         <button type="button" class="wx-widget" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
-          <span class="wx-orb" id="wxOrb" data-level="idle">
-            <span class="wx-orb-icon" id="wxIcon">⏳</span>
-          </span>
-          <span class="wx-info">
-            <span class="wx-temp" id="mwxTemp">—°</span>
-            <span class="wx-detail" id="mwxDetail"></span>
-            <span class="wx-status" id="mwxStatus">Météo</span>
-          </span>
+          <div class="wx-top">
+            <span class="wx-orb" id="wxOrb" data-level="idle">
+              <span class="wx-orb-icon" id="wxIcon">⏳</span>
+            </span>
+            <span class="wx-info">
+              <span class="wx-temp" id="mwxTemp">—°</span>
+              <span class="wx-detail" id="mwxDetail"></span>
+            </span>
+          </div>
+          <div class="wx-sep"></div>
+          <div class="wx-grid">
+            <div class="wx-stat">
+              <span class="wx-stat-lbl">Vent</span>
+              <span class="wx-stat-val" id="mwxWind">—</span>
+            </div>
+            <div class="wx-stat">
+              <span class="wx-stat-lbl">Pluie</span>
+              <span class="wx-stat-val" id="mwxRain">—</span>
+            </div>
+          </div>
+          <span class="wx-status" id="mwxStatus">Météo</span>
         </button>
       </div>
 
@@ -3586,6 +3624,8 @@ function renderMiniWeather() {
   var tempEl   = document.getElementById('mwxTemp');
   var statusEl = document.getElementById('mwxStatus');
   var detailEl = document.getElementById('mwxDetail');
+  var windEl   = document.getElementById('mwxWind');
+  var rainEl   = document.getElementById('mwxRain');
   var orbEl    = document.getElementById('wxOrb');
   var iconEl   = document.getElementById('wxIcon');
   if (!tempEl) return;
@@ -3594,6 +3634,8 @@ function renderMiniWeather() {
   if (!w) {
     tempEl.textContent   = '—°';
     if (detailEl) detailEl.textContent = '';
+    if (windEl)   windEl.textContent   = '—';
+    if (rainEl)   rainEl.textContent   = '—';
     statusEl.textContent = 'Météo';
     statusEl.className   = 'wx-status';
     if (orbEl) orbEl.setAttribute('data-level', 'idle');
@@ -3602,23 +3644,25 @@ function renderMiniWeather() {
   }
 
   tempEl.textContent = w.temp_max + '°';
-  if (detailEl) detailEl.textContent = 'min ' + w.temp_min + '° · max ' + w.temp_max + '°';
+  if (detailEl) detailEl.textContent = w.temp_min + '° / ' + w.temp_max + '°';
+  if (windEl)   windEl.textContent   = w.windspeed + ' km/h';
+  if (rainEl)   rainEl.textContent   = (w.rain_prob != null ? w.rain_prob : 0) + '%';
 
   var st = simpleStatus(w);
   var label;
   if (st.level === 'ok') {
     label = 'Favorable';
   } else if (st.level === 'warn') {
-    if (w.precipitation > 0)  label = 'Risque pluie';
+    if (w.precipitation > 0)   label = 'Risque pluie';
     else if (w.windspeed > 25) label = 'Vent léger';
-    else if (w.temp_min < 5)  label = 'Températures fraîches';
-    else                       label = 'À surveiller';
+    else if (w.temp_min < 5)   label = 'Températures fraîches';
+    else                        label = 'À surveiller';
   } else {
-    if (w.weathercode >= 95)   label = 'Orages';
+    if (w.weathercode >= 95)      label = 'Orages';
     else if (w.precipitation > 5) label = 'Forte pluie';
-    else if (w.windspeed > 40) label = 'Grand vent';
-    else if (w.temp_min < 0)   label = 'Gel prévu';
-    else                       label = 'Conditions risquées';
+    else if (w.windspeed > 40)    label = 'Grand vent';
+    else if (w.temp_min < 0)      label = 'Gel prévu';
+    else                           label = 'Conditions risquées';
   }
   statusEl.textContent = label;
   statusEl.className   = 'wx-status ' + st.level;

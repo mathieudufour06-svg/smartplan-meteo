@@ -544,6 +544,13 @@
       letter-spacing: -0.01em;
       font-variant-numeric: tabular-nums;
     }
+    .wx-stat-sub {
+      font-size: 10px; font-weight: 600;
+      color: var(--t-4);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+      margin-top: 1px;
+    }
 
     .wx-status {
       font-size: 9.5px; font-weight: 700;
@@ -2268,6 +2275,7 @@
             <div class="wx-stat">
               <span class="wx-stat-lbl">Pluie</span>
               <span class="wx-stat-val" id="mwxRain">—</span>
+              <span class="wx-stat-sub" id="mwxRainMm"></span>
             </div>
           </div>
           <span class="wx-status" id="mwxStatus">Météo</span>
@@ -3626,6 +3634,7 @@ function renderMiniWeather() {
   var detailEl = document.getElementById('mwxDetail');
   var windEl   = document.getElementById('mwxWind');
   var rainEl   = document.getElementById('mwxRain');
+  var rainMmEl = document.getElementById('mwxRainMm');
   var orbEl    = document.getElementById('wxOrb');
   var iconEl   = document.getElementById('wxIcon');
   if (!tempEl) return;
@@ -3636,6 +3645,7 @@ function renderMiniWeather() {
     if (detailEl) detailEl.textContent = '';
     if (windEl)   windEl.textContent   = '—';
     if (rainEl)   rainEl.textContent   = '—';
+    if (rainMmEl) rainMmEl.textContent = '';
     statusEl.textContent = 'Météo';
     statusEl.className   = 'wx-status';
     if (orbEl) orbEl.setAttribute('data-level', 'idle');
@@ -3647,6 +3657,7 @@ function renderMiniWeather() {
   if (detailEl) detailEl.textContent = w.temp_min + '° / ' + w.temp_max + '°';
   if (windEl)   windEl.textContent   = w.windspeed + ' km/h';
   if (rainEl)   rainEl.textContent   = (w.rain_prob != null ? w.rain_prob : 0) + '%';
+  if (rainMmEl) rainMmEl.textContent = w.precipitation > 0 ? w.precipitation + ' mm' : '';
 
   var st = simpleStatus(w);
   var label;

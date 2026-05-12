@@ -269,10 +269,7 @@
     ════════════════════════════════════════════════════════════════ */
     .greeting {
       padding: var(--s4) 0 var(--s6);
-      display: flex; align-items: flex-start;
-      gap: var(--s3);
     }
-    .greet-text { flex: 1; min-width: 0; }
     .greet-eyebrow {
       display: block;
       font-size: 12px; font-weight: 700;
@@ -443,36 +440,33 @@
     }
     .date-picker:focus { outline: none; border-color: var(--tint); }
 
-    /* Mini météo cliquable — premium, près du "Bonsoir" */
-    .mini-wx {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 2px; flex-shrink: 0;
-      padding: 8px 10px;
-      min-width: 56px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--line-1);
-      border-radius: var(--r-lg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      cursor: pointer;
-      transition: transform var(--t-fast) var(--ease),
-                  background var(--t-fast) var(--ease),
-                  border-color var(--t-fast) var(--ease);
-    }
-    .mini-wx:active { transform: scale(0.96); background: rgba(255,255,255,0.08); }
-    .mwx-temp {
-      font-size: 20px; font-weight: 800;
-      letter-spacing: -0.04em; line-height: 1;
-      color: var(--t-1); font-variant-numeric: tabular-nums;
-    }
-    .mwx-status {
-      font-size: 14px; font-weight: 700;
+    /* Mini météo dans la topbar — pill glass ultra-compact */
+    .sh-wx {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      background: var(--glass-2);
+      border: 1px solid var(--glass-bd-2);
+      border-radius: var(--r-pill);
+      color: var(--t-1);
       line-height: 1;
-      color: var(--t-3); white-space: nowrap;
+      transition: transform var(--t-fast) var(--ease),
+                  background var(--t-fast) var(--ease);
+      cursor: pointer;
     }
-    .mwx-status.ok   { color: var(--green); }
-    .mwx-status.warn { color: var(--orange); }
-    .mwx-status.bad  { color: var(--red); }
+    .sh-wx:active { transform: scale(0.94); background: var(--glass-3); }
+    .sh-wx .mwx-temp {
+      font-size: 14px; font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--t-1);
+      font-variant-numeric: tabular-nums;
+    }
+    .sh-wx .mwx-status {
+      font-size: 14px; line-height: 1;
+      color: var(--t-3);
+    }
+    .sh-wx .mwx-status.ok   { color: var(--green); }
+    .sh-wx .mwx-status.warn { color: var(--orange); }
+    .sh-wx .mwx-status.bad  { color: var(--red); }
 
     /* ════════════════════════════════════════════════════════════════
        7-DAY STRIP — premium pills
@@ -1345,6 +1339,97 @@
     }
     .fg textarea { resize: vertical; min-height: 70px; }
 
+    .fg .label-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .mic-inline {
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      background: var(--glass-2);
+      border: 1px solid var(--glass-bd-2);
+      color: var(--t-1);
+      font-size: 14px;
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+      cursor: pointer;
+    }
+    .mic-inline:active { transform: scale(0.92); }
+    .mic-inline.listening {
+      background: rgba(255, 85, 102, 0.18);
+      border-color: rgba(255, 85, 102, 0.45);
+      box-shadow: 0 0 0 4px rgba(255, 85, 102, 0.10), 0 0 16px rgba(255, 85, 102, 0.35);
+      animation: micPulse 1.2s ease-in-out infinite;
+    }
+    .mic-inline.processing {
+      background: rgba(95, 142, 255, 0.18);
+      border-color: rgba(95, 142, 255, 0.45);
+    }
+    .mic-inline.error {
+      background: rgba(255, 159, 67, 0.18);
+      border-color: rgba(255, 159, 67, 0.45);
+    }
+    @keyframes micPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 85, 102, 0.45), 0 0 16px rgba(255, 85, 102, 0.35); }
+      50%      { box-shadow: 0 0 0 8px rgba(255, 85, 102, 0), 0 0 22px rgba(255, 85, 102, 0.55); }
+    }
+
+    /* Gallery — multi-photo upload with drag&drop */
+    .gallery-zone {
+      position: relative;
+      padding: 10px;
+      background: var(--surface-2);
+      border: 1px dashed var(--line-2);
+      border-radius: var(--r-md);
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .gallery-zone.drag-over {
+      background: var(--surface-3);
+      border-color: var(--tint);
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 6px;
+    }
+    .gallery-grid:empty { display: none; }
+    .gallery-item {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface-3);
+      border: 1px solid var(--line-1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+    }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-rm {
+      position: absolute; top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.65);
+      color: #fff; font-size: 12px; font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(6px);
+    }
+    .gallery-rm:active { transform: scale(0.88); }
+    .gallery-add {
+      margin-top: 8px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; width: 100%; padding: 14px 10px;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: 10px;
+      color: var(--t-1);
+      cursor: pointer;
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+    }
+    .gallery-add:active { transform: scale(0.98); background: var(--surface-3); }
+    .gallery-add .ga-icon  { font-size: 20px; line-height: 1; }
+    .gallery-add .ga-label { font-size: 13px; font-weight: 700; }
+    .gallery-add .ga-hint  { font-size: 11px; color: var(--t-4); font-weight: 500; }
+    .gallery-grid:empty + .gallery-add { margin-top: 0; }
+
     .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .type-btn {
       padding: 11px 6px;
@@ -2030,6 +2115,10 @@
       <span class="sh-loc-name" id="locName">—</span>
     </button>
     <span class="sh-spacer"></span>
+    <button type="button" class="sh-wx" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
+      <span class="mwx-temp" id="mwxTemp">—°</span>
+      <span class="mwx-status" id="mwxStatus">⏳</span>
+    </button>
     <button class="sh-icon-btn" onclick="openJobsModal()" aria-label="Mes métiers">⚙</button>
     <button class="sh-icon-btn" onclick="loadWeather()" aria-label="Rafraîchir">↻</button>
   </header>
@@ -2040,17 +2129,11 @@
     <!-- ═══════════════════ HOME ═══════════════════ -->
     <section class="view active" id="viewHome" data-view="home">
 
-      <!-- Greeting + mini météo cliquable -->
+      <!-- Greeting -->
       <div class="greeting">
-        <div class="greet-text">
-          <span class="greet-eyebrow" id="greetEyebrow"></span>
-          <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
-          <div class="greet-sub" id="greetSub">—</div>
-        </div>
-        <button type="button" class="mini-wx" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
-          <span class="mwx-temp" id="mwxTemp">—°</span>
-          <span class="mwx-status" id="mwxStatus">⏳</span>
-        </button>
+        <span class="greet-eyebrow" id="greetEyebrow"></span>
+        <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
+        <div class="greet-sub" id="greetSub">—</div>
       </div>
 
       <!-- 1. JOBS AUJOURD'HUI -->
@@ -2304,6 +2387,25 @@
     <div class="fg">
       <label>Durée</label>
       <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30">
+    </div>
+    <div class="fg">
+      <label class="label-row">
+        <span>Description / Notes</span>
+        <button type="button" class="mic-inline" data-mic-target="tDesc" aria-label="Dicter la description">🎤</button>
+      </label>
+      <textarea id="tDesc" rows="3" placeholder="Notes, instructions client, accès chantier…"></textarea>
+    </div>
+    <div class="fg">
+      <label>Photos du chantier</label>
+      <div class="gallery-zone" id="galleryZone">
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(this.files)">
+        <button type="button" class="gallery-add" onclick="document.getElementById('galleryInput').click()">
+          <span class="ga-icon">📷</span>
+          <span class="ga-label">Ajouter des photos</span>
+          <span class="ga-hint">Glissez-déposez ou cliquez · plusieurs photos</span>
+        </button>
+      </div>
     </div>
     <div class="task-mode-tabs">
       <button type="button" id="taskModeBtnManual" class="mode-btn sel" onclick="setTaskMode('manual')">Manuel</button>
@@ -4508,6 +4610,253 @@ function loadTaskPhoto(files) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   GALLERY — multi-photo upload + drag&drop
+════════════════════════════════════════════════════════════════ */
+var _taskGallery = [];
+var MAX_GALLERY_PHOTOS = 12;
+var MAX_GALLERY_DIM    = 1280;
+var GALLERY_JPEG_Q     = 0.78;
+
+function setTaskGallery(arr) {
+  _taskGallery = Array.isArray(arr) ? arr.slice(0) : [];
+  renderGallery();
+}
+
+function renderGallery() {
+  var grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  _taskGallery.forEach(function(src, i) {
+    var item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.innerHTML = '<img src="' + esc(src) + '" alt=""><button type="button" class="gallery-rm" aria-label="Supprimer">✕</button>';
+    item.querySelector('.gallery-rm').onclick = function(ev) {
+      ev.stopPropagation();
+      removeGalleryPhoto(i);
+    };
+    grid.appendChild(item);
+  });
+}
+
+function removeGalleryPhoto(idx) {
+  if (idx < 0 || idx >= _taskGallery.length) return;
+  _taskGallery.splice(idx, 1);
+  renderGallery();
+}
+
+function addGalleryPhotos(files) {
+  if (!files || !files.length) return;
+  var list = Array.from(files).filter(function(f) { return f && f.type && /^image\//.test(f.type); });
+  if (!list.length) { toast('⚠ Sélectionnez des images'); return; }
+  var slots = MAX_GALLERY_PHOTOS - _taskGallery.length;
+  if (slots <= 0) { toast('⚠ Limite ' + MAX_GALLERY_PHOTOS + ' photos atteinte'); return; }
+  list.slice(0, slots).forEach(function(f) {
+    compressImageToDataURL(f, MAX_GALLERY_DIM, GALLERY_JPEG_Q).then(function(data) {
+      _taskGallery.push(data);
+      renderGallery();
+    }).catch(function() {
+      var reader = new FileReader();
+      reader.onload = function(e) { _taskGallery.push(e.target.result); renderGallery(); };
+      reader.readAsDataURL(f);
+    });
+  });
+  var input = document.getElementById('galleryInput');
+  if (input) input.value = '';
+}
+
+function compressImageToDataURL(file, maxDim, quality) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('read')); };
+    reader.onload  = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        var ratio = Math.min(1, maxDim / Math.max(w, h));
+        var cw = Math.round(w * ratio), ch = Math.round(h * ratio);
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, cw, ch);
+        try { resolve(c.toDataURL('image/jpeg', quality)); }
+        catch(err) { resolve(e.target.result); }
+      };
+      img.onerror = function() { reject(new Error('img')); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function _initGalleryDnD() {
+  var zone = document.getElementById('galleryZone');
+  if (!zone || zone.dataset.dndBound) return;
+  zone.dataset.dndBound = '1';
+  ['dragenter','dragover'].forEach(function(ev) {
+    zone.addEventListener(ev, function(e) { e.preventDefault(); e.stopPropagation(); zone.classList.add('drag-over'); });
+  });
+  ['dragleave','dragend'].forEach(function(ev) {
+    zone.addEventListener(ev, function(e) { e.preventDefault(); e.stopPropagation(); zone.classList.remove('drag-over'); });
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    zone.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files) addGalleryPhotos(e.dataTransfer.files);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INLINE MIC — dictée vocale attachable à n'importe quel <textarea>
+════════════════════════════════════════════════════════════════ */
+var _inlineMicBtn  = null;
+var _inlineMicEl   = null;
+var _inlineMicRec  = null;
+var _inlineMicActive = false;
+var _inlineMicStarting = false;
+var _inlineMicBaseline = '';
+var _inlineMicFinalAccum = '';
+var _inlineMicLatestInterim = '';
+var _inlineMicLangIdx = 0;
+var _inlineMicGotResult = false;
+
+function setInlineMicBtnState(btn, state, icon) {
+  if (!btn) return;
+  btn.classList.remove('listening','processing','error');
+  if (state && state !== 'idle') btn.classList.add(state);
+  btn.textContent = icon || '🎤';
+}
+
+function toggleInlineMic(btn) {
+  var targetId = btn.dataset.micTarget;
+  var target = document.getElementById(targetId);
+  if (!target) return;
+
+  if (_inlineMicActive || _inlineMicStarting) {
+    if (_inlineMicBtn === btn) {
+      stopInlineMic();
+      return;
+    }
+    stopInlineMic();
+  }
+
+  var SR = getSpeechRecognitionCtor();
+  if (!SR) {
+    setInlineMicBtnState(btn, 'error', '⚠');
+    toast('⚠ Dictée non supportée sur ce navigateur');
+    return;
+  }
+  micCheckHTTPS();
+
+  _inlineMicBtn = btn;
+  _inlineMicEl  = target;
+  _inlineMicBaseline = (target.value || '').trim();
+  _inlineMicFinalAccum = '';
+  _inlineMicLatestInterim = '';
+  _inlineMicLangIdx = 0;
+  _inlineMicGotResult = false;
+  _inlineMicAttempt();
+}
+
+function _inlineMicAttempt() {
+  var SR = getSpeechRecognitionCtor();
+  if (!SR || !_inlineMicEl) return;
+  var lang = _micLangChain[_inlineMicLangIdx] || 'fr-FR';
+  if (_inlineMicRec) { try { _inlineMicRec.stop(); } catch(e) {} _inlineMicRec = null; }
+  _inlineMicRec = new SR();
+  _inlineMicRec.lang = lang;
+  _inlineMicRec.interimResults = !isIOSSafari();
+  _inlineMicRec.continuous = false;
+  _inlineMicRec.maxAlternatives = 1;
+  _inlineMicStarting = true;
+  _inlineMicGotResult = false;
+  setInlineMicBtnState(_inlineMicBtn, 'listening', '⏺');
+
+  function writeLive() {
+    var combined = (_inlineMicFinalAccum + ' ' + _inlineMicLatestInterim).replace(/\s+/g, ' ').trim();
+    var parts = [];
+    if (_inlineMicBaseline) parts.push(_inlineMicBaseline);
+    if (combined) parts.push(combined);
+    _inlineMicEl.value = parts.join(' ');
+    try { _inlineMicEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+  }
+  function commit() {
+    var t = (_inlineMicFinalAccum || _inlineMicLatestInterim || '').trim();
+    if (!t) return false;
+    _inlineMicFinalAccum = t;
+    _inlineMicLatestInterim = '';
+    writeLive();
+    return true;
+  }
+
+  _inlineMicRec.onstart = function() {
+    _inlineMicStarting = false;
+    _inlineMicActive = true;
+    setInlineMicBtnState(_inlineMicBtn, 'listening', '⏺');
+  };
+  _inlineMicRec.onresult = function(e) {
+    if (!e || !e.results || !e.results.length) return;
+    var newFinal = '', interim = '';
+    for (var i = 0; i < e.results.length; i++) {
+      var res = e.results[i];
+      if (!res || !res[0]) continue;
+      var t = res[0].transcript || '';
+      if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
+    }
+    newFinal = newFinal.trim(); interim = interim.trim();
+    if (newFinal) { _inlineMicFinalAccum = (_inlineMicFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim(); _inlineMicGotResult = true; }
+    if (interim)  { _inlineMicLatestInterim = interim; _inlineMicGotResult = true; }
+    if (newFinal || interim) writeLive();
+  };
+  _inlineMicRec.onerror = function(e) {
+    _inlineMicStarting = false;
+    var err = e && e.error;
+    if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
+      _inlineMicActive = false;
+      setInlineMicBtnState(_inlineMicBtn, 'error', '⚠');
+      toast('⚠ Permission micro refusée ou capture indisponible');
+    }
+  };
+  _inlineMicRec.onend = function() {
+    _inlineMicStarting = false;
+    _inlineMicActive = false;
+    if (commit()) {
+      setInlineMicBtnState(_inlineMicBtn, 'idle', '🎤');
+      _inlineMicBtn = null; _inlineMicEl = null; _inlineMicRec = null;
+      return;
+    }
+    if (_inlineMicLangIdx + 1 < _micLangChain.length) {
+      _inlineMicLangIdx++;
+      setTimeout(_inlineMicAttempt, 250);
+      return;
+    }
+    setInlineMicBtnState(_inlineMicBtn, 'error', '⚠');
+    toast('⚠ Aucune voix détectée — réessayez');
+    _inlineMicBtn = null; _inlineMicEl = null; _inlineMicRec = null;
+  };
+
+  try { _inlineMicRec.start(); }
+  catch(e) {
+    _inlineMicStarting = false;
+    setInlineMicBtnState(_inlineMicBtn, 'error', '⚠');
+  }
+}
+
+function stopInlineMic() {
+  if (_inlineMicRec) { try { _inlineMicRec.stop(); } catch(e) {} }
+  _inlineMicActive = false;
+  _inlineMicStarting = false;
+}
+
+function _bindInlineMicButtons() {
+  var btns = document.querySelectorAll('.mic-inline[data-mic-target]');
+  btns.forEach(function(btn) {
+    if (btn.dataset.micBound) return;
+    btn.dataset.micBound = '1';
+    btn.addEventListener('click', function(ev) { ev.preventDefault(); toggleInlineMic(btn); });
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
    TASK MODAL — CRÉATION
 ════════════════════════════════════════════════════════════════ */
 function openAddTask(dayIdx) {
@@ -4520,6 +4869,11 @@ function openAddTask(dayIdx) {
   document.getElementById('tClient').value   = '';
   document.getElementById('tLocation').value = '';
   document.getElementById('tDuration').value = '';
+  var descEl = document.getElementById('tDesc');
+  if (descEl) descEl.value = '';
+  setTaskGallery([]);
+  _initGalleryDnD();
+  _bindInlineMicButtons();
   document.getElementById('tTime').value     = dayIdx == null ? '' : '08:00';
   document.getElementById('tPrio').value     = 'medium';
   document.getElementById('tMinTemp').value  = '';
@@ -4552,6 +4906,11 @@ function openEditTask(id, title) {
   document.getElementById('tClient').value   = task.client   || '';
   document.getElementById('tLocation').value = task.location || '';
   document.getElementById('tDuration').value = task.duration || '';
+  var descEl = document.getElementById('tDesc');
+  if (descEl) descEl.value = task.description || '';
+  setTaskGallery(Array.isArray(task.gallery) ? task.gallery : []);
+  _initGalleryDnD();
+  _bindInlineMicButtons();
   document.getElementById('tTime').value     = task.time     || '';
   document.getElementById('tPrio').value     = task.priority || 'medium';
   var tw = task.weather || {};
@@ -4619,8 +4978,12 @@ function saveTask() {
     maxWind: _num('tMaxWind'),
   };
   var hasW = weather.minTemp != null || weather.maxTemp != null || weather.maxRain != null || weather.maxWind != null;
+  var descEl  = document.getElementById('tDesc');
+  var description = descEl ? descEl.value.trim() : '';
   var patch = {
     name: name, title: name, client: client, location: location, duration: duration,
+    description: description,
+    gallery: _taskGallery.slice(0),
     time: time, scheduledTime: time, scheduledDate: scheduledDate,
     type: sel.dataset.type, priority: prio, dayIndex: dayIdx, status: status, source: source,
     weather: hasW ? weather : null,
@@ -4842,6 +5205,8 @@ document.addEventListener('DOMContentLoaded', function() {
   renderCalendar();
   // Detect dictation support and adapt UI
   applyVoiceSupportUI();
+  _bindInlineMicButtons();
+  _initGalleryDnD();
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

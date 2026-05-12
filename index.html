@@ -1239,15 +1239,56 @@
     }
     .wb-photo-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
     .wb-photo-remove {
-      position: absolute; top: 8px; right: 8px;
-      width: 32px; height: 32px;
+      position: absolute; top: 6px; right: 6px;
+      width: 28px; height: 28px;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.60);
       color: #fff;
       border-radius: 50%;
       backdrop-filter: blur(6px);
-      font-size: 14px;
-      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.20);
+    }
+    .wb-photo-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+      gap: 8px;
+    }
+    .wb-photo-grid:empty { display: none; }
+    .wb-photo-cell {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      border: 1px solid var(--line-1);
+      background: var(--surface-2);
+    }
+    .wb-photo-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .wb-photo-zone { display: flex; flex-direction: column; gap: 8px; }
+    .wb-photo-analyze {
+      width: 100%;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(167,139,255,0.16), rgba(118,150,255,0.10));
+      border: 1px solid rgba(167,139,255,0.28);
+      border-radius: var(--r-md);
+      color: var(--t-1);
+      font-size: 13px; font-weight: 700;
+      min-height: 44px;
+      transition: opacity var(--t-fast) var(--ease);
+    }
+    .wb-photo-analyze:disabled { opacity: 0.6; }
+    .wb-photo-analyze:active { opacity: 0.85; }
+
+    /* Card thumbnail with multi-photo count */
+    .wb-thumb-wrap { position: relative; flex-shrink: 0; }
+    .wb-thumb-count {
+      position: absolute; bottom: -4px; right: -4px;
+      min-width: 22px; height: 18px; padding: 0 5px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--tint); color: #fff;
+      font-size: 10px; font-weight: 800;
+      border-radius: 10px;
+      border: 2px solid var(--bg, #0a0a0c);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
     /* alerts (discreet by default, banner only for real danger) */
@@ -2894,12 +2935,16 @@
     <div class="fg-row">
       <div class="fg">
         <label>Téléphone</label>
-        <input type="tel" id="wbPhone" placeholder="Ex: 514-555-1234" maxlength="30" inputmode="tel" />
+        <input type="tel" id="wbPhone" placeholder="514-222-2222" maxlength="14" inputmode="tel" autocomplete="tel-national" oninput="formatPhoneInput(this)" />
       </div>
       <div class="fg">
         <label>Courriel <span class="fg-opt">(optionnel)</span></label>
-        <input type="email" id="wbEmail" placeholder="exemple@courriel.com" maxlength="80" inputmode="email" />
+        <input type="email" id="wbEmail" placeholder="exemple@courriel.com" maxlength="80" inputmode="email" autocomplete="email" />
       </div>
+    </div>
+    <div class="fg">
+      <label>Adresse des travaux <span class="fg-opt">(optionnel)</span></label>
+      <input type="text" id="wbAddress" placeholder="Ex : 245 rue Tremblay, Saint-Jean-sur-Richelieu" maxlength="120" autocomplete="street-address" />
     </div>
     <div class="fg">
       <label>Type de métier</label>
@@ -2932,17 +2977,17 @@
       </label>
     </div>
     <div class="fg">
-      <label>Photo de référence <span class="fg-opt">(optionnel)</span></label>
-      <input type="file" id="wbPhotoFile" accept="image/*" capture="environment" style="display:none" onchange="loadWbPhoto(this.files)">
+      <label>Photos de référence <span class="fg-opt">(soumission, note, screenshot, chantier)</span></label>
+      <input type="file" id="wbPhotoFile" accept="image/*" capture="environment" multiple style="display:none" onchange="loadWbPhotos(this.files)">
       <div class="wb-photo-zone" id="wbPhotoZone">
-        <div class="wb-photo-preview" id="wbPhotoPreviewWrap" style="display:none">
-          <img id="wbPhotoPreview" alt="Aperçu photo">
-          <button type="button" class="wb-photo-remove" onclick="removeWbPhoto()" aria-label="Retirer la photo">✕</button>
-        </div>
+        <div class="wb-photo-grid" id="wbPhotoGrid"></div>
         <button type="button" class="wb-photo-add" id="wbPhotoAddBtn" onclick="document.getElementById('wbPhotoFile').click()">
           <span class="wb-photo-icon">📷</span>
-          <span class="wb-photo-label">Ajouter une photo</span>
-          <span class="wb-photo-hint">Appareil photo ou galerie</span>
+          <span class="wb-photo-label">Ajouter des photos</span>
+          <span class="wb-photo-hint">Appareil photo ou galerie · jusqu'à 4</span>
+        </button>
+        <button type="button" class="wb-photo-analyze" id="wbPhotoAnalyzeBtn" onclick="analyzeWbPhotos()" style="display:none">
+          <span id="wbAnalyzeLabel">🪄 Analyser les photos (IA)</span>
         </button>
       </div>
     </div>
@@ -4094,9 +4139,10 @@ function renderDayStrip() {
 var _workBank = [];
 var _wbEditingId = null;
 var _wbCurrentIndoor = null; // null = unset, true = indoor, false = outdoor
-var _wbCurrentPhoto = null;  // dataURL or null
+var _wbPhotos = [];          // array of dataURLs (max WB_PHOTO_MAX)
 var WB_PHOTO_MAX_DIM = 1024;
-var WB_PHOTO_JPEG_Q  = 0.74;
+var WB_PHOTO_JPEG_Q  = 0.72;
+var WB_PHOTO_MAX     = 4;
 
 function loadWorkBank() {
   try {
@@ -4131,6 +4177,7 @@ function openWorkBankForm(id) {
   var clientEl = document.getElementById('wbClient');
   var phoneEl  = document.getElementById('wbPhone');
   var emailEl  = document.getElementById('wbEmail');
+  var addrEl   = document.getElementById('wbAddress');
   var typeEl   = document.getElementById('wbType');
   var durEl    = document.getElementById('wbDuration');
   var prioEl   = document.getElementById('wbPrio');
@@ -4161,24 +4208,26 @@ function openWorkBankForm(id) {
     titleEl.textContent = 'Modifier travail';
     nameEl.value   = item.name || '';
     clientEl.value = item.client || '';
-    phoneEl.value  = item.phone || '';
+    phoneEl.value  = normalizePhone(item.phone) || item.phone || '';
     emailEl.value  = item.email || '';
+    if (addrEl) addrEl.value = item.address || '';
     typeEl.value   = item.type && jobsDef[item.type] ? item.type : (keys[0] || '');
     durEl.value    = item.duration || '';
     prioEl.value   = item.priority || 'medium';
     notesEl.value  = item.notes || '';
     flexEl.checked = !!item.flexible;
     _wbCurrentIndoor = (item.indoor === true) ? true : (item.indoor === false ? false : null);
-    _wbCurrentPhoto = item.photo || null;
+    _wbPhotos = Array.isArray(item.photos) ? item.photos.slice() : (item.photo ? [item.photo] : []);
     if (delBtn) delBtn.style.display = '';
   } else {
     titleEl.textContent = 'Nouveau travail';
     nameEl.value = ''; clientEl.value = ''; phoneEl.value = ''; emailEl.value = '';
+    if (addrEl) addrEl.value = '';
     typeEl.value = keys[0] || '';
     durEl.value = ''; prioEl.value = 'medium'; notesEl.value = '';
     flexEl.checked = false;
     _wbCurrentIndoor = null;
-    _wbCurrentPhoto = null;
+    _wbPhotos = [];
     if (delBtn) delBtn.style.display = 'none';
   }
   if (voiceEl) voiceEl.value = '';
@@ -4191,70 +4240,168 @@ function openWorkBankForm(id) {
 }
 
 function _wbUpdatePhotoUI() {
-  var wrap = document.getElementById('wbPhotoPreviewWrap');
-  var img  = document.getElementById('wbPhotoPreview');
-  var addBtn = document.getElementById('wbPhotoAddBtn');
-  if (!wrap || !img || !addBtn) return;
-  if (_wbCurrentPhoto) {
-    img.src = _wbCurrentPhoto;
-    wrap.style.display = '';
-    addBtn.style.display = 'none';
-  } else {
-    img.src = '';
-    wrap.style.display = 'none';
-    addBtn.style.display = '';
-  }
-}
-
-function loadWbPhoto(files) {
-  if (!files || !files.length) return;
-  var f = files[0];
-  if (!f.type || !/^image\//.test(f.type)) { toast('⚠ Sélectionnez une image'); return; }
-  compressImageToDataURL(f, WB_PHOTO_MAX_DIM, WB_PHOTO_JPEG_Q).then(function(data) {
-    _wbCurrentPhoto = data;
-    _wbUpdatePhotoUI();
-  }).catch(function() {
-    var r = new FileReader();
-    r.onload = function(e) { _wbCurrentPhoto = e.target.result; _wbUpdatePhotoUI(); };
-    r.readAsDataURL(f);
+  var grid       = document.getElementById('wbPhotoGrid');
+  var addBtn     = document.getElementById('wbPhotoAddBtn');
+  var analyzeBtn = document.getElementById('wbPhotoAnalyzeBtn');
+  if (!grid || !addBtn) return;
+  grid.innerHTML = '';
+  _wbPhotos.forEach(function(src, idx) {
+    var cell = document.createElement('div');
+    cell.className = 'wb-photo-cell';
+    cell.innerHTML = '<img alt="" src="' + esc(src) + '">' +
+      '<button type="button" class="wb-photo-remove" aria-label="Retirer" data-idx="' + idx + '">✕</button>';
+    grid.appendChild(cell);
   });
+  grid.querySelectorAll('.wb-photo-remove').forEach(function(b) {
+    b.addEventListener('click', function() { removeWbPhoto(parseInt(b.dataset.idx, 10)); });
+  });
+  addBtn.style.display = (_wbPhotos.length < WB_PHOTO_MAX) ? '' : 'none';
+  if (analyzeBtn) analyzeBtn.style.display = _wbPhotos.length ? '' : 'none';
 }
 
-function removeWbPhoto() {
-  _wbCurrentPhoto = null;
-  var fileEl = document.getElementById('wbPhotoFile');
-  if (fileEl) fileEl.value = '';
+function loadWbPhotos(files) {
+  if (!files || !files.length) return;
+  var list = Array.from(files).filter(function(f) { return f && f.type && /^image\//.test(f.type); });
+  if (!list.length) { toast('⚠ Sélectionnez des images'); return; }
+  var slots = WB_PHOTO_MAX - _wbPhotos.length;
+  if (slots <= 0) { toast('⚠ Maximum ' + WB_PHOTO_MAX + ' photos'); return; }
+  list.slice(0, slots).forEach(function(f) {
+    compressImageToDataURL(f, WB_PHOTO_MAX_DIM, WB_PHOTO_JPEG_Q).then(function(data) {
+      _wbPhotos.push(data);
+      _wbUpdatePhotoUI();
+    }).catch(function() {
+      var r = new FileReader();
+      r.onload = function(e) { _wbPhotos.push(e.target.result); _wbUpdatePhotoUI(); };
+      r.readAsDataURL(f);
+    });
+  });
+  var input = document.getElementById('wbPhotoFile');
+  if (input) input.value = '';
+}
+
+function removeWbPhoto(idx) {
+  if (idx < 0 || idx >= _wbPhotos.length) return;
+  _wbPhotos.splice(idx, 1);
   _wbUpdatePhotoUI();
+}
+
+/* Lazy-loaded Tesseract.js OCR for work bank photos */
+var _tesseractLoading = null;
+function _loadTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (_tesseractLoading) return _tesseractLoading;
+  _tesseractLoading = new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.async = true;
+    s.onload = function() { resolve(window.Tesseract); };
+    s.onerror = function() { _tesseractLoading = null; reject(new Error('tesseract load failed')); };
+    document.head.appendChild(s);
+  });
+  return _tesseractLoading;
+}
+
+function analyzeWbPhotos() {
+  if (!_wbPhotos.length) { toast('⚠ Aucune photo à analyser'); return; }
+  var btn = document.getElementById('wbPhotoAnalyzeBtn');
+  var lbl = document.getElementById('wbAnalyzeLabel');
+  if (btn) btn.disabled = true;
+  if (lbl) lbl.textContent = '⏳ Chargement du module IA…';
+  _loadTesseract().then(function(T) {
+    var allText = '';
+    var idx = 0;
+    function next() {
+      if (idx >= _wbPhotos.length) return finish(allText);
+      if (lbl) lbl.textContent = '🔍 Analyse ' + (idx + 1) + '/' + _wbPhotos.length + '…';
+      T.recognize(_wbPhotos[idx], 'fra+eng').then(function(res) {
+        allText += '\n' + (res && res.data && res.data.text ? res.data.text : '');
+        idx++; next();
+      }).catch(function() { idx++; next(); });
+    }
+    function finish(text) {
+      if (btn) btn.disabled = false;
+      if (lbl) lbl.textContent = '🪄 Analyser les photos (IA)';
+      var clean = (text || '').replace(/\s+/g, ' ').trim();
+      if (!clean) { toast('⚠ Aucun texte détecté dans les photos'); return; }
+      applyParsedToWbForm(parseSmartInput(clean));
+      toast('✓ Photos analysées');
+    }
+    next();
+  }).catch(function() {
+    if (btn) btn.disabled = false;
+    if (lbl) lbl.textContent = '🪄 Analyser les photos (IA)';
+    toast('⚠ Module d\'analyse indisponible (hors-ligne ?)');
+  });
 }
 
 function applyWbVoice() {
   var textEl = document.getElementById('wbVoiceText');
   var text = textEl ? (textEl.value || '').trim() : '';
   if (!text) { toast('⚠ Aucun texte à analyser'); return; }
-  var parsed = parseVoiceInput(text);
-  var t = text.toLowerCase();
-  // Indoor/outdoor detection
-  if (/\b(int[eé]rieur|indoor|inside|au\s+chaud)\b/.test(t))      _wbCurrentIndoor = true;
-  else if (/\b(ext[eé]rieur|outdoor|outside|dehors)\b/.test(t))   _wbCurrentIndoor = false;
-  // Duration detection (h, min, jour, journée)
-  var dur = '';
-  var mDur = t.match(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/);
-  if (mDur) dur = mDur[1].replace(',', '.') + 'h';
-  else if (/\b(?:une\s+)?journée\b|\b(?:1|une)\s*jour\b/.test(t)) dur = '1 journée';
-  else if ((mDur = t.match(/\b(\d+)\s*min(?:utes?)?\b/))) dur = mDur[1] + ' min';
-  // Phone detection
-  var phone = '';
-  var mPh = text.match(/(?:\+?\d[\s.\-]?){9,14}\d/);
-  if (mPh) phone = mPh[0].trim();
-  // Apply
-  if (parsed.name)   document.getElementById('wbName').value = parsed.name;
-  if (parsed.client) document.getElementById('wbClient').value = parsed.client;
-  if (parsed.type)   document.getElementById('wbType').value = parsed.type;
-  if (parsed.priority) document.getElementById('wbPrio').value = parsed.priority;
-  if (dur)   document.getElementById('wbDuration').value = dur;
-  if (phone) document.getElementById('wbPhone').value = phone;
-  _wbUpdateIndoorUI();
+  applyParsedToWbForm(parseSmartInput(text));
   toast('✓ Champs pré-remplis');
+}
+
+function applyParsedToWbForm(parsed) {
+  if (!parsed) return;
+  var setVal = function(id, v) { var el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+  setVal('wbName',     parsed.name);
+  setVal('wbClient',   parsed.client);
+  setVal('wbPhone',    normalizePhone(parsed.phone) || parsed.phone);
+  setVal('wbEmail',    parsed.email);
+  setVal('wbAddress',  parsed.location);
+  setVal('wbDuration', parsed.duration);
+  if (parsed.type)     setVal('wbType', parsed.type);
+  if (parsed.priority) setVal('wbPrio', parsed.priority);
+  if (parsed.indoor === true || parsed.indoor === false) _wbCurrentIndoor = parsed.indoor;
+  // Carry remaining context (date, time, amount) into notes
+  var notesEl = document.getElementById('wbNotes');
+  if (notesEl) {
+    var bits = [];
+    if (parsed.date)   bits.push('📅 ' + _formatDateFr(parsed.date));
+    if (parsed.time)   bits.push('🕒 ' + parsed.time);
+    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (bits.length) {
+      var prev = (notesEl.value || '').trim();
+      notesEl.value = bits.join(' · ') + (prev ? '\n' + prev : '');
+    }
+  }
+  _wbUpdateIndoorUI();
+}
+
+/* Normalize a phone string to "XXX-XXX-XXXX" (NA format).
+   Returns the original input if it doesn't yield 10 digits. */
+function normalizePhone(raw) {
+  if (!raw) return '';
+  var digits = String(raw).replace(/\D+/g, '');
+  if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+  if (digits.length < 10) return digits;
+  digits = digits.slice(0, 10);
+  return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6, 10);
+}
+
+/* Live input formatter: keeps the field formatted as the user types.
+   Handles paste and trailing edits gracefully. */
+function formatPhoneInput(el) {
+  if (!el) return;
+  var digits = (el.value || '').replace(/\D+/g, '');
+  if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+  digits = digits.slice(0, 10);
+  var out = digits;
+  if (digits.length > 6)      out = digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+  else if (digits.length > 3) out = digits.slice(0, 3) + '-' + digits.slice(3);
+  el.value = out;
+}
+
+function _formatDateFr(iso) {
+  if (!iso) return '';
+  var parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  var months = ['janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
+  var d = parseInt(parts[2], 10);
+  var m = parseInt(parts[1], 10) - 1;
+  if (isNaN(d) || m < 0 || m > 11) return iso;
+  return d + ' ' + months[m] + ' ' + parts[0];
 }
 
 function saveWorkBankItem() {
@@ -4264,15 +4411,16 @@ function saveWorkBankItem() {
     id: _wbEditingId || _wbNewId(),
     name: name,
     client: (document.getElementById('wbClient').value || '').trim(),
-    phone: (document.getElementById('wbPhone').value || '').trim(),
+    phone: normalizePhone((document.getElementById('wbPhone').value || '').trim()) || (document.getElementById('wbPhone').value || '').trim(),
     email: (document.getElementById('wbEmail').value || '').trim(),
+    address: ((document.getElementById('wbAddress') || {}).value || '').trim(),
     type: document.getElementById('wbType').value || '',
     duration: (document.getElementById('wbDuration').value || '').trim(),
     priority: document.getElementById('wbPrio').value || 'medium',
     notes: (document.getElementById('wbNotes').value || '').trim(),
     flexible: !!document.getElementById('wbFlexible').checked,
     indoor: _wbCurrentIndoor,
-    photo: _wbCurrentPhoto || null
+    photos: _wbPhotos.slice()
   };
   if (_wbEditingId) {
     var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
@@ -4321,10 +4469,16 @@ function useWorkBankItem(id) {
     if (prioEl && item.priority) prioEl.value = item.priority;
     // Pre-select job type in the grid
     if (item.type) buildTypeGrid(item.type);
-    // Carry photo into the task gallery
-    if (item.photo && typeof _taskGallery !== 'undefined') {
-      _taskGallery = [item.photo];
+    // Carry photos into the task gallery (supports legacy single-photo field)
+    var photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+    if (photos.length && typeof _taskGallery !== 'undefined') {
+      _taskGallery = photos.slice();
       if (typeof renderGallery === 'function') renderGallery();
+    }
+    // Carry address to tLocation
+    if (item.address) {
+      var locEl = document.getElementById('tLocation');
+      if (locEl) locEl.value = item.address;
     }
     // Weather rules: if the item is indoor, set very permissive defaults
     if (item.indoor === true) {
@@ -4361,8 +4515,12 @@ function _wbBuildCardHTML(w, jobsDef) {
   if (w.indoor === true)  badges += '<span class="wb-badge">🏠 Intérieur</span>';
   if (w.indoor === false) badges += '<span class="wb-badge">🌤 Extérieur</span>';
   if (w.flexible)         badges += '<span class="wb-badge ok">☂ Flexible météo</span>';
-  var leftThumb = w.photo
-    ? '<img class="wb-thumb" src="' + esc(w.photo) + '" alt="">'
+  var photos = Array.isArray(w.photos) ? w.photos : (w.photo ? [w.photo] : []);
+  var thumbSrc = photos[0] || '';
+  var leftThumb = thumbSrc
+    ? '<span class="wb-thumb-wrap"><img class="wb-thumb" src="' + esc(thumbSrc) + '" alt="">' +
+        (photos.length > 1 ? '<span class="wb-thumb-count">+' + (photos.length - 1) + '</span>' : '') +
+      '</span>'
     : '<span class="wb-icon">' + jd.icon + '</span>';
   return ''
     + '<button type="button" class="wb-main" data-wb-edit="' + w.id + '">'
@@ -5290,38 +5448,144 @@ function applyTaskVoice() {
 }
 
 function parseVoiceInput(text) {
-  var t = text.toLowerCase();
-  var today = new Date();
-  var dayIndex = 0;
-  var dayNamesFr = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  var dayNamesEn = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  var nextWord = /\b(?:next|prochain|prochaine)\b/.test(t);
-  if (/\b(?:demain|tomorrow)\b/.test(t))       { dayIndex = 1; }
-  else if (/\b(?:aujourd'hui|aujourd hui|today|auj)\b/.test(t)) { dayIndex = 0; }
-  else {
-    var foundDay = null;
-    for (var i = 0; i < dayNamesFr.length; i++) {
-      if (new RegExp('\\b' + dayNamesFr[i] + '\\b').test(t)) { foundDay = i; break; }
-    }
-    if (foundDay === null) {
-      for (var j = 0; j < dayNamesEn.length; j++) {
-        if (new RegExp('\\b' + dayNamesEn[j] + '\\b').test(t)) { foundDay = j; break; }
+  return parseSmartInput(text);
+}
+
+/* Smart structured parser: extracts phone/email/date FR/time/duration/priority/
+   address/amount/client/job-type from one block of text. Leftover becomes the title. */
+function parseSmartInput(originalText) {
+  var text = originalText || '';
+  var result = {
+    name: '', client: '', phone: '', email: '',
+    type: null, priority: 'medium',
+    duration: '', time: '',
+    date: '', dayIndex: null,
+    indoor: null, location: '', amount: ''
+  };
+  var work = ' ' + text + ' ';
+  function clip(re) {
+    var m = work.match(re);
+    if (m) work = work.replace(re, ' ');
+    return m;
+  }
+
+  var em = clip(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
+  if (em) result.email = em[1];
+
+  var ph = clip(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+  if (ph) result.phone = ph[1] + '-' + ph[2] + '-' + ph[3];
+
+  var amt = clip(/(?:\$\s*\d+(?:[.,]\d{1,2})?|\b\d+(?:[.,]\d{1,2})?\s*\$)/);
+  if (amt) result.amount = amt[0].trim();
+
+  var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|montée|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
+  if (addr) result.location = addr[1].trim();
+
+  var monthsFr = { janvier:0, 'février':1, fevrier:1, mars:2, avril:3, mai:4, juin:5, juillet:6, 'août':7, aout:7, septembre:8, octobre:9, novembre:10, 'décembre':11, decembre:11 };
+  var monthsRe = Object.keys(monthsFr).join('|');
+  var dM = clip(new RegExp('\\b(?:du\\s+|le\\s+)?(\\d{1,2})(?:\\s*er)?\\s+(' + monthsRe + ')(?:\\s+(\\d{4}))?\\b', 'i'));
+  if (dM) {
+    var dd = parseInt(dM[1], 10);
+    var mo = monthsFr[dM[2].toLowerCase()];
+    var yr = dM[3] ? parseInt(dM[3], 10) : new Date().getFullYear();
+    var dt = new Date(yr, mo, dd);
+    var today0 = new Date(); today0.setHours(0,0,0,0);
+    if (!dM[3] && dt < today0) dt = new Date(yr + 1, mo, dd);
+    result.date = isoDate(dt);
+  }
+
+  if (!result.date) {
+    var dN = clip(/\b(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2}|\d{4}))?\b/);
+    if (dN) {
+      var nd = parseInt(dN[1], 10), nm = parseInt(dN[2], 10) - 1;
+      var ny = dN[3] ? (dN[3].length === 2 ? 2000 + parseInt(dN[3], 10) : parseInt(dN[3], 10)) : new Date().getFullYear();
+      if (nm >= 0 && nm <= 11 && nd >= 1 && nd <= 31) {
+        var d2 = new Date(ny, nm, nd);
+        var t0 = new Date(); t0.setHours(0,0,0,0);
+        if (!dN[3] && d2 < t0) d2 = new Date(ny + 1, nm, nd);
+        result.date = isoDate(d2);
       }
     }
-    if (foundDay !== null) {
-      var diff = (foundDay - today.getDay() + 7) % 7;
-      if (diff === 0 && nextWord) diff = 7;
-      dayIndex = diff;
+  }
+
+  var todayD = new Date();
+  if (!result.date) {
+    if (/\b(?:apr[eè]s[\-\s]demain)\b/i.test(work)) {
+      result.dayIndex = 2;
+      work = work.replace(/\b(?:apr[eè]s[\-\s]demain)\b/gi, ' ');
+    } else if (/\b(?:demain|tomorrow)\b/i.test(work)) {
+      result.dayIndex = 1;
+      work = work.replace(/\b(?:demain|tomorrow)\b/gi, ' ');
+    } else if (/\b(?:aujourd[''’]?hui|aujourd hui|today|auj)\b/i.test(work)) {
+      result.dayIndex = 0;
+      work = work.replace(/\b(?:aujourd[''’]?hui|aujourd hui|today|auj)\b/gi, ' ');
+    } else if (/\b(?:fin\s+de\s+semaine|week[-\s]?end)\b/i.test(work)) {
+      var diffW = (6 - todayD.getDay() + 7) % 7;
+      if (diffW === 0) diffW = 7;
+      result.dayIndex = diffW;
+    } else {
+      var dayNamesFr = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+      var dayNamesEn = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+      var nextWord = /\b(?:next|prochain|prochaine)\b/i.test(work);
+      var found = null;
+      for (var di = 0; di < 7; di++) {
+        if (new RegExp('\\b' + dayNamesFr[di] + '\\b', 'i').test(work)) { found = di; break; }
+        if (new RegExp('\\b' + dayNamesEn[di] + '\\b', 'i').test(work)) { found = di; break; }
+      }
+      if (found !== null) {
+        var diffD = (found - todayD.getDay() + 7) % 7;
+        if (diffD === 0 && nextWord) diffD = 7;
+        result.dayIndex = diffD;
+        work = work.replace(new RegExp('\\b(' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')(?:\\s+prochain[e]?)?\\b', 'gi'), ' ');
+        work = work.replace(/\b(?:next|prochain|prochaine)\b/gi, ' ');
+      }
     }
   }
-  if (dayIndex > 6) dayIndex = 6;
-  var priority = 'medium';
-  if (t.indexOf('urgent') !== -1) priority = 'urgent';
-  else if (t.indexOf('haute') !== -1) priority = 'high';
-  else if (t.indexOf('basse') !== -1 || t.indexOf('low') !== -1) priority = 'low';
-  var client = '';
-  var clientMatch = t.match(/\b(?:chez|pour|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ'’]+)/i);
-  if (clientMatch) client = clientMatch[1].replace(/[’']s$/i, '');
+
+  var tm = clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
+  if (tm) {
+    var hh = parseInt(tm[1], 10), mm2 = tm[2] ? parseInt(tm[2], 10) : 0;
+    result.time = ('0' + hh).slice(-2) + ':' + ('0' + mm2).slice(-2);
+  }
+  if (!result.time) {
+    if (/\bce\s+matin\b/i.test(work))                                          result.time = '08:00';
+    else if (/\bce\s+midi\b/i.test(work))                                      result.time = '12:00';
+    else if (/\b(?:cet?\s+)?apr[èe]s[\-\s]midi\b/i.test(work))                 result.time = '14:00';
+    else if (/\bce\s+soir\b/i.test(work))                                      result.time = '18:00';
+  }
+
+  var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
+  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['’]?\s*)?/gi, ' ');
+  var d1 = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
+  if (d1) result.duration = d1[1].replace(',', '.') + 'h';
+  if (!result.duration) {
+    var nKeys = Object.keys(frNums).join('|');
+    var d2 = clip(new RegExp('\\b(' + nKeys + ')\\s+heures?\\b', 'i'));
+    if (d2) result.duration = frNums[d2[1].toLowerCase()] + 'h';
+  }
+  if (!result.duration) {
+    var d3 = clip(/\b(\d+)\s*min(?:utes?)?\b/i);
+    if (d3) result.duration = d3[1] + ' min';
+  }
+  if (!result.duration) {
+    if (clip(/\bdemi[\-\s]journ[eé]e\b/i))                  result.duration = '1/2 journée';
+    else if (clip(/\b(?:une\s+)?journ[eé]e\b|\b1\s*jour\b/i)) result.duration = '1 journée';
+  }
+
+  if      (/\b(?:urgent[e]?|asap)\b/i.test(work))                                                            { result.priority = 'urgent'; }
+  else if (/\b(?:priorit[eé]\s+(?:haute|élev[eé]e)|haute\s+priorit[eé]|\bhaute\b)\b/i.test(work))             { result.priority = 'high'; }
+  else if (/\b(?:priorit[eé]\s+basse|basse\s+priorit[eé]|\bbasse\b|low)\b/i.test(work))                       { result.priority = 'low'; }
+  else if (/\b(?:priorit[eé]\s+moyenne|moyenne)\b/i.test(work))                                              { result.priority = 'medium'; }
+  work = work.replace(/\b(?:urgent[e]?|asap|priorit[eé]\s+(?:haute|basse|moyenne|élev[eé]e)|haute\s+priorit[eé]|basse\s+priorit[eé]|haute|basse|moyenne|low|priorit[eé])\b/gi, ' ');
+
+  if (/\b(?:int[eé]rieur|indoor|inside|au\s+chaud)\b/i.test(work)) {
+    result.indoor = true;
+    work = work.replace(/\b(?:int[eé]rieur|indoor|inside|au\s+chaud)\b/gi, ' ');
+  } else if (/\b(?:ext[eé]rieur|outdoor|outside|dehors)\b/i.test(work)) {
+    result.indoor = false;
+    work = work.replace(/\b(?:ext[eé]rieur|outdoor|outside|dehors)\b/gi, ' ');
+  }
+
   var jobAliases = {
     beton:      ['béton','beton','dalle','fondation','coulage','asphalte','asphaltage'],
     hauteur:    ['hauteur','échafaudage','echafaudage'],
@@ -5330,43 +5594,44 @@ function parseVoiceInput(text) {
     paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','tree','trees','coupe','cut','cutting','abattage'],
     electrique: ['électrique','electrique','électricité','electricite'],
     toiture:    ['toiture','toit','couverture','bardeau'],
-    peinture:   ['peinture','peindre'],
+    peinture:   ['peinture','peindre']
   };
-  var jobs = getMergedJobTypes();
+  var jobs = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
   Object.keys(jobs).forEach(function(k) {
     if (!jobAliases[k]) jobAliases[k] = [(jobs[k].name || '').toLowerCase(), (jobs[k].short || '').toLowerCase()];
   });
-  var jobType = Object.keys(jobs)[0] || null;
-  var found = false;
+  var lowerWork = work.toLowerCase();
   Object.keys(jobAliases).forEach(function(k) {
-    if (found) return;
+    if (result.type) return;
     var aliases = jobAliases[k];
-    for (var i = 0; i < aliases.length; i++) {
-      if (aliases[i] && t.indexOf(aliases[i]) !== -1) { jobType = k; found = true; break; }
+    for (var ai = 0; ai < aliases.length; ai++) {
+      if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
     }
   });
-  var name = text;
-  name = name.replace(/\b(?:chez|pour|at|for)\s+[A-Za-zÀ-ÖØ-öø-ÿ'’]+/gi, '');
-  name = name.replace(/\b(?:samedi prochain|vendredi prochain|dimanche prochain|jeudi prochain|mercredi prochain|mardi prochain|lundi prochain|next saturday|next friday|next sunday|next thursday|next wednesday|next tuesday|next monday|après-demain|apres-demain|tomorrow|demain)\b/gi, '');
-  name = name.replace(new RegExp('\\b(?:' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')\\b', 'gi'), '');
-  name = name.replace(/\b(?:urgent[e]?|priorit[eé]\s+\w+|haute?|basse?|moyenne?)\b/gi, '');
-  var time = '';
-  var timeMatch = text.match(/\b(?:à\s*)?([0-1]?\d|2[0-3])(?:h|:)([0-5]?\d)?\b/i);
-  if (timeMatch) {
-    var hour = parseInt(timeMatch[1], 10);
-    var min  = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-    time = ('0' + hour).slice(-2) + ':' + ('0' + min).slice(-2);
-    name = name.replace(timeMatch[0], '');
+  if (!result.type) result.type = Object.keys(jobs)[0] || null;
+
+  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}(?:\s+(?:[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/;
+  var cm = work.match(contextRe);
+  if (cm) {
+    result.client = cm[1].trim();
+    work = work.replace(cm[0], ' ');
+  } else {
+    var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\b/);
+    if (titleM) {
+      result.client = titleM[0].trim();
+      work = work.replace(titleM[0], ' ');
+    }
   }
-  if (!time) {
-    if (/\b(?:ce matin|this morning)\b/i.test(text))       time = '08:00';
-    else if (/\b(?:cet après-midi|après-midi|apres-midi|this afternoon)\b/i.test(text)) time = '14:00';
-    else if (/\b(?:ce soir|this evening)\b/i.test(text))   time = '18:00';
-  }
-  name = name.replace(/\s+/g, ' ').trim();
-  if (/\b(?:arbre|arbres|tree|trees|coupe|cut|cutting|abattage)\b/i.test(t)) name = 'Coupe d’arbres';
-  if (!name) name = text.trim();
-  return { name: name, client: client, type: jobType, priority: priority, dayIndex: dayIndex, time: time };
+
+  var leftover = work.replace(/\s+/g, ' ').trim();
+  leftover = leftover.replace(/^[\s,\.\-]+|[\s,\.\-]+$/g, '');
+  leftover = leftover.replace(/^(?:à|de|et|du|le|la|les|au|aux|en|d['’])\s+/i, '');
+  leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d['’])$/i, '');
+  leftover = leftover.replace(/\s{2,}/g, ' ').trim();
+  if (!leftover || leftover.length < 2) leftover = (text.split(/[\.,;]/)[0] || text).trim();
+  if (leftover) leftover = leftover.charAt(0).toUpperCase() + leftover.slice(1);
+  result.name = leftover;
+  return result;
 }
 
 function applyVoiceParsed(parsed) {
@@ -5381,9 +5646,20 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tDuration').value = parsed.duration || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
+  // Pipe phone/email/amount into description if present
+  var descEl = document.getElementById('tDesc');
+  if (descEl) {
+    var bits = [];
+    if (parsed.phone)  bits.push('📞 ' + parsed.phone);
+    if (parsed.email)  bits.push('✉ ' + parsed.email);
+    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (bits.length) descEl.value = bits.join(' · ');
+  }
   buildTypeGrid(parsed.type);
   var dateValue = '';
-  if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
+  if (parsed.date) {
+    dateValue = parsed.date;
+  } else if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
     dateValue = isoDate(ST.forecast[parsed.dayIndex].date);
   }
   populateDateInput(dateValue);

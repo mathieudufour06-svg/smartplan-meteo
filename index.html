@@ -269,7 +269,10 @@
     ════════════════════════════════════════════════════════════════ */
     .greeting {
       padding: var(--s4) 0 var(--s6);
+      display: flex; align-items: flex-start;
+      gap: var(--s3);
     }
+    .greet-text { flex: 1; min-width: 0; }
     .greet-eyebrow {
       display: block;
       font-size: 12px; font-weight: 700;
@@ -410,8 +413,6 @@
       margin-bottom: var(--s4);
       padding: 0 2px;
     }
-    .section-head--today { align-items: flex-start; }
-    .sh-left { display: flex; flex-direction: column; gap: 2px; }
     .section-title {
       font-size: 22px;
       font-weight: 800;
@@ -442,28 +443,36 @@
     }
     .date-picker:focus { outline: none; border-color: var(--tint); }
 
-    /* Mini météo — compact top-right du hero */
+    /* Mini météo cliquable — premium, près du "Bonsoir" */
     .mini-wx {
-      display: flex; flex-direction: column; align-items: flex-end;
-      gap: 1px; flex-shrink: 0; padding-top: 2px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; flex-shrink: 0;
+      padding: 8px 10px;
+      min-width: 56px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      cursor: pointer;
+      transition: transform var(--t-fast) var(--ease),
+                  background var(--t-fast) var(--ease),
+                  border-color var(--t-fast) var(--ease);
     }
+    .mini-wx:active { transform: scale(0.96); background: rgba(255,255,255,0.08); }
     .mwx-temp {
-      font-size: 21px; font-weight: 800;
+      font-size: 20px; font-weight: 800;
       letter-spacing: -0.04em; line-height: 1;
       color: var(--t-1); font-variant-numeric: tabular-nums;
     }
     .mwx-status {
-      font-size: 11.5px; font-weight: 700;
-      color: var(--t-3); letter-spacing: 0.005em;
-      white-space: nowrap;
+      font-size: 14px; font-weight: 700;
+      line-height: 1;
+      color: var(--t-3); white-space: nowrap;
     }
     .mwx-status.ok   { color: var(--green); }
     .mwx-status.warn { color: var(--orange); }
     .mwx-status.bad  { color: var(--red); }
-    .mwx-loc {
-      font-size: 10.5px; font-weight: 500;
-      color: var(--t-4); white-space: nowrap;
-    }
 
     /* ════════════════════════════════════════════════════════════════
        7-DAY STRIP — premium pills
@@ -1495,6 +1504,67 @@
 
     .jobs-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
 
+    /* Job rows in management modal */
+    .job-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; margin-bottom: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+    }
+    .job-row-thumb {
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      border-radius: 9px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.08) inset;
+      flex-shrink: 0;
+    }
+    .job-row-name { flex: 1; font-size: .92rem; font-weight: 700; color: var(--t-1); }
+    .job-row-edit, .job-row-del {
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      border-radius: 8px;
+      font-size: 14px; font-weight: 700;
+      background: var(--surface-1);
+      border: 1px solid var(--hairline);
+      color: var(--t-2);
+    }
+    .job-row-del { color: var(--red, #ff5566); }
+    .job-row-edit:active, .job-row-del:active { transform: scale(0.94); }
+
+    /* Color swatches for job creation */
+    .color-swatches {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 6px 0 2px;
+    }
+    .color-swatch {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.08) inset;
+      transition: transform var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+      cursor: pointer;
+    }
+    .color-swatch:active { transform: scale(0.92); }
+    .color-swatch.sel { border-color: var(--tint); transform: scale(1.06); }
+
+    /* Empty state for type-grid in new task sheet */
+    .type-grid-empty {
+      grid-column: 1 / -1;
+      padding: 14px 12px; text-align: center;
+      background: var(--surface-2);
+      border: 1px dashed var(--hairline);
+      border-radius: 12px;
+      color: var(--t-3); font-size: .85rem;
+    }
+    .type-grid-empty-cta {
+      display: inline-block; margin-top: 8px;
+      padding: 8px 14px; border-radius: 10px;
+      background: var(--tint); color: #fff;
+      font-weight: 800; font-size: .82rem;
+    }
+
     /* ════════════════════════════════════════════════════════════════
        CALENDAR (carries over from PR2, refined to new system)
     ════════════════════════════════════════════════════════════════ */
@@ -1970,25 +2040,24 @@
     <!-- ═══════════════════ HOME ═══════════════════ -->
     <section class="view active" id="viewHome" data-view="home">
 
-      <!-- Greeting -->
+      <!-- Greeting + mini météo cliquable -->
       <div class="greeting">
-        <span class="greet-eyebrow" id="greetEyebrow"></span>
-        <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
-        <div class="greet-sub" id="greetSub">—</div>
+        <div class="greet-text">
+          <span class="greet-eyebrow" id="greetEyebrow"></span>
+          <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
+          <div class="greet-sub" id="greetSub">—</div>
+        </div>
+        <button type="button" class="mini-wx" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
+          <span class="mwx-temp" id="mwxTemp">—°</span>
+          <span class="mwx-status" id="mwxStatus">⏳</span>
+        </button>
       </div>
 
       <!-- 1. JOBS AUJOURD'HUI -->
       <div class="section">
-        <div class="section-head section-head--today">
-          <div class="sh-left">
-            <h2 class="section-title">Aujourd'hui</h2>
-            <span class="section-count" id="todayCount">—</span>
-          </div>
-          <div class="mini-wx" id="miniWeather">
-            <span class="mwx-temp" id="mwxTemp">—°</span>
-            <span class="mwx-status" id="mwxStatus">⏳</span>
-            <span class="mwx-loc" id="mwxLoc">—</span>
-          </div>
+        <div class="section-head">
+          <h2 class="section-title">Aujourd'hui</h2>
+          <span class="section-count" id="todayCount">—</span>
         </div>
         <div class="today-list" id="todayList"></div>
       </div>
@@ -2043,46 +2112,6 @@
         </div>
         <div class="btl-list" id="btlList"></div>
       </div>
-
-      <!-- 4. MÉTÉO DÉTAILLÉE -->
-      <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Météo détaillée</h2>
-          <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
-        </div>
-        <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
-          <div class="hero-row-1">
-            <span class="hero-eyebrow"><span id="heroEyebrowDay">Aujourd'hui</span> · <b id="heroEyebrowDate">—</b></span>
-            <span class="hero-score status-pill" id="heroScore"><span class="sp-icon">⏳</span><span>…</span></span>
-          </div>
-          <div class="hero-row-2">
-            <span class="hero-icon" id="heroIcon">☀️</span>
-            <div>
-              <div class="hero-temp"><span id="heroTempMax">—</span><em>°</em><span class="min" id="heroTempMin">—°</span></div>
-            </div>
-          </div>
-          <div class="hero-label" id="heroLabel">—</div>
-          <div class="hero-sub" id="heroLabelSub">Chargement de la météo…</div>
-          <div class="hero-stats">
-            <div class="hs-cell">
-              <span class="hs-cell-icon">💨</span>
-              <span class="hs-cell-lbl">Vent</span>
-              <span class="hs-cell-val" id="heroWind">—<span>km/h</span></span>
-            </div>
-            <div class="hs-cell">
-              <span class="hs-cell-icon">💧</span>
-              <span class="hs-cell-lbl">Pluie</span>
-              <span class="hs-cell-val" id="heroRain">—<span>mm</span></span>
-            </div>
-            <div class="hs-cell">
-              <span class="hs-cell-icon">☔</span>
-              <span class="hs-cell-lbl">Probabilité</span>
-              <span class="hs-cell-val" id="heroProb">—<span>%</span></span>
-            </div>
-          </div>
-        </button>
-      </div>
-
 
     </section>
 
@@ -2370,7 +2399,10 @@
 <!-- DAY DETAIL MODAL -->
 <div class="overlay" id="dayDetailOverlay" onclick="overlayClick(event,'dayDetailOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
-    <h3 id="ddTitle">Météo du jour</h3>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px">
+      <h3 id="ddTitle" style="margin:0">Météo du jour</h3>
+      <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
+    </div>
     <div id="ddContent"></div>
     <div class="mf" style="margin-top:16px">
       <button class="btn-cancel" onclick="closeModal('dayDetailOverlay')">Fermer</button>
@@ -2463,7 +2495,7 @@
     <h3>⚙ Mes métiers</h3>
     <div id="jobsList"></div>
     <div style="border-top:1px solid var(--hairline); margin: 14px 0 12px"></div>
-    <p style="font-size:.72rem; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom:10px">Ajouter un métier</p>
+    <p id="jobFormTitle" style="font-size:.72rem; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom:10px">+ Ajouter un métier</p>
     <div class="jobs-add-grid">
       <div class="fg"><label>Emoji</label><input type="text" id="jIcon" placeholder="🔩" maxlength="4"></div>
       <div class="fg"><label>Nom</label><input type="text" id="jName" placeholder="Soudure" maxlength="30"></div>
@@ -2471,9 +2503,13 @@
       <div class="fg"><label>Vent max (km/h)</label><input type="number" id="jWind" placeholder="30" min="0" max="200"></div>
     </div>
     <div class="fg" style="margin-top:2px"><label>Temp. min (°C)</label><input type="number" id="jTemp" placeholder="5" min="-30" max="30"></div>
+    <div class="fg" style="margin-top:8px">
+      <label>Couleur</label>
+      <div class="color-swatches" id="jColor" role="radiogroup" aria-label="Couleur du métier"></div>
+    </div>
     <div class="mf" style="margin-top:6px">
-      <button class="btn-cancel" onclick="closeModal('jobsOverlay')">Fermer</button>
-      <button class="btn-primary" onclick="addCustomJob()">Ajouter →</button>
+      <button class="btn-cancel" onclick="resetJobForm()" id="jobCancelBtn">Annuler</button>
+      <button class="btn-primary" onclick="saveCustomJob()" id="jobSaveBtn">Ajouter →</button>
     </div>
   </div>
 </div>
@@ -2490,68 +2526,9 @@ var DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 var MONTHS = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 var MONTHS_FULL = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 
-var JOB_TYPES = {
-  beton:      { name:'Béton',       icon:'🏗️', short:'Béton'   },
-  hauteur:    { name:'En hauteur',  icon:'🧗', short:'Hauteur' },
-  pave:       { name:'Pavé',        icon:'🧱', short:'Pavé'    },
-  excavation: { name:'Excavation',  icon:'🚜', short:'Excav.'  },
-  paysagisme: { name:'Paysagisme',  icon:'🌿', short:'Paysage' },
-  electrique: { name:'Électrique',  icon:'🔌', short:'Électr.' },
-  toiture:    { name:'Toiture',     icon:'🏠', short:'Toiture' },
-  peinture:   { name:'Peinture',    icon:'🎨', short:'Peinture'},
-};
+var JOB_TYPES = {};
 
-var RISK_RULES = {
-  beton: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — bétonnage interdit' },
-    { t: function(w) { return w.temp_min < 5; },       l:'danger', m:'Gel < 5°C — prise impossible' },
-    { t: function(w) { return w.precipitation > 5; },  l:'danger', m:'Pluie > 5mm — prise compromise' },
-    { t: function(w) { return w.precipitation > 2; },  l:'risk',   m:'Pluie > 2mm — qualité réduite' },
-    { t: function(w) { return w.temp_min < 10; },      l:'risk',   m:'Froid — prise lente' },
-    { t: function(w) { return w.windspeed > 50; },     l:'risk',   m:'Vent fort — surface compromise' },
-  ],
-  hauteur: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — arrêt immédiat' },
-    { t: function(w) { return w.windspeed > 40; },     l:'danger', m:'Vent > 40 km/h — DANGER VITAL' },
-    { t: function(w) { return w.precipitation > 5; },  l:'risk',   m:'Pluie — surface glissante' },
-    { t: function(w) { return w.windspeed > 25; },     l:'risk',   m:'Vent > 25 km/h — vigilance' },
-    { t: function(w) { return w.weathercode === 45 || w.weathercode === 48; }, l:'risk', m:'Brouillard — visibilité réduite' },
-  ],
-  pave: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — arrêt chantier' },
-    { t: function(w) { return w.precipitation > 10; }, l:'danger', m:'Pluie > 10mm — joint impossible' },
-    { t: function(w) { return w.precipitation > 5; },  l:'risk',   m:'Pluie > 5mm — qualité compromise' },
-    { t: function(w) { return w.temp_min < 0; },       l:'risk',   m:'Gel — sable de pose instable' },
-  ],
-  excavation: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — sécurité machines' },
-    { t: function(w) { return w.precipitation > 20; }, l:'risk',   m:'Pluie > 20mm — sol instable' },
-    { t: function(w) { return w.windspeed > 60; },     l:'risk',   m:'Vent > 60 km/h — poussière' },
-  ],
-  paysagisme: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — danger' },
-    { t: function(w) { return w.precipitation > 15; }, l:'risk',   m:'Pluie > 15mm — plantation compromise' },
-    { t: function(w) { return w.temp_max > 35; },      l:'risk',   m:'Canicule > 35°C — stress hydrique' },
-  ],
-  electrique: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — DANGER ÉLECTROCUTION' },
-    { t: function(w) { return w.precipitation > 2; },  l:'danger', m:'Pluie — risque électrique' },
-    { t: function(w) { return w.precipitation > 0; },  l:'risk',   m:'Humidité — précautions requises' },
-  ],
-  toiture: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — danger électrique/vent' },
-    { t: function(w) { return w.windspeed > 35; },     l:'danger', m:'Vent > 35 km/h — chute de matériaux' },
-    { t: function(w) { return w.precipitation > 2; },  l:'danger', m:'Pluie — surface glissante' },
-    { t: function(w) { return w.windspeed > 20; },     l:'risk',   m:'Vent > 20 km/h — pose difficile' },
-  ],
-  peinture: [
-    { t: function(w) { return w.weathercode >= 95; },  l:'danger', m:'Orage — peinture perdue' },
-    { t: function(w) { return w.precipitation > 0; },  l:'danger', m:'Pluie — séchage impossible' },
-    { t: function(w) { return w.temp_min < 10; },      l:'risk',   m:'Froid < 10°C — séchage lent' },
-    { t: function(w) { return w.temp_max > 35; },      l:'risk',   m:'Chaleur > 35°C — bulles/craquelures' },
-    { t: function(w) { return w.windspeed > 30; },     l:'risk',   m:'Vent > 30 km/h — poussière' },
-  ],
-};
+var RISK_RULES = {};
 
 var WMO = {
   0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
@@ -2628,9 +2605,27 @@ function simpleStatus(w) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   CUSTOM JOBS
+   CUSTOM JOBS — dynamique, 100% configurable (localStorage)
 ════════════════════════════════════════════════════════════════ */
 var _customJobs = {};
+var _editingJobKey = null;
+
+var JOB_COLORS = [
+  { id:'slate',  c1:'#4a5163', c2:'#2c303d' },
+  { id:'orange', c1:'#ff9f43', c2:'#cc6e1d' },
+  { id:'brown',  c1:'#8b6843', c2:'#5a4128' },
+  { id:'amber',  c1:'#c08a3e', c2:'#7a5523' },
+  { id:'green',  c1:'#2dd483', c2:'#1a7a4a' },
+  { id:'yellow', c1:'#ffd75a', c2:'#b39222' },
+  { id:'red',    c1:'#e4583c', c2:'#8a2c1a' },
+  { id:'pink',   c1:'#ff71a8' , c2:'#a23266' },
+  { id:'blue',   c1:'#4d9dff', c2:'#1f5dad' },
+  { id:'violet', c1:'#a07bff', c2:'#5b3fb3' },
+];
+function getJobColor(id) {
+  for (var i = 0; i < JOB_COLORS.length; i++) if (JOB_COLORS[i].id === id) return JOB_COLORS[i];
+  return JOB_COLORS[0];
+}
 
 function getMergedJobTypes() {
   var merged = {};
@@ -2673,57 +2668,119 @@ function saveCustomJobs() {
 }
 
 function openJobsModal() {
+  resetJobForm();
   renderJobsList();
   openModal('jobsOverlay');
+}
+
+function renderColorSwatches(selectedId) {
+  var c = document.getElementById('jColor');
+  if (!c) return;
+  c.innerHTML = '';
+  JOB_COLORS.forEach(function(col) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'color-swatch' + (col.id === selectedId ? ' sel' : '');
+    b.style.background = 'linear-gradient(135deg,' + col.c1 + ' 0%,' + col.c2 + ' 100%)';
+    b.dataset.color = col.id;
+    b.setAttribute('aria-label', col.id);
+    b.onclick = function() {
+      c.querySelectorAll('.color-swatch').forEach(function(x) { x.classList.remove('sel'); });
+      b.classList.add('sel');
+    };
+    c.appendChild(b);
+  });
 }
 
 function renderJobsList() {
   var list = document.getElementById('jobsList');
   list.innerHTML = '';
-  var jobs = getMergedJobTypes();
-  var keys = Object.keys(jobs);
+  var keys = Object.keys(_customJobs);
+  if (!keys.length) {
+    list.innerHTML = '<div style="padding:16px 12px; text-align:center; background:var(--surface-2); border:1px dashed var(--hairline); border-radius:12px; color:var(--t-3); font-size:.85rem">Aucun métier configuré.<br>Ajoutez votre premier métier ci-dessous ↓</div>';
+    return;
+  }
   keys.forEach(function(k) {
-    var j = jobs[k];
+    var j   = _customJobs[k];
+    var col = getJobColor(j.color);
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--hairline); border-radius:12px; margin-bottom:6px;';
-    var canDelete = !!_customJobs[k];
-    row.innerHTML = '<span style="font-size:1.4rem">' + j.icon + '</span>'
-      + '<span style="flex:1; font-size:.92rem; font-weight:700">' + esc(j.name) + '</span>'
-      + (canDelete ? '<button onclick="deleteCustomJob(\'' + k + '\')" style="color:var(--danger); font-weight:800; padding:6px 10px; background:var(--danger-bg); border:1px solid var(--danger-bd); border-radius:8px; font-size:.78rem">Suppr.</button>'
-                   : '<span style="font-size:.7rem; color:var(--t3)">par défaut</span>');
+    row.className = 'job-row';
+    row.innerHTML =
+        '<span class="job-row-thumb" style="background:linear-gradient(135deg,' + col.c1 + ' 0%,' + col.c2 + ' 100%)">' + j.icon + '</span>'
+      + '<span class="job-row-name">' + esc(j.name) + '</span>'
+      + '<button class="job-row-edit" data-key="' + esc(k) + '" aria-label="Modifier">✎</button>'
+      + '<button class="job-row-del"  data-key="' + esc(k) + '" aria-label="Supprimer">✕</button>';
+    row.querySelector('.job-row-edit').onclick = function() { editCustomJob(k); };
+    row.querySelector('.job-row-del').onclick  = function() { deleteCustomJob(k); };
     list.appendChild(row);
   });
 }
 
-function addCustomJob() {
+function resetJobForm() {
+  _editingJobKey = null;
+  document.getElementById('jobFormTitle').textContent = '+ Ajouter un métier';
+  document.getElementById('jobSaveBtn').textContent   = 'Ajouter →';
+  document.getElementById('jIcon').value = '';
+  document.getElementById('jName').value = '';
+  document.getElementById('jRain').value = '';
+  document.getElementById('jWind').value = '';
+  document.getElementById('jTemp').value = '';
+  renderColorSwatches(JOB_COLORS[0].id);
+}
+
+function editCustomJob(key) {
+  var j = _customJobs[key];
+  if (!j) return;
+  _editingJobKey = key;
+  document.getElementById('jobFormTitle').textContent = 'Modifier — ' + j.name;
+  document.getElementById('jobSaveBtn').textContent   = 'Enregistrer';
+  document.getElementById('jIcon').value = j.icon || '';
+  document.getElementById('jName').value = j.name || '';
+  document.getElementById('jRain').value = j.rain != null ? j.rain : '';
+  document.getElementById('jWind').value = j.wind != null ? j.wind : '';
+  document.getElementById('jTemp').value = j.temp != null ? j.temp : '';
+  renderColorSwatches(j.color || JOB_COLORS[0].id);
+}
+
+function saveCustomJob() {
   var icon = (document.getElementById('jIcon').value || '🔧').trim();
   var name = (document.getElementById('jName').value || '').trim();
   var rain = parseInt(document.getElementById('jRain').value, 10);
   var wind = parseInt(document.getElementById('jWind').value, 10);
   var temp = parseInt(document.getElementById('jTemp').value, 10);
+  var colorEl = document.querySelector('#jColor .color-swatch.sel');
+  var color = colorEl ? colorEl.dataset.color : JOB_COLORS[0].id;
   if (!name) { toast('⚠ Nom requis'); return; }
-  var key = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || ('job' + Date.now());
+
+  var key;
+  if (_editingJobKey) {
+    key = _editingJobKey;
+  } else {
+    key = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || ('job' + Date.now());
+    if (_customJobs[key]) key = key + Date.now().toString(36).slice(-4);
+  }
+
   _customJobs[key] = {
-    name: name, short: name.slice(0, 8), icon: icon,
+    name: name, short: name.slice(0, 8), icon: icon, color: color,
     rain: isNaN(rain) ? null : rain,
     wind: isNaN(wind) ? null : wind,
     temp: isNaN(temp) ? null : temp,
   };
   RISK_RULES[key] = buildCustomRules(_customJobs[key]);
   saveCustomJobs();
+  resetJobForm();
   renderJobsList();
   buildTypeGrid();
-  document.getElementById('jIcon').value = '';
-  document.getElementById('jName').value = '';
-  document.getElementById('jRain').value = '';
-  document.getElementById('jWind').value = '';
-  document.getElementById('jTemp').value = '';
-  toast('✓ Métier ajouté');
+  renderActive();
+  toast(_editingJobKey ? '✓ Métier mis à jour' : '✓ Métier ajouté');
 }
 
 function deleteCustomJob(key) {
+  if (!_customJobs[key]) return;
+  if (!confirm('Supprimer « ' + _customJobs[key].name + ' » ?')) return;
   delete _customJobs[key];
   delete RISK_RULES[key];
+  if (_editingJobKey === key) resetJobForm();
   saveCustomJobs();
   renderJobsList();
   buildTypeGrid();
@@ -3239,7 +3296,9 @@ function buildJobCard(task, w, jobsDef, opts) {
   card.className = 'job-card' + levelCls + (opts.withStatus ? ' with-status' : '');
   card.dataset.taskId = task.id;
 
-  var thumb = '<div class="job-thumb" data-type="' + esc(task.type) + '">';
+  var col = jd && jd.color ? getJobColor(jd.color) : null;
+  var thumbStyle = col ? ' style="--thumb-c1:' + col.c1 + ';--thumb-c2:' + col.c2 + '"' : '';
+  var thumb = '<div class="job-thumb" data-type="' + esc(task.type) + '"' + thumbStyle + '>';
   if (task.photoPreview) thumb += '<img src="' + esc(task.photoPreview) + '" alt="">';
   else thumb += jd.icon;
   thumb += '</div>';
@@ -3290,36 +3349,21 @@ function renderHome() {
 function renderMiniWeather() {
   var tempEl   = document.getElementById('mwxTemp');
   var statusEl = document.getElementById('mwxStatus');
-  var locEl    = document.getElementById('mwxLoc');
   if (!tempEl) return;
 
   var w = ST.forecast && ST.forecast[0];
-  var locName = (ST.loc && ST.loc.name) ? ST.loc.name : '';
-
   if (!w) {
     tempEl.textContent   = '—°';
     statusEl.textContent = '⏳';
     statusEl.className   = 'mwx-status';
-    locEl.textContent    = locName;
     return;
   }
 
   tempEl.textContent = w.temp_max + '°';
-
   var st = simpleStatus(w);
-  var shortMsg;
-  if (w.weathercode >= 95)      shortMsg = '⛔ Orage';
-  else if (w.precipitation > 10) shortMsg = '⛔ Pluie ' + w.precipitation + 'mm';
-  else if (w.windspeed > 40)     shortMsg = '⛔ Vent fort';
-  else if (w.temp_min < 0)       shortMsg = '⛔ Gel';
-  else if (w.precipitation > 0)  shortMsg = '⚠ Pluie ' + w.precipitation + 'mm';
-  else if (w.windspeed > 25)     shortMsg = '⚠ Vent ' + w.windspeed + 'km/h';
-  else if (w.temp_min < 5)       shortMsg = '⚠ Froid';
-  else                           shortMsg = '✅ Favorable';
-
-  statusEl.textContent = shortMsg;
+  var icon = st.level === 'ok' ? '✅' : (st.level === 'bad' ? '⛔' : '⚠');
+  statusEl.textContent = icon;
   statusEl.className   = 'mwx-status ' + st.level;
-  locEl.textContent    = locName;
 }
 
 function renderGreeting() {
@@ -3356,38 +3400,7 @@ function moodFromCode(code) {
 }
 
 function renderHero() {
-  var card = document.getElementById('heroCard');
-  var fc = ST.forecast;
-  if (!fc || !fc.length) {
-    document.getElementById('heroIcon').textContent = '⏳';
-    document.getElementById('heroTempMax').textContent = '—';
-    document.getElementById('heroTempMin').textContent = '—°';
-    document.getElementById('heroLabel').textContent = 'Chargement météo';
-    document.getElementById('heroLabelSub').textContent = 'Récupération des données…';
-    document.getElementById('heroWind').innerHTML = '—<span>km/h</span>';
-    document.getElementById('heroRain').innerHTML = '—<span>mm</span>';
-    document.getElementById('heroProb').innerHTML = '—<span>%</span>';
-    return;
-  }
-  var d = fc[0];
-  var st = simpleStatus(d);
-  var dateLabel = DAYS_S[d.date.getDay()] + ' ' + d.date.getDate() + ' ' + MONTHS[d.date.getMonth()];
-
-  card.dataset.mood = moodFromCode(d.weathercode);
-  document.getElementById('heroEyebrowDay').textContent = "Aujourd'hui";
-  document.getElementById('heroEyebrowDate').textContent = dateLabel;
-  document.getElementById('heroIcon').textContent = wIcon(d.weathercode);
-  document.getElementById('heroTempMax').textContent = d.temp_max;
-  document.getElementById('heroTempMin').textContent = d.temp_min + '°';
-  document.getElementById('heroLabel').textContent = wLabel(d.weathercode);
-  document.getElementById('heroLabelSub').textContent = d.windspeed + ' km/h vent · ' + d.precipitation + ' mm pluie';
-  document.getElementById('heroWind').innerHTML = d.windspeed + '<span>km/h</span>';
-  document.getElementById('heroRain').innerHTML = d.precipitation + '<span>mm</span>';
-  document.getElementById('heroProb').innerHTML = d.rain_prob + '<span>%</span>';
-
-  var scoreEl = document.getElementById('heroScore');
-  scoreEl.className = 'hero-score status-pill ' + st.level;
-  scoreEl.innerHTML = '<span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span>';
+  /* Hero card retiré — météo détaillée déplacée dans le modal openDayDetail() */
 }
 
 function renderDayStrip() {
@@ -3578,8 +3591,10 @@ function buildTodayCard(task, w, jobsDef) {
   card.className = 'today-card' + levelCls;
   card.dataset.taskId = task.id;
 
-  // Thumb
-  var thumbHtml = '<div class="tc-thumb" data-type="' + esc(task.type) + '">';
+  // Thumb (couleur dynamique depuis le métier)
+  var col = jd && jd.color ? getJobColor(jd.color) : null;
+  var thumbStyle = col ? ' style="--thumb-c1:' + col.c1 + ';--thumb-c2:' + col.c2 + '"' : '';
+  var thumbHtml = '<div class="tc-thumb" data-type="' + esc(task.type) + '"' + thumbStyle + '>';
   if (task.photoPreview) thumbHtml += '<img src="' + esc(task.photoPreview) + '" alt="">';
   else thumbHtml += jd.icon;
   thumbHtml += '</div>';
@@ -4326,7 +4341,7 @@ function parseVoiceInput(text) {
   Object.keys(jobs).forEach(function(k) {
     if (!jobAliases[k]) jobAliases[k] = [(jobs[k].name || '').toLowerCase(), (jobs[k].short || '').toLowerCase()];
   });
-  var jobType = Object.keys(JOB_TYPES)[0];
+  var jobType = Object.keys(jobs)[0] || null;
   var found = false;
   Object.keys(jobAliases).forEach(function(k) {
     if (found) return;
@@ -4653,6 +4668,11 @@ function buildTypeGrid(selectedType) {
   g.innerHTML = '';
   var jobs = getMergedJobTypes();
   var keys = Object.keys(jobs);
+  if (!keys.length) {
+    g.innerHTML = '<div class="type-grid-empty">Aucun métier configuré.<br>'
+      + '<button type="button" class="type-grid-empty-cta" onclick="openJobsModal()">+ Ajouter un métier</button></div>';
+    return;
+  }
   var firstKey = keys[0];
   keys.forEach(function(key) {
     var def = jobs[key];
@@ -4755,6 +4775,11 @@ async function loadWeather() {
     toast('⚠ Météo simulée — vérifiez la connexion');
   }
   renderActive();
+  // Refresh day detail if currently open
+  var dd = document.getElementById('dayDetailOverlay');
+  if (dd && dd.classList.contains('open') && ST.forecast && ST.forecast[0]) {
+    openDayDetail(0);
+  }
 }
 
 function setDot(state) {

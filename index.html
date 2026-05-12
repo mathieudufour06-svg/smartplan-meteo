@@ -2687,6 +2687,8 @@
       <label>Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
     </div>
+    <!-- Debug panel: visible only with ?debug=1 in URL -->
+    <pre id="micDebugPanel" style="display:none;font-size:9px;line-height:1.3;color:#0f0;background:#111;padding:6px;border-radius:6px;margin-top:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('voiceOverlay')">Annuler</button>
       <button class="btn-primary" onclick="analyzeAndCreate()">Analyser →</button>
@@ -4177,9 +4179,21 @@ var _micLatestInterim = '';   // latest interim chunk
 var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
 var _micLangIdx   = 0;
 
-// Verbose debug logging (visible in Safari Web Inspector)
+// Debug log — console + on-screen panel when ?debug=1 is in URL
+var _micDebugMode = /[?&]debug=1/.test(location.search);
+var _micDebugLines = [];
 function micLog() {
-  try { console.log.apply(console, ['[mic]'].concat([].slice.call(arguments))); } catch(e) {}
+  try {
+    var args = [].slice.call(arguments);
+    console.log.apply(console, ['[mic]'].concat(args));
+    if (_micDebugMode) {
+      var ts = new Date().toISOString().slice(11,23);
+      _micDebugLines.push(ts + ' ' + args.join(' '));
+      if (_micDebugLines.length > 30) _micDebugLines.shift();
+      var panel = document.getElementById('micDebugPanel');
+      if (panel) panel.textContent = _micDebugLines.join('\n');
+    }
+  } catch(e) {}
 }
 
 function micCheckHTTPS() {
@@ -4217,7 +4231,8 @@ function openVoice() {
 }
 
 function voiceTextElement() {
-  return document.getElementById('taskVoiceText') || document.getElementById('voiceText');
+  // voiceOverlay uses #voiceText; taskOverlay uses #taskVoiceText directly (not via this fn)
+  return document.getElementById('voiceText');
 }
 function voiceStatusElement() {
   return document.getElementById('taskVoiceStatus') || document.getElementById('voiceStatus');
@@ -4350,10 +4365,11 @@ function _micAttemptStart() {
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = lang;
-  // iOS Safari: interimResults can prevent isFinal — keep disabled on iOS
-  _micRec.interimResults = !isIOSSafari();
-  // continuous=true: session stays open across pauses; iOS may still end silently → silent restart handles it
-  _micRec.continuous = true;
+  // iOS Safari: continuous=true blocks onresult (known iOS bug) → use false + silent restart
+  // interimResults=true on iOS can prevent isFinal from firing → disable
+  var ios = isIOSSafari();
+  _micRec.interimResults = !ios;
+  _micRec.continuous = !ios;
   _micRec.maxAlternatives = 1;
 
   setMicState('listening', _micSilentRestarts > 0 ? 'Je t\'écoute…' : 'Je t\'écoute…', '🎙');
@@ -4413,8 +4429,11 @@ function _micAttemptStart() {
       _micLatestInterim = interim;
       _micGotResult = true;
     }
+    micLog('→ final=' + JSON.stringify(_micFinalAccum) + ' interim=' + JSON.stringify(_micLatestInterim));
     if (newFinal || interim) {
       _micWriteLive();
+      var _dbgEl = document.getElementById('voiceText');
+      micLog('→ textarea#voiceText val=' + JSON.stringify(_dbgEl ? _dbgEl.value : 'NOT FOUND'));
       setMicState('listening', 'Parlez…', '🔴');
     }
   };
@@ -4500,7 +4519,9 @@ function _micAttemptStart() {
   };
 
   try {
+    micLog('calling start() lang=' + lang + ' continuous=' + _micRec.continuous + ' interim=' + _micRec.interimResults);
     _micRec.start();
+    micLog('start() called OK');
     _micStartFallback = setTimeout(function() {
       if (_micStarting && !_micActive) {
         _micStarting = false;
@@ -4540,9 +4561,10 @@ function _taskMicAttempt(textEl) {
   var lang = _micLangChain[_micLangIdx] || 'fr-CA';
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
+  var ios = isIOSSafari();
   _micRec.lang = lang;
-  _micRec.interimResults = !isIOSSafari();
-  _micRec.continuous = true;
+  _micRec.interimResults = !ios;
+  _micRec.continuous = !ios;
   _micRec.maxAlternatives = 1;
   _micStarting = true;
   _micGotResult = false;
@@ -5040,9 +5062,10 @@ function _inlineMicAttempt() {
   var lang = _micLangChain[_inlineMicLangIdx] || 'fr-CA';
   if (_inlineMicRec) { try { _inlineMicRec.stop(); } catch(e) {} _inlineMicRec = null; }
   _inlineMicRec = new SR();
+  var ios = isIOSSafari();
   _inlineMicRec.lang = lang;
-  _inlineMicRec.interimResults = !isIOSSafari();
-  _inlineMicRec.continuous = true;
+  _inlineMicRec.interimResults = !ios;
+  _inlineMicRec.continuous = !ios;
   _inlineMicRec.maxAlternatives = 1;
   _inlineMicStarting = true;
   _inlineMicGotResult = false;
@@ -5516,6 +5539,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Detect dictation support and adapt UI
   applyVoiceSupportUI();
   _bindInlineMicButtons();
+  if (_micDebugMode) {
+    var dp = document.getElementById('micDebugPanel');
+    if (dp) { dp.style.display = 'block'; dp.textContent = 'DEBUG ON — SR=' + (getSpeechRecognitionCtor() ? 'OK' : 'ABSENT') + ' iOS=' + isIOSSafari() + '\n'; }
+  }
   _initGalleryDnD();
 
   document.addEventListener('keydown', function(e) {

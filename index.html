@@ -428,6 +428,20 @@
     }
     .section-link:active { opacity: 0.5; }
 
+    .date-picker {
+      font: inherit;
+      font-size: 13px; font-weight: 600;
+      color: var(--t-2);
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      padding: 6px 10px;
+      min-height: 32px;
+      -webkit-appearance: none; appearance: none;
+      transition: border-color var(--t-fast) var(--ease);
+    }
+    .date-picker:focus { outline: none; border-color: var(--tint); }
+
     /* Mini météo — compact top-right du hero */
     .mini-wx {
       display: flex; flex-direction: column; align-items: flex-end;
@@ -2034,6 +2048,7 @@
       <div class="section">
         <div class="section-head">
           <h2 class="section-title">Météo détaillée</h2>
+          <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
         </div>
         <button class="hero" id="heroCard" data-mood="cloud" onclick="openTodayDetail()">
           <div class="hero-row-1">
@@ -2764,15 +2779,21 @@ function saveST() {
 /* ════════════════════════════════════════════════════════════════
    WEATHER — Open-Meteo (free, no API key)
 ════════════════════════════════════════════════════════════════ */
-async function fetchForecast(lat, lon) {
+async function fetchForecast(lat, lon, startDate) {
   var ctrl = new AbortController();
   var tid  = setTimeout(function() { ctrl.abort(); }, 9000);
   try {
+    var dateParam = '&forecast_days=7';
+    if (startDate) {
+      var sd = new Date(startDate + 'T12:00:00');
+      var ed = new Date(sd); ed.setDate(sd.getDate() + 6);
+      dateParam = '&start_date=' + startDate + '&end_date=' + isoDate(ed);
+    }
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
-      + '&timezone=auto&forecast_days=7';
+      + '&timezone=auto' + dateParam;
     var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var d    = await res.json();
@@ -4723,7 +4744,9 @@ async function loadWeather() {
   ST.forecast = null;
   renderActive();
   try {
-    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon);
+    var dInput = document.getElementById('dateStart');
+    var startDate = (dInput && dInput.value) ? dInput.value : null;
+    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
     setDot('ok');
   } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);
@@ -4802,6 +4825,15 @@ document.addEventListener('DOMContentLoaded', function() {
       closeNewJobSheet();
     }
   });
+
+  var dInput = document.getElementById('dateStart');
+  if (dInput) {
+    var today = new Date();
+    var max   = new Date(); max.setDate(today.getDate() + 9);
+    dInput.value = isoDate(today);
+    dInput.min   = isoDate(today);
+    dInput.max   = isoDate(max);
+  }
 
   loadWeather();
 });

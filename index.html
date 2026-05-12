@@ -1149,13 +1149,15 @@
     .bank-toolbar {
       display: flex; align-items: center; justify-content: space-between;
       gap: 10px; padding: 14px 0 10px;
+      flex-wrap: wrap;
     }
     .bank-count {
       font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
       color: var(--t-3); text-transform: uppercase;
+      min-width: 0; flex: 1 1 auto;
     }
     .bank-new {
-      padding: 10px 16px;
+      padding: 11px 18px;
       background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
       color: #fff;
       font-size: 13px; font-weight: 800; letter-spacing: 0.01em;
@@ -1163,6 +1165,9 @@
       border: 0;
       box-shadow: 0 6px 18px -8px rgba(118,150,255,0.55);
       transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+      white-space: nowrap;
+      flex: 0 0 auto;
+      min-height: 44px;
     }
     .bank-new:active { opacity: 0.85; transform: scale(0.97); }
     .bank-list { gap: 10px; margin-top: 0; }
@@ -1172,6 +1177,77 @@
       background: var(--surface-1);
       border: 1px dashed var(--line-2);
       border-radius: var(--r-lg);
+    }
+    @media (max-width: 360px) {
+      .bank-toolbar { padding: 12px 0 10px; }
+      .bank-new { width: 100%; }
+      .bank-count { flex: 1 1 100%; }
+    }
+
+    /* Work bank — thumbnail on cards */
+    .wb-thumb {
+      width: 56px; height: 56px; flex-shrink: 0;
+      border-radius: var(--r-md);
+      background: var(--surface-2);
+      object-fit: cover;
+      border: 1px solid var(--line-1);
+    }
+    /* Work bank — voice + photo blocks */
+    .wb-voice-block {
+      background: rgba(118,150,255,0.04);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      padding: 10px 12px 12px;
+    }
+    .wb-voice-block .label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .wb-voice-block textarea { width: 100%; }
+    .wb-analyze {
+      width: 100%; margin-top: 8px;
+      min-height: 40px;
+    }
+    .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fg-row .fg { margin-bottom: 0; }
+    @media (max-width: 420px) {
+      .fg-row { grid-template-columns: 1fr; gap: 0; }
+      .fg-row .fg { margin-bottom: var(--s3, 12px); }
+    }
+    .fg-opt { font-size: 11px; font-weight: 600; color: var(--t-4); letter-spacing: 0; }
+
+    .wb-photo-zone { width: 100%; }
+    .wb-photo-add {
+      width: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      padding: 18px 12px;
+      background: var(--surface-1);
+      border: 1px dashed var(--line-2);
+      border-radius: var(--r-md);
+      color: var(--t-2);
+      min-height: 92px;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .wb-photo-add:active { background: var(--surface-2); border-color: var(--tint); }
+    .wb-photo-icon { font-size: 24px; line-height: 1; }
+    .wb-photo-label { font-size: 13px; font-weight: 700; color: var(--t-1); }
+    .wb-photo-hint { font-size: 11px; color: var(--t-4); }
+    .wb-photo-preview {
+      position: relative;
+      width: 100%;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      border: 1px solid var(--line-1);
+      background: var(--surface-2);
+    }
+    .wb-photo-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+    .wb-photo-remove {
+      position: absolute; top: 8px; right: 8px;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      border-radius: 50%;
+      backdrop-filter: blur(6px);
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
     }
 
     /* alerts (discreet by default, banner only for real danger) */
@@ -2796,6 +2872,17 @@
   <div class="modal" role="dialog" aria-modal="true">
     <button type="button" class="modal-close" onclick="closeModal('workBankOverlay')" aria-label="Fermer">✕</button>
     <h3 id="wbModalTitle">Nouveau travail</h3>
+
+    <!-- Voice pre-fill block -->
+    <div class="fg wb-voice-block">
+      <label class="label-row">
+        <span>🎙 Pré-remplir par dictée (optionnel)</span>
+        <button type="button" class="mic-inline" data-mic-target="wbVoiceText" aria-label="Dicter">🎤</button>
+      </label>
+      <textarea id="wbVoiceText" rows="2" placeholder="Ex : Inspection toiture Tremblay 2h intérieur priorité haute"></textarea>
+      <button type="button" class="btn-secondary wb-analyze" onclick="applyWbVoice()">Analyser et remplir →</button>
+    </div>
+
     <div class="fg">
       <label>Titre</label>
       <input type="text" id="wbName" placeholder="Ex: Inspection intérieure" />
@@ -2803,6 +2890,16 @@
     <div class="fg">
       <label>Client</label>
       <input type="text" id="wbClient" placeholder="Ex: M. Tremblay" maxlength="50" />
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Téléphone</label>
+        <input type="tel" id="wbPhone" placeholder="Ex: 514-555-1234" maxlength="30" inputmode="tel" />
+      </div>
+      <div class="fg">
+        <label>Courriel <span class="fg-opt">(optionnel)</span></label>
+        <input type="email" id="wbEmail" placeholder="exemple@courriel.com" maxlength="80" inputmode="email" />
+      </div>
     </div>
     <div class="fg">
       <label>Type de métier</label>
@@ -2833,6 +2930,21 @@
         <input type="checkbox" id="wbFlexible" />
         <span>Flexible météo (peut être déplacé)</span>
       </label>
+    </div>
+    <div class="fg">
+      <label>Photo de référence <span class="fg-opt">(optionnel)</span></label>
+      <input type="file" id="wbPhotoFile" accept="image/*" capture="environment" style="display:none" onchange="loadWbPhoto(this.files)">
+      <div class="wb-photo-zone" id="wbPhotoZone">
+        <div class="wb-photo-preview" id="wbPhotoPreviewWrap" style="display:none">
+          <img id="wbPhotoPreview" alt="Aperçu photo">
+          <button type="button" class="wb-photo-remove" onclick="removeWbPhoto()" aria-label="Retirer la photo">✕</button>
+        </div>
+        <button type="button" class="wb-photo-add" id="wbPhotoAddBtn" onclick="document.getElementById('wbPhotoFile').click()">
+          <span class="wb-photo-icon">📷</span>
+          <span class="wb-photo-label">Ajouter une photo</span>
+          <span class="wb-photo-hint">Appareil photo ou galerie</span>
+        </button>
+      </div>
     </div>
     <div class="fg">
       <label>Notes</label>
@@ -3982,6 +4094,9 @@ function renderDayStrip() {
 var _workBank = [];
 var _wbEditingId = null;
 var _wbCurrentIndoor = null; // null = unset, true = indoor, false = outdoor
+var _wbCurrentPhoto = null;  // dataURL or null
+var WB_PHOTO_MAX_DIM = 1024;
+var WB_PHOTO_JPEG_Q  = 0.74;
 
 function loadWorkBank() {
   try {
@@ -4014,11 +4129,15 @@ function openWorkBankForm(id) {
   var titleEl  = document.getElementById('wbModalTitle');
   var nameEl   = document.getElementById('wbName');
   var clientEl = document.getElementById('wbClient');
+  var phoneEl  = document.getElementById('wbPhone');
+  var emailEl  = document.getElementById('wbEmail');
   var typeEl   = document.getElementById('wbType');
   var durEl    = document.getElementById('wbDuration');
   var prioEl   = document.getElementById('wbPrio');
   var notesEl  = document.getElementById('wbNotes');
   var flexEl   = document.getElementById('wbFlexible');
+  var voiceEl  = document.getElementById('wbVoiceText');
+  var fileEl   = document.getElementById('wbPhotoFile');
   var delBtn   = document.getElementById('wbDeleteBtn');
 
   // Populate type select
@@ -4042,24 +4161,100 @@ function openWorkBankForm(id) {
     titleEl.textContent = 'Modifier travail';
     nameEl.value   = item.name || '';
     clientEl.value = item.client || '';
+    phoneEl.value  = item.phone || '';
+    emailEl.value  = item.email || '';
     typeEl.value   = item.type && jobsDef[item.type] ? item.type : (keys[0] || '');
     durEl.value    = item.duration || '';
     prioEl.value   = item.priority || 'medium';
     notesEl.value  = item.notes || '';
     flexEl.checked = !!item.flexible;
     _wbCurrentIndoor = (item.indoor === true) ? true : (item.indoor === false ? false : null);
+    _wbCurrentPhoto = item.photo || null;
     if (delBtn) delBtn.style.display = '';
   } else {
     titleEl.textContent = 'Nouveau travail';
-    nameEl.value = ''; clientEl.value = ''; typeEl.value = keys[0] || '';
+    nameEl.value = ''; clientEl.value = ''; phoneEl.value = ''; emailEl.value = '';
+    typeEl.value = keys[0] || '';
     durEl.value = ''; prioEl.value = 'medium'; notesEl.value = '';
     flexEl.checked = false;
     _wbCurrentIndoor = null;
+    _wbCurrentPhoto = null;
     if (delBtn) delBtn.style.display = 'none';
   }
+  if (voiceEl) voiceEl.value = '';
+  if (fileEl)  fileEl.value  = '';
   _wbUpdateIndoorUI();
+  _wbUpdatePhotoUI();
   openModal('workBankOverlay');
+  _bindInlineMicButtons();
   setTimeout(function() { nameEl.focus(); }, 120);
+}
+
+function _wbUpdatePhotoUI() {
+  var wrap = document.getElementById('wbPhotoPreviewWrap');
+  var img  = document.getElementById('wbPhotoPreview');
+  var addBtn = document.getElementById('wbPhotoAddBtn');
+  if (!wrap || !img || !addBtn) return;
+  if (_wbCurrentPhoto) {
+    img.src = _wbCurrentPhoto;
+    wrap.style.display = '';
+    addBtn.style.display = 'none';
+  } else {
+    img.src = '';
+    wrap.style.display = 'none';
+    addBtn.style.display = '';
+  }
+}
+
+function loadWbPhoto(files) {
+  if (!files || !files.length) return;
+  var f = files[0];
+  if (!f.type || !/^image\//.test(f.type)) { toast('⚠ Sélectionnez une image'); return; }
+  compressImageToDataURL(f, WB_PHOTO_MAX_DIM, WB_PHOTO_JPEG_Q).then(function(data) {
+    _wbCurrentPhoto = data;
+    _wbUpdatePhotoUI();
+  }).catch(function() {
+    var r = new FileReader();
+    r.onload = function(e) { _wbCurrentPhoto = e.target.result; _wbUpdatePhotoUI(); };
+    r.readAsDataURL(f);
+  });
+}
+
+function removeWbPhoto() {
+  _wbCurrentPhoto = null;
+  var fileEl = document.getElementById('wbPhotoFile');
+  if (fileEl) fileEl.value = '';
+  _wbUpdatePhotoUI();
+}
+
+function applyWbVoice() {
+  var textEl = document.getElementById('wbVoiceText');
+  var text = textEl ? (textEl.value || '').trim() : '';
+  if (!text) { toast('⚠ Aucun texte à analyser'); return; }
+  var parsed = parseVoiceInput(text);
+  var t = text.toLowerCase();
+  // Indoor/outdoor detection
+  if (/\b(int[eé]rieur|indoor|inside|au\s+chaud)\b/.test(t))      _wbCurrentIndoor = true;
+  else if (/\b(ext[eé]rieur|outdoor|outside|dehors)\b/.test(t))   _wbCurrentIndoor = false;
+  // Duration detection (h, min, jour, journée)
+  var dur = '';
+  var mDur = t.match(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/);
+  if (mDur) dur = mDur[1].replace(',', '.') + 'h';
+  else if (/\b(?:une\s+)?journée\b|\b(?:1|une)\s*jour\b/.test(t)) dur = '1 journée';
+  else if ((mDur = t.match(/\b(\d+)\s*min(?:utes?)?\b/))) dur = mDur[1] + ' min';
+  // Phone detection
+  var phone = '';
+  var mPh = text.match(/(?:\+?\d[\s.\-]?){9,14}\d/);
+  if (mPh) phone = mPh[0].trim();
+  // Apply
+  if (parsed.name)   document.getElementById('wbName').value = parsed.name;
+  if (parsed.client) document.getElementById('wbClient').value = parsed.client;
+  if (parsed.type)   document.getElementById('wbType').value = parsed.type;
+  if (parsed.priority) document.getElementById('wbPrio').value = parsed.priority;
+  if (dur)   document.getElementById('wbDuration').value = dur;
+  if (phone) document.getElementById('wbPhone').value = phone;
+  _wbUpdateIndoorUI();
+  toast('✓ Champs pré-remplis');
 }
 
 function saveWorkBankItem() {
@@ -4069,12 +4264,15 @@ function saveWorkBankItem() {
     id: _wbEditingId || _wbNewId(),
     name: name,
     client: (document.getElementById('wbClient').value || '').trim(),
+    phone: (document.getElementById('wbPhone').value || '').trim(),
+    email: (document.getElementById('wbEmail').value || '').trim(),
     type: document.getElementById('wbType').value || '',
     duration: (document.getElementById('wbDuration').value || '').trim(),
     priority: document.getElementById('wbPrio').value || 'medium',
     notes: (document.getElementById('wbNotes').value || '').trim(),
     flexible: !!document.getElementById('wbFlexible').checked,
-    indoor: _wbCurrentIndoor
+    indoor: _wbCurrentIndoor,
+    photo: _wbCurrentPhoto || null
   };
   if (_wbEditingId) {
     var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
@@ -4113,10 +4311,21 @@ function useWorkBankItem(id) {
     if (nameEl)   nameEl.value   = item.name || '';
     if (clientEl) clientEl.value = item.client || '';
     if (durEl)    durEl.value    = item.duration || '';
-    if (descEl && item.notes) descEl.value = item.notes;
+    // Carry phone/email into description if present
+    var notes = item.notes || '';
+    var contact = [];
+    if (item.phone) contact.push('📞 ' + item.phone);
+    if (item.email) contact.push('✉ ' + item.email);
+    if (contact.length) notes = (contact.join(' · ') + (notes ? '\n' + notes : ''));
+    if (descEl && notes) descEl.value = notes;
     if (prioEl && item.priority) prioEl.value = item.priority;
     // Pre-select job type in the grid
     if (item.type) buildTypeGrid(item.type);
+    // Carry photo into the task gallery
+    if (item.photo && typeof _taskGallery !== 'undefined') {
+      _taskGallery = [item.photo];
+      if (typeof renderGallery === 'function') renderGallery();
+    }
     // Weather rules: if the item is indoor, set very permissive defaults
     if (item.indoor === true) {
       var minT = document.getElementById('tMinTemp');
@@ -4142,6 +4351,7 @@ function _wbBuildCardHTML(w, jobsDef) {
   var typeStr = esc(jd.short || jd.name || '');
   var metaParts = [];
   if (w.client) metaParts.push('👤 ' + esc(w.client));
+  if (w.phone)  metaParts.push('📞 ' + esc(w.phone));
   if (typeStr)  metaParts.push(typeStr);
   if (w.duration) metaParts.push('⏱ ' + esc(w.duration));
   var badges = '';
@@ -4151,9 +4361,12 @@ function _wbBuildCardHTML(w, jobsDef) {
   if (w.indoor === true)  badges += '<span class="wb-badge">🏠 Intérieur</span>';
   if (w.indoor === false) badges += '<span class="wb-badge">🌤 Extérieur</span>';
   if (w.flexible)         badges += '<span class="wb-badge ok">☂ Flexible météo</span>';
+  var leftThumb = w.photo
+    ? '<img class="wb-thumb" src="' + esc(w.photo) + '" alt="">'
+    : '<span class="wb-icon">' + jd.icon + '</span>';
   return ''
     + '<button type="button" class="wb-main" data-wb-edit="' + w.id + '">'
-    +   '<span class="wb-icon">' + jd.icon + '</span>'
+    +   leftThumb
     +   '<span class="wb-body">'
     +     '<span class="wb-name">' + esc(w.name) + '</span>'
     +     (metaParts.length ? '<span class="wb-meta">' + metaParts.join(' · ') + '</span>' : '')

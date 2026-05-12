@@ -2935,12 +2935,16 @@
     <div class="fg-row">
       <div class="fg">
         <label>Téléphone</label>
-        <input type="tel" id="wbPhone" placeholder="Ex: 514-555-1234" maxlength="30" inputmode="tel" />
+        <input type="tel" id="wbPhone" placeholder="514-222-2222" maxlength="14" inputmode="tel" autocomplete="tel-national" oninput="formatPhoneInput(this)" />
       </div>
       <div class="fg">
         <label>Courriel <span class="fg-opt">(optionnel)</span></label>
-        <input type="email" id="wbEmail" placeholder="exemple@courriel.com" maxlength="80" inputmode="email" />
+        <input type="email" id="wbEmail" placeholder="exemple@courriel.com" maxlength="80" inputmode="email" autocomplete="email" />
       </div>
+    </div>
+    <div class="fg">
+      <label>Adresse des travaux <span class="fg-opt">(optionnel)</span></label>
+      <input type="text" id="wbAddress" placeholder="Ex : 245 rue Tremblay, Saint-Jean-sur-Richelieu" maxlength="120" autocomplete="street-address" />
     </div>
     <div class="fg">
       <label>Type de métier</label>
@@ -4173,6 +4177,7 @@ function openWorkBankForm(id) {
   var clientEl = document.getElementById('wbClient');
   var phoneEl  = document.getElementById('wbPhone');
   var emailEl  = document.getElementById('wbEmail');
+  var addrEl   = document.getElementById('wbAddress');
   var typeEl   = document.getElementById('wbType');
   var durEl    = document.getElementById('wbDuration');
   var prioEl   = document.getElementById('wbPrio');
@@ -4203,8 +4208,9 @@ function openWorkBankForm(id) {
     titleEl.textContent = 'Modifier travail';
     nameEl.value   = item.name || '';
     clientEl.value = item.client || '';
-    phoneEl.value  = item.phone || '';
+    phoneEl.value  = normalizePhone(item.phone) || item.phone || '';
     emailEl.value  = item.email || '';
+    if (addrEl) addrEl.value = item.address || '';
     typeEl.value   = item.type && jobsDef[item.type] ? item.type : (keys[0] || '');
     durEl.value    = item.duration || '';
     prioEl.value   = item.priority || 'medium';
@@ -4216,6 +4222,7 @@ function openWorkBankForm(id) {
   } else {
     titleEl.textContent = 'Nouveau travail';
     nameEl.value = ''; clientEl.value = ''; phoneEl.value = ''; emailEl.value = '';
+    if (addrEl) addrEl.value = '';
     typeEl.value = keys[0] || '';
     durEl.value = ''; prioEl.value = 'medium'; notesEl.value = '';
     flexEl.checked = false;
@@ -4340,26 +4347,50 @@ function applyParsedToWbForm(parsed) {
   var setVal = function(id, v) { var el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
   setVal('wbName',     parsed.name);
   setVal('wbClient',   parsed.client);
-  setVal('wbPhone',    parsed.phone);
+  setVal('wbPhone',    normalizePhone(parsed.phone) || parsed.phone);
   setVal('wbEmail',    parsed.email);
+  setVal('wbAddress',  parsed.location);
   setVal('wbDuration', parsed.duration);
   if (parsed.type)     setVal('wbType', parsed.type);
   if (parsed.priority) setVal('wbPrio', parsed.priority);
   if (parsed.indoor === true || parsed.indoor === false) _wbCurrentIndoor = parsed.indoor;
-  // Carry contextual info (date, time, address, amount) into notes
+  // Carry remaining context (date, time, amount) into notes
   var notesEl = document.getElementById('wbNotes');
   if (notesEl) {
     var bits = [];
-    if (parsed.date)     bits.push('📅 ' + _formatDateFr(parsed.date));
-    if (parsed.time)     bits.push('🕒 ' + parsed.time);
-    if (parsed.location) bits.push('📍 ' + parsed.location);
-    if (parsed.amount)   bits.push('💲 ' + parsed.amount);
+    if (parsed.date)   bits.push('📅 ' + _formatDateFr(parsed.date));
+    if (parsed.time)   bits.push('🕒 ' + parsed.time);
+    if (parsed.amount) bits.push('💲 ' + parsed.amount);
     if (bits.length) {
       var prev = (notesEl.value || '').trim();
       notesEl.value = bits.join(' · ') + (prev ? '\n' + prev : '');
     }
   }
   _wbUpdateIndoorUI();
+}
+
+/* Normalize a phone string to "XXX-XXX-XXXX" (NA format).
+   Returns the original input if it doesn't yield 10 digits. */
+function normalizePhone(raw) {
+  if (!raw) return '';
+  var digits = String(raw).replace(/\D+/g, '');
+  if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+  if (digits.length < 10) return digits;
+  digits = digits.slice(0, 10);
+  return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6, 10);
+}
+
+/* Live input formatter: keeps the field formatted as the user types.
+   Handles paste and trailing edits gracefully. */
+function formatPhoneInput(el) {
+  if (!el) return;
+  var digits = (el.value || '').replace(/\D+/g, '');
+  if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+  digits = digits.slice(0, 10);
+  var out = digits;
+  if (digits.length > 6)      out = digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+  else if (digits.length > 3) out = digits.slice(0, 3) + '-' + digits.slice(3);
+  el.value = out;
 }
 
 function _formatDateFr(iso) {
@@ -4380,8 +4411,9 @@ function saveWorkBankItem() {
     id: _wbEditingId || _wbNewId(),
     name: name,
     client: (document.getElementById('wbClient').value || '').trim(),
-    phone: (document.getElementById('wbPhone').value || '').trim(),
+    phone: normalizePhone((document.getElementById('wbPhone').value || '').trim()) || (document.getElementById('wbPhone').value || '').trim(),
     email: (document.getElementById('wbEmail').value || '').trim(),
+    address: ((document.getElementById('wbAddress') || {}).value || '').trim(),
     type: document.getElementById('wbType').value || '',
     duration: (document.getElementById('wbDuration').value || '').trim(),
     priority: document.getElementById('wbPrio').value || 'medium',

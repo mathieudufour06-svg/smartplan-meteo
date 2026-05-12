@@ -4231,30 +4231,46 @@ function applyWbVoice() {
   var textEl = document.getElementById('wbVoiceText');
   var text = textEl ? (textEl.value || '').trim() : '';
   if (!text) { toast('⚠ Aucun texte à analyser'); return; }
-  var parsed = parseVoiceInput(text);
-  var t = text.toLowerCase();
-  // Indoor/outdoor detection
-  if (/\b(int[eé]rieur|indoor|inside|au\s+chaud)\b/.test(t))      _wbCurrentIndoor = true;
-  else if (/\b(ext[eé]rieur|outdoor|outside|dehors)\b/.test(t))   _wbCurrentIndoor = false;
-  // Duration detection (h, min, jour, journée)
-  var dur = '';
-  var mDur = t.match(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/);
-  if (mDur) dur = mDur[1].replace(',', '.') + 'h';
-  else if (/\b(?:une\s+)?journée\b|\b(?:1|une)\s*jour\b/.test(t)) dur = '1 journée';
-  else if ((mDur = t.match(/\b(\d+)\s*min(?:utes?)?\b/))) dur = mDur[1] + ' min';
-  // Phone detection
-  var phone = '';
-  var mPh = text.match(/(?:\+?\d[\s.\-]?){9,14}\d/);
-  if (mPh) phone = mPh[0].trim();
-  // Apply
-  if (parsed.name)   document.getElementById('wbName').value = parsed.name;
-  if (parsed.client) document.getElementById('wbClient').value = parsed.client;
-  if (parsed.type)   document.getElementById('wbType').value = parsed.type;
-  if (parsed.priority) document.getElementById('wbPrio').value = parsed.priority;
-  if (dur)   document.getElementById('wbDuration').value = dur;
-  if (phone) document.getElementById('wbPhone').value = phone;
-  _wbUpdateIndoorUI();
+  applyParsedToWbForm(parseSmartInput(text));
   toast('✓ Champs pré-remplis');
+}
+
+function applyParsedToWbForm(parsed) {
+  if (!parsed) return;
+  var setVal = function(id, v) { var el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+  setVal('wbName',     parsed.name);
+  setVal('wbClient',   parsed.client);
+  setVal('wbPhone',    parsed.phone);
+  setVal('wbEmail',    parsed.email);
+  setVal('wbDuration', parsed.duration);
+  if (parsed.type)     setVal('wbType', parsed.type);
+  if (parsed.priority) setVal('wbPrio', parsed.priority);
+  if (parsed.indoor === true || parsed.indoor === false) _wbCurrentIndoor = parsed.indoor;
+  // Carry contextual info (date, time, address, amount) into notes
+  var notesEl = document.getElementById('wbNotes');
+  if (notesEl) {
+    var bits = [];
+    if (parsed.date)     bits.push('📅 ' + _formatDateFr(parsed.date));
+    if (parsed.time)     bits.push('🕒 ' + parsed.time);
+    if (parsed.location) bits.push('📍 ' + parsed.location);
+    if (parsed.amount)   bits.push('💲 ' + parsed.amount);
+    if (bits.length) {
+      var prev = (notesEl.value || '').trim();
+      notesEl.value = bits.join(' · ') + (prev ? '\n' + prev : '');
+    }
+  }
+  _wbUpdateIndoorUI();
+}
+
+function _formatDateFr(iso) {
+  if (!iso) return '';
+  var parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  var months = ['janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
+  var d = parseInt(parts[2], 10);
+  var m = parseInt(parts[1], 10) - 1;
+  if (isNaN(d) || m < 0 || m > 11) return iso;
+  return d + ' ' + months[m] + ' ' + parts[0];
 }
 
 function saveWorkBankItem() {
@@ -5488,9 +5504,20 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tDuration').value = parsed.duration || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
+  // Pipe phone/email/amount into description if present
+  var descEl = document.getElementById('tDesc');
+  if (descEl) {
+    var bits = [];
+    if (parsed.phone)  bits.push('📞 ' + parsed.phone);
+    if (parsed.email)  bits.push('✉ ' + parsed.email);
+    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (bits.length) descEl.value = bits.join(' · ');
+  }
   buildTypeGrid(parsed.type);
   var dateValue = '';
-  if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
+  if (parsed.date) {
+    dateValue = parsed.date;
+  } else if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
     dateValue = isoDate(ST.forecast[parsed.dayIndex].date);
   }
   populateDateInput(dateValue);

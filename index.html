@@ -2425,6 +2425,155 @@
     .status-pill.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
 
     /* ════════════════════════════════════════════════════════════════
+       DAY DETAIL — chantier dossier first, weather compact
+    ════════════════════════════════════════════════════════════════ */
+    #ddContent { display: flex; flex-direction: column; gap: 14px; }
+    .dd-section { display: flex; flex-direction: column; gap: 10px; }
+    .dd-sec-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 0 2px;
+    }
+    .dd-sec-eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      color: var(--t-3); text-transform: uppercase;
+    }
+    .dd-sec-count {
+      font-size: 11px; font-weight: 800; color: var(--t-2);
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-pill); padding: 3px 9px;
+    }
+    .dd-chev { font-size: 12px; color: var(--t-3); transition: transform 0.2s var(--ease); }
+    details[open] > summary .dd-chev { transform: rotate(180deg); }
+
+    /* Empty state */
+    .dd-empty { text-align: center; padding: 28px 16px; background: var(--surface-1); border: 1px dashed var(--line-2); border-radius: var(--r-lg); }
+    .dd-empty-icon { font-size: 32px; line-height: 1; margin-bottom: 6px; }
+    .dd-empty-title { font-size: 14px; font-weight: 700; color: var(--t-1); margin-bottom: 4px; }
+    .dd-empty-sub { font-size: 12px; color: var(--t-3); margin-bottom: 14px; }
+    .dd-add-btn {
+      padding: 10px 18px;
+      background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
+      color: #fff; font-weight: 800; font-size: 13px;
+      border-radius: var(--r-pill); border: 0;
+      min-height: 44px;
+    }
+
+    /* Job dossier card */
+    .dj-card {
+      display: flex; flex-direction: column; gap: 12px;
+      padding: 14px;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+    }
+    .dj-head { display: flex; flex-direction: column; gap: 6px; }
+    .dj-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .dj-title { font-size: 16px; font-weight: 800; color: var(--t-1); letter-spacing: -0.01em; margin: 0; line-height: 1.25; }
+    .dj-type-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      align-self: flex-start;
+      font-size: 11px; font-weight: 700;
+      padding: 4px 9px;
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-pill); color: var(--t-2);
+    }
+    .dj-prio {
+      display: inline-flex; align-items: center;
+      flex-shrink: 0;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: var(--r-pill);
+      background: var(--surface-2); border: 1px solid var(--line-1); color: var(--t-2);
+    }
+    .dj-prio.prio-urgent { background: rgba(255,85,102,0.12); border-color: rgba(255,85,102,0.30); color: #ff8a96; }
+    .dj-prio.prio-high   { background: rgba(255,159,67,0.12); border-color: rgba(255,159,67,0.30); color: #ffb672; }
+    .dj-prio.prio-medium { background: rgba(255,213,79,0.10); border-color: rgba(255,213,79,0.28); color: #ffd97a; }
+    .dj-prio.prio-low    { background: rgba(76,217,123,0.10); border-color: rgba(76,217,123,0.28); color: #7be09a; }
+
+    .dj-sec { display: flex; flex-direction: column; gap: 6px; }
+    .dj-sec-t {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.07em;
+      color: var(--t-4); text-transform: uppercase;
+      margin: 0; padding-left: 2px;
+    }
+    .dj-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+    .dj-list li {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 13px; color: var(--t-1); line-height: 1.4;
+    }
+    .dj-list .dj-i { flex-shrink: 0; font-size: 13px; line-height: 1.4; width: 16px; text-align: center; }
+    .dj-link { color: var(--tint); text-decoration: none; border-bottom: 1px dashed rgba(118,150,255,0.4); }
+    .dj-link:active { opacity: 0.7; }
+    .dj-notes { color: var(--t-2); font-style: normal; }
+
+    .dj-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
+    .dj-photo { display: block; aspect-ratio: 1/1; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line-1); }
+    .dj-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .dj-w-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      align-self: flex-start;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 700;
+      border-radius: var(--r-pill);
+    }
+    .dj-w-chip.ok   { background: var(--ok-bg);   border: 1px solid var(--ok-bd);   color: var(--green); }
+    .dj-w-chip.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--orange); }
+    .dj-w-chip.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
+    .dj-w-chip-i { font-size: 11px; }
+
+    .dj-edit {
+      width: 100%; padding: 11px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      color: var(--t-1); font-size: 13px; font-weight: 700;
+      min-height: 44px;
+      transition: background var(--t-fast) var(--ease);
+    }
+    .dj-edit:active { background: var(--surface-3); }
+
+    /* Compact weather */
+    .dd-w-pill { padding: 5px 11px; font-size: 11px; }
+    .dd-w-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface-1); border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+    }
+    .dd-w-main { display: flex; align-items: center; gap: 12px; }
+    .dd-w-icon { font-size: 30px; line-height: 1; }
+    .dd-w-num { display: flex; flex-direction: column; gap: 1px; }
+    .dd-w-temp { font-size: 20px; font-weight: 800; color: var(--t-1); letter-spacing: -0.02em; line-height: 1.1; }
+    .dd-w-tmin { font-size: 13px; font-weight: 600; color: var(--t-3); }
+    .dd-w-label { font-size: 11px; color: var(--t-3); }
+    .dd-w-stats { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+    .dd-w-stat { font-size: 11.5px; color: var(--t-2); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+    .dd-w-stat-i { font-size: 11px; }
+    @media (max-width: 380px) {
+      .dd-w-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .dd-w-stats { flex-direction: row; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+    }
+
+    /* Risque par métier — collapsed */
+    .dd-risk { background: var(--surface-1); border: 1px solid var(--line-1); border-radius: var(--r-md); padding: 0; }
+    .dd-risk > summary {
+      list-style: none;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+    }
+    .dd-risk > summary::-webkit-details-marker { display: none; }
+    .dd-risk-list { display: flex; flex-direction: column; gap: 4px; padding: 0 12px 12px; }
+    .dd-risk-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--line-1); border-radius: var(--r-sm); }
+    .dd-risk-ico { font-size: 16px; }
+    .dd-risk-name { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--t-1); }
+    .dd-risk-lvl { font-size: 12px; font-weight: 800; }
+    .dd-risk-lvl.ok   { color: var(--green); }
+    .dd-risk-lvl.warn { color: var(--orange); }
+    .dd-risk-lvl.bad  { color: var(--red); }
+
+    /* ════════════════════════════════════════════════════════════════
        TOAST
     ════════════════════════════════════════════════════════════════ */
     #toast {
@@ -4807,45 +4956,160 @@ function openTodayDetail() { openDayDetail(0); }
 function openDayDetail(di) {
   if (!ST.forecast || !ST.forecast[di]) return;
   var day = ST.forecast[di];
-  var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
+  var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS_FULL[day.date.getMonth()];
   document.getElementById('ddTitle').textContent = dayName;
-  var st = simpleStatus(day);
-  var html =
-    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px">'
-    + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline)">'
-    + '<div style="font-size:2.6rem; line-height:1">' + wIcon(day.weathercode) + '</div>'
-    + '<div style="font-weight:700; margin-top:8px">' + wLabel(day.weathercode) + '</div>'
-    + '</div>'
-    + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px">'
-    + '<div style="font-size:.68rem; font-weight:700; color:var(--t-3); text-transform:uppercase; letter-spacing:.07em">Conditions terrain</div>'
-    + '<span class="status-pill ' + st.level + '" style="padding:8px 14px"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
-    + '</div>'
-    + '</div>'
-    + '<div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-bottom:14px">'
-    + ddStat('🌡', 'Max', day.temp_max + '°')
-    + ddStat('🌡', 'Min', day.temp_min + '°')
-    + ddStat('💨', 'Vent', day.windspeed + ' km/h')
-    + ddStat('💧', 'Précip.', day.precipitation + ' mm')
-    + ddStat('☔', 'Prob.', day.rain_prob + '%')
-    + ddStat('⛅', 'Ciel', wLabel(day.weathercode))
-    + '</div>'
-    + '<div style="font-size:.70rem; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px">Risque par métier</div>'
-    + '<div style="display:flex; flex-direction:column; gap:5px">';
-  var jobs = getMergedJobTypes();
-  Object.keys(jobs).forEach(function(key) {
-    var jd  = jobs[key];
-    var res = assess(key, day);
-    var clr = res.level === 'ok' ? 'var(--green)' : res.level === 'risk' ? 'var(--warning)' : 'var(--danger)';
-    var lvlIcon = res.level === 'ok' ? '✓' : res.level === 'risk' ? '⚠' : '✕';
-    html += '<div style="display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--surface-2); border-radius:10px; border:1px solid var(--hairline)">'
-      + '<span style="font-size:1.05rem">' + jd.icon + '</span>'
-      + '<span style="flex:1; font-size:.85rem; font-weight:600">' + esc(jd.name || jd.short) + '</span>'
-      + '<span style="color:' + clr + '; font-size:.78rem; font-weight:700">' + lvlIcon + '</span>'
-      + '</div>';
+  var dayIso = isoDate(day.date);
+  // Tasks on this day
+  var tasks = (ST.tasks || []).filter(function(t) {
+    if (t.status === 'backlog') return false;
+    if (t.scheduledDate) return t.scheduledDate === dayIso;
+    return t.dayIndex === di;
+  }).sort(function(a, b) {
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    if (a.time) return -1;
+    if (b.time) return 1;
+    return 0;
   });
-  html += '</div>';
+
+  var jobsDef = getMergedJobTypes();
+  var st = simpleStatus(day);
+  var html = '';
+
+  // 1) JOB DOSSIERS — chantier first, weather later
+  if (tasks.length) {
+    html += '<section class="dd-section dd-jobs">'
+         +    '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Chantiers</span><span class="dd-sec-count">' + tasks.length + '</span></div>';
+    tasks.forEach(function(t) { html += _ddBuildJobDossier(t, day, jobsDef); });
+    html += '</section>';
+  } else {
+    html += '<section class="dd-section dd-empty">'
+         +    '<div class="dd-empty-icon">📅</div>'
+         +    '<div class="dd-empty-title">Aucun chantier ce jour-là</div>'
+         +    '<div class="dd-empty-sub">Tapez ci-dessous pour en planifier un.</div>'
+         +    '<button type="button" class="dd-add-btn" onclick="closeModal(\'dayDetailOverlay\'); openAddTask(\'' + dayIso + '\')">+ Ajouter un chantier</button>'
+         +  '</section>';
+  }
+
+  // 2) COMPACT WEATHER
+  html += '<section class="dd-section dd-weather">'
+       +    '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Météo</span>'
+       +      '<span class="status-pill ' + st.level + ' dd-w-pill"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
+       +    '</div>'
+       +    '<div class="dd-w-card">'
+       +      '<div class="dd-w-main">'
+       +        '<span class="dd-w-icon">' + wIcon(day.weathercode) + '</span>'
+       +        '<div class="dd-w-num">'
+       +          '<div class="dd-w-temp">' + day.temp_max + '°<span class="dd-w-tmin"> / ' + day.temp_min + '°</span></div>'
+       +          '<div class="dd-w-label">' + wLabel(day.weathercode) + '</div>'
+       +        '</div>'
+       +      '</div>'
+       +      '<div class="dd-w-stats">'
+       +        '<span class="dd-w-stat"><span class="dd-w-stat-i">💨</span>' + day.windspeed + ' km/h</span>'
+       +        '<span class="dd-w-stat"><span class="dd-w-stat-i">☔</span>' + day.rain_prob + '%</span>'
+       +        '<span class="dd-w-stat"><span class="dd-w-stat-i">💧</span>' + day.precipitation + ' mm</span>'
+       +      '</div>'
+       +    '</div>'
+       +  '</section>';
+
+  // 3) RISQUE PAR MÉTIER — collapsed by default if jobs exist
+  var riskOpen = tasks.length ? '' : ' open';
+  html += '<details class="dd-section dd-risk"' + riskOpen + '>'
+       +    '<summary><span class="dd-sec-eyebrow">Risque par métier</span><span class="dd-chev">▾</span></summary>'
+       +    '<div class="dd-risk-list">';
+  Object.keys(jobsDef).forEach(function(key) {
+    var jd  = jobsDef[key];
+    var res = assess(key, day);
+    var lvl = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
+    var ic  = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
+    html += '<div class="dd-risk-row">'
+         +    '<span class="dd-risk-ico">' + jd.icon + '</span>'
+         +    '<span class="dd-risk-name">' + esc(jd.name || jd.short) + '</span>'
+         +    '<span class="dd-risk-lvl ' + lvl + '">' + ic + '</span>'
+         +  '</div>';
+  });
+  html += '</div></details>';
+
   document.getElementById('ddContent').innerHTML = html;
+  // Wire up edit buttons + photo open
+  document.querySelectorAll('#ddContent [data-edit-task]').forEach(function(b) {
+    b.addEventListener('click', function() { closeModal('dayDetailOverlay'); openEditTask(b.dataset.editTask); });
+  });
   openModal('dayDetailOverlay');
+}
+
+function _ddBuildJobDossier(t, day, jobsDef) {
+  var jd = jobsDef[t.type] || { icon: '🔧', name: t.type, short: t.type };
+  var prioMap = { urgent:{lbl:'Urgente',cls:'prio-urgent'}, high:{lbl:'Haute',cls:'prio-high'}, medium:{lbl:'Moyenne',cls:'prio-medium'}, low:{lbl:'Basse',cls:'prio-low'} };
+  var p = prioMap[t.priority] || prioMap.medium;
+  var photos = Array.isArray(t.gallery) && t.gallery.length ? t.gallery : (t.photoPreview ? [t.photoPreview] : []);
+  // Extract phone/email from description (planifier flow stores them there)
+  var desc = t.description || '';
+  var phone = '', email = '';
+  var pm = desc.match(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+  if (pm) phone = pm[1] + '-' + pm[2] + '-' + pm[3];
+  var em = desc.match(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
+  if (em) email = em[1];
+  // Notes = description minus contact lines
+  var notes = desc
+    .replace(/[📞✉][^\n]*\n?/g, '')
+    .replace(/^\s*[\-•·]\s*/gm, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  // Weather assessment for this job
+  var res = assess(t.type, day, t.weather);
+  var resLevel = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
+  var resIcon  = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
+  var flexible = t.weather && t.weather.maxRain >= 50 && t.weather.maxWind >= 80;
+
+  var html = '<article class="dj-card">'
+    + '<header class="dj-head">'
+    +   '<div class="dj-title-row">'
+    +     '<h4 class="dj-title">' + esc(t.name || 'Sans titre') + '</h4>'
+    +     '<span class="dj-prio ' + p.cls + '">' + p.lbl + '</span>'
+    +   '</div>'
+    +   '<span class="dj-type-badge">' + jd.icon + ' ' + esc(jd.short || jd.name) + '</span>'
+    + '</header>';
+
+  // Client section
+  var clientItems = [];
+  if (t.client)   clientItems.push('<li><span class="dj-i">👤</span>' + esc(t.client) + '</li>');
+  if (phone)      clientItems.push('<li><span class="dj-i">📞</span><a class="dj-link" href="tel:' + esc(phone.replace(/\D+/g,'')) + '">' + esc(phone) + '</a></li>');
+  if (email)      clientItems.push('<li><span class="dj-i">✉</span><a class="dj-link" href="mailto:' + esc(email) + '">' + esc(email) + '</a></li>');
+  if (t.location) clientItems.push('<li><span class="dj-i">📍</span>' + esc(t.location) + '</li>');
+  if (clientItems.length) {
+    html += '<section class="dj-sec"><h5 class="dj-sec-t">Client</h5><ul class="dj-list">' + clientItems.join('') + '</ul></section>';
+  }
+
+  // Job section
+  var jobItems = [];
+  if (t.time)     jobItems.push('<li><span class="dj-i">🕒</span>' + esc(t.time) + '</li>');
+  if (t.duration) jobItems.push('<li><span class="dj-i">⏱</span>' + esc(t.duration) + '</li>');
+  if (flexible)   jobItems.push('<li><span class="dj-i">☂</span>Flexible météo</li>');
+  if (notes)      jobItems.push('<li class="dj-notes"><span class="dj-i">📝</span>' + esc(notes).replace(/\n/g, '<br>') + '</li>');
+  if (jobItems.length) {
+    html += '<section class="dj-sec"><h5 class="dj-sec-t">Détails</h5><ul class="dj-list">' + jobItems.join('') + '</ul></section>';
+  }
+
+  // Photos
+  if (photos.length) {
+    html += '<section class="dj-sec"><h5 class="dj-sec-t">Photos</h5><div class="dj-photos">';
+    photos.forEach(function(src) {
+      html += '<a class="dj-photo" href="' + esc(src) + '" target="_blank" rel="noopener"><img src="' + esc(src) + '" alt=""></a>';
+    });
+    html += '</div></section>';
+  }
+
+  // Compact weather chip for the job
+  html += '<div class="dj-w-chip ' + resLevel + '">'
+       +    '<span class="dj-w-chip-i">' + resIcon + '</span>'
+       +    '<span>' + esc(res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller')) + '</span>'
+       +  '</div>';
+
+  // Edit CTA
+  html += '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier ce chantier →</button>';
+
+  html += '</article>';
+  return html;
 }
 
 function ddStat(icon, lbl, val) {

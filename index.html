@@ -269,7 +269,10 @@
     ════════════════════════════════════════════════════════════════ */
     .greeting {
       padding: var(--s4) 0 var(--s6);
+      display: flex; align-items: flex-start;
+      gap: var(--s3);
     }
+    .greet-text { flex: 1; min-width: 0; }
     .greet-eyebrow {
       display: block;
       font-size: 12px; font-weight: 700;
@@ -440,33 +443,73 @@
     }
     .date-picker:focus { outline: none; border-color: var(--tint); }
 
-    /* Mini météo dans la topbar — pill glass ultra-compact */
-    .sh-wx {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 10px;
-      background: var(--glass-2);
+    /* Widget météo — intégré au hero, à côté du "Bonjour" */
+    .wx-widget {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 8px 14px 8px 8px;
+      background: linear-gradient(135deg, var(--glass-2), var(--glass-3));
       border: 1px solid var(--glass-bd-2);
       border-radius: var(--r-pill);
       color: var(--t-1);
-      line-height: 1;
-      transition: transform var(--t-fast) var(--ease),
-                  background var(--t-fast) var(--ease);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.06) inset;
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
       cursor: pointer;
+      transition: transform var(--t-fast) var(--ease),
+                  background var(--t-fast) var(--ease),
+                  box-shadow var(--t-fast) var(--ease);
+      align-self: flex-start;
+      margin-top: 4px;
     }
-    .sh-wx:active { transform: scale(0.94); background: var(--glass-3); }
-    .sh-wx .mwx-temp {
-      font-size: 14px; font-weight: 800;
-      letter-spacing: -0.02em;
+    .wx-widget:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.08) inset; }
+    .wx-widget:active { transform: scale(0.96); }
+    .wx-orb {
+      width: 34px; height: 34px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.16), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(135deg, #3a8eff, #1e4fa8);
+      box-shadow: 0 0 14px rgba(58,142,255,0.32), 0 1px 0 rgba(255,255,255,0.12) inset;
+      flex-shrink: 0;
+      transition: background var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+    }
+    .wx-orb[data-level="ok"] {
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(135deg, var(--green), #1a7a4a);
+      box-shadow: 0 0 14px var(--green-glow, rgba(45,212,131,0.34)), 0 1px 0 rgba(255,255,255,0.12) inset;
+    }
+    .wx-orb[data-level="warn"] {
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(135deg, var(--orange), #cc6e1d);
+      box-shadow: 0 0 14px rgba(255,159,67,0.38), 0 1px 0 rgba(255,255,255,0.12) inset;
+    }
+    .wx-orb[data-level="bad"] {
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(135deg, var(--red, #ff5566), #8a2c1a);
+      box-shadow: 0 0 16px rgba(255,85,102,0.42), 0 1px 0 rgba(255,255,255,0.12) inset;
+    }
+    .wx-orb-icon { font-size: 16px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); }
+    .wx-info {
+      display: flex; flex-direction: column;
+      gap: 2px; line-height: 1;
+      min-width: 0;
+    }
+    .wx-temp {
+      font-size: 17px; font-weight: 800;
+      letter-spacing: -0.025em;
       color: var(--t-1);
       font-variant-numeric: tabular-nums;
     }
-    .sh-wx .mwx-status {
-      font-size: 14px; line-height: 1;
+    .wx-status {
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
       color: var(--t-3);
+      white-space: nowrap;
     }
-    .sh-wx .mwx-status.ok   { color: var(--green); }
-    .sh-wx .mwx-status.warn { color: var(--orange); }
-    .sh-wx .mwx-status.bad  { color: var(--red); }
+    .wx-status.ok   { color: var(--green); }
+    .wx-status.warn { color: var(--orange); }
+    .wx-status.bad  { color: var(--red, #ff5566); }
 
     /* ════════════════════════════════════════════════════════════════
        7-DAY STRIP — premium pills
@@ -1298,6 +1341,7 @@
     .overlay.open { display: flex; animation: ovIn var(--t-mid) var(--ease); }
     @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
     .overlay .modal {
+      position: relative;
       width: 100%;
       max-width: var(--app-max);
       max-height: 92vh;
@@ -1309,12 +1353,34 @@
       border-bottom: 0;
       padding: var(--s5) var(--s5) calc(var(--safe-bot) + var(--s5));
       animation: shIn var(--t-slow) var(--ease);
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
     @keyframes shIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .overlay .modal h3 {
       font-size: 22px; font-weight: 800; letter-spacing: -0.025em;
       margin-bottom: var(--s4);
+      padding-right: 44px;
     }
+    .modal-close {
+      position: absolute;
+      top: calc(var(--s5) - 4px); right: calc(var(--s5) - 4px);
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      background: var(--glass-2);
+      border: 1px solid var(--glass-bd-2);
+      color: var(--t-1);
+      font-size: 16px; font-weight: 700;
+      transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+      cursor: pointer;
+      z-index: 2;
+    }
+    .modal-close:active { transform: scale(0.92); background: var(--glass-3); }
+
+    /* Body lock when any modal open — prevents background scroll on iOS */
+    body.modal-open { overflow: hidden; }
+    html.modal-open  { overflow: hidden; }
 
     .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s3); }
     .fg label {
@@ -1617,6 +1683,12 @@
     }
     .job-row-del { color: var(--red, #ff5566); }
     .job-row-edit:active, .job-row-del:active { transform: scale(0.94); }
+    .job-row-del.confirming {
+      width: auto; min-width: 44px; padding: 0 8px;
+      background: var(--red, #ff5566); color: #fff;
+      border-color: var(--red, #ff5566);
+      font-size: 11px; font-weight: 800;
+    }
 
     /* Color swatches for job creation */
     .color-swatches {
@@ -2115,10 +2187,6 @@
       <span class="sh-loc-name" id="locName">—</span>
     </button>
     <span class="sh-spacer"></span>
-    <button type="button" class="sh-wx" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
-      <span class="mwx-temp" id="mwxTemp">—°</span>
-      <span class="mwx-status" id="mwxStatus">⏳</span>
-    </button>
     <button class="sh-icon-btn" onclick="openJobsModal()" aria-label="Mes métiers">⚙</button>
     <button class="sh-icon-btn" onclick="loadWeather()" aria-label="Rafraîchir">↻</button>
   </header>
@@ -2129,11 +2197,22 @@
     <!-- ═══════════════════ HOME ═══════════════════ -->
     <section class="view active" id="viewHome" data-view="home">
 
-      <!-- Greeting -->
+      <!-- Greeting + widget météo intégré -->
       <div class="greeting">
-        <span class="greet-eyebrow" id="greetEyebrow"></span>
-        <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
-        <div class="greet-sub" id="greetSub">—</div>
+        <div class="greet-text">
+          <span class="greet-eyebrow" id="greetEyebrow"></span>
+          <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
+          <div class="greet-sub" id="greetSub">—</div>
+        </div>
+        <button type="button" class="wx-widget" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
+          <span class="wx-orb" id="wxOrb" data-level="idle">
+            <span class="wx-orb-icon" id="wxIcon">⏳</span>
+          </span>
+          <span class="wx-info">
+            <span class="wx-temp" id="mwxTemp">—°</span>
+            <span class="wx-status" id="mwxStatus">Météo</span>
+          </span>
+        </button>
       </div>
 
       <!-- 1. JOBS AUJOURD'HUI -->
@@ -2367,6 +2446,7 @@
 <!-- TASK MODAL -->
 <div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('taskOverlay')" aria-label="Fermer">✕</button>
     <h3 id="taskModalTitle">Nouveau chantier</h3>
     <div class="fg">
       <label>Type de travail</label>
@@ -2486,6 +2566,7 @@
 <!-- LOCATION MODAL -->
 <div class="overlay" id="locOverlay" onclick="overlayClick(event,'locOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('locOverlay')" aria-label="Fermer">✕</button>
     <h3>Localisation du chantier</h3>
     <button class="btn-geo" onclick="geolocate()">📍 Utiliser ma position GPS</button>
     <input type="text" class="loc-input" id="locSearch"
@@ -2501,7 +2582,8 @@
 <!-- DAY DETAIL MODAL -->
 <div class="overlay" id="dayDetailOverlay" onclick="overlayClick(event,'dayDetailOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px">
+    <button type="button" class="modal-close" onclick="closeModal('dayDetailOverlay')" aria-label="Fermer">✕</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; padding-right: 44px">
       <h3 id="ddTitle" style="margin:0">Météo du jour</h3>
       <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
     </div>
@@ -2515,6 +2597,7 @@
 <!-- OPTIMIZE MODAL -->
 <div class="overlay" id="optimizeOverlay" onclick="overlayClick(event,'optimizeOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('optimizeOverlay')" aria-label="Fermer">✕</button>
     <h3>📅 Optimiser ma semaine</h3>
     <div id="optimizeContent"></div>
     <div class="mf" style="margin-top:16px">
@@ -2526,6 +2609,7 @@
 <!-- VOICE MODAL -->
 <div class="overlay" id="voiceOverlay" onclick="overlayClick(event,'voiceOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('voiceOverlay')" aria-label="Fermer">✕</button>
     <h3>🎙 Dicter un chantier</h3>
     <p style="font-size:.84rem;color:var(--t3);margin-bottom:12px">Ex : <em>"Asphaltage chez Tremblay samedi à 8h priorité haute"</em></p>
     <div class="mic-wrap">
@@ -2546,6 +2630,7 @@
 <!-- PHOTO ANALYSIS MODAL -->
 <div class="overlay" id="photoOverlay" onclick="overlayClick(event,'photoOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('photoOverlay')" aria-label="Fermer">✕</button>
     <h3>📸 Analyse photo</h3>
     <p class="photo-overlay-note">Téléchargez une photo de formulaire ou note. Les champs seront pré-remplis.</p>
     <div class="fg">
@@ -2594,6 +2679,7 @@
 <!-- JOBS MODAL -->
 <div class="overlay" id="jobsOverlay" onclick="overlayClick(event,'jobsOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('jobsOverlay')" aria-label="Fermer">✕</button>
     <h3>⚙ Mes métiers</h3>
     <div id="jobsList"></div>
     <div style="border-top:1px solid var(--hairline); margin: 14px 0 12px"></div>
@@ -2610,8 +2696,8 @@
       <div class="color-swatches" id="jColor" role="radiogroup" aria-label="Couleur du métier"></div>
     </div>
     <div class="mf" style="margin-top:6px">
-      <button class="btn-cancel" onclick="resetJobForm()" id="jobCancelBtn">Annuler</button>
-      <button class="btn-primary" onclick="saveCustomJob()" id="jobSaveBtn">Ajouter →</button>
+      <button type="button" class="btn-cancel" onclick="cancelJobForm()" id="jobCancelBtn">Fermer</button>
+      <button type="button" class="btn-primary" onclick="saveCustomJob()" id="jobSaveBtn">Ajouter →</button>
     </div>
   </div>
 </div>
@@ -2844,6 +2930,16 @@ function editCustomJob(key) {
   renderColorSwatches(j.color || JOB_COLORS[0].id);
 }
 
+function cancelJobForm() {
+  if (_editingJobKey) {
+    // Cancel current edit and return to "add" mode (don't close)
+    resetJobForm();
+    return;
+  }
+  // No edit in progress → close the modal entirely
+  closeModal('jobsOverlay');
+}
+
 function saveCustomJob() {
   var icon = (document.getElementById('jIcon').value || '🔧').trim();
   var name = (document.getElementById('jName').value || '').trim();
@@ -2854,13 +2950,12 @@ function saveCustomJob() {
   var color = colorEl ? colorEl.dataset.color : JOB_COLORS[0].id;
   if (!name) { toast('⚠ Nom requis'); return; }
 
-  var key;
-  if (_editingJobKey) {
-    key = _editingJobKey;
-  } else {
-    key = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || ('job' + Date.now());
-    if (_customJobs[key]) key = key + Date.now().toString(36).slice(-4);
-  }
+  // Capture edit state BEFORE reset so the toast is correct
+  var wasEditing = !!_editingJobKey;
+  var key = wasEditing
+    ? _editingJobKey
+    : (name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || ('job' + Date.now()));
+  if (!wasEditing && _customJobs[key]) key = key + Date.now().toString(36).slice(-4);
 
   _customJobs[key] = {
     name: name, short: name.slice(0, 8), icon: icon, color: color,
@@ -2874,12 +2969,30 @@ function saveCustomJob() {
   renderJobsList();
   buildTypeGrid();
   renderActive();
-  toast(_editingJobKey ? '✓ Métier mis à jour' : '✓ Métier ajouté');
+  // Dismiss soft keyboard
+  if (document.activeElement && document.activeElement.blur) {
+    try { document.activeElement.blur(); } catch(e) {}
+  }
+  toast(wasEditing ? '✓ Métier mis à jour' : '✓ Métier ajouté');
 }
 
 function deleteCustomJob(key) {
   if (!_customJobs[key]) return;
-  if (!confirm('Supprimer « ' + _customJobs[key].name + ' » ?')) return;
+  // Two-tap confirm: first tap turns the button red, second tap deletes
+  var btn = document.querySelector('.job-row-del[data-key="' + key + '"]');
+  if (btn && !btn.classList.contains('confirming')) {
+    document.querySelectorAll('.job-row-del.confirming').forEach(function(b) {
+      b.classList.remove('confirming');
+      b.textContent = '✕';
+    });
+    btn.classList.add('confirming');
+    btn.textContent = 'OK?';
+    setTimeout(function() {
+      btn.classList.remove('confirming');
+      btn.textContent = '✕';
+    }, 3000);
+    return;
+  }
   delete _customJobs[key];
   delete RISK_RULES[key];
   if (_editingJobKey === key) resetJobForm();
@@ -3451,21 +3564,30 @@ function renderHome() {
 function renderMiniWeather() {
   var tempEl   = document.getElementById('mwxTemp');
   var statusEl = document.getElementById('mwxStatus');
+  var orbEl    = document.getElementById('wxOrb');
+  var iconEl   = document.getElementById('wxIcon');
   if (!tempEl) return;
 
   var w = ST.forecast && ST.forecast[0];
   if (!w) {
     tempEl.textContent   = '—°';
-    statusEl.textContent = '⏳';
-    statusEl.className   = 'mwx-status';
+    statusEl.textContent = 'Météo';
+    statusEl.className   = 'wx-status';
+    if (orbEl) orbEl.setAttribute('data-level', 'idle');
+    if (iconEl) iconEl.textContent = '⏳';
     return;
   }
 
   tempEl.textContent = w.temp_max + '°';
   var st = simpleStatus(w);
-  var icon = st.level === 'ok' ? '✅' : (st.level === 'bad' ? '⛔' : '⚠');
-  statusEl.textContent = icon;
-  statusEl.className   = 'mwx-status ' + st.level;
+  var label = st.level === 'ok'  ? 'Favorable'
+            : st.level === 'warn' ? 'Vigilance'
+            : st.level === 'bad'  ? 'Défavorable'
+            : 'Météo';
+  statusEl.textContent = label;
+  statusEl.className   = 'wx-status ' + st.level;
+  if (orbEl) orbEl.setAttribute('data-level', st.level);
+  if (iconEl) iconEl.textContent = wIcon(w.weathercode);
 }
 
 function renderGreeting() {
@@ -5153,8 +5275,29 @@ function setDot(state) {
 /* ════════════════════════════════════════════════════════════════
    MODAL HELPERS / NEW JOB SHEET
 ════════════════════════════════════════════════════════════════ */
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+var _openModals = [];
+function openModal(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  if (_openModals.indexOf(id) === -1) _openModals.push(id);
+  document.body.classList.add('modal-open');
+  document.documentElement.classList.add('modal-open');
+}
+function closeModal(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  _openModals = _openModals.filter(function(x) { return x !== id; });
+  if (!_openModals.length) {
+    document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+  }
+  // Blur to dismiss soft keyboard on iOS
+  if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
+    try { document.activeElement.blur(); } catch(e) {}
+  }
+}
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
 
 function openNewJobSheet() {

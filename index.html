@@ -294,7 +294,24 @@
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-    }
+   }
+    .smartplan-label{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:#C9A96E;
+  margin-bottom:10px;
+  opacity:0.95;
+}
+
+.greet-description{
+  font-size:13px;
+  color:rgba(255,255,255,0.58);
+  margin-top:8px;
+  line-height:1.4;
+  max-width:220px;
+}
     .greet-sub {
       font-size: 15px; font-weight: 500;
       color: var(--t-3);
@@ -444,23 +461,100 @@
     .date-picker:focus { outline: none; border-color: var(--tint); }
 
     /* Widget météo — intégré au hero, à côté du "Bonjour" */
-    .wx-widget {
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 8px 14px 8px 8px;
-      background: linear-gradient(135deg, var(--glass-2), var(--glass-3));
-      border: 1px solid var(--glass-bd-2);
-      border-radius: var(--r-pill);
-      color: var(--t-1);
-      box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.06) inset;
-      backdrop-filter: blur(18px) saturate(160%);
-      -webkit-backdrop-filter: blur(18px) saturate(160%);
-      cursor: pointer;
-      transition: transform var(--t-fast) var(--ease),
-                  background var(--t-fast) var(--ease),
-                  box-shadow var(--t-fast) var(--ease);
-      align-self: flex-start;
-      margin-top: 4px;
-    }
+    .wx-widget{
+      margin-top:24px;
+      width:250px;
+  padding:18px;
+  border-radius:32px;
+
+  background:
+    linear-gradient(180deg,
+    rgba(20,24,36,0.92),
+    rgba(12,15,24,0.96));
+
+  border:1px solid rgba(255,255,255,0.06);
+
+  box-shadow:
+    0 10px 40px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+
+  backdrop-filter:blur(20px);
+}
+
+.wx-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.wx-main{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+}
+
+.wx-temp{
+  font-size:42px;
+  font-weight:800;
+  line-height:1;
+}
+
+.wx-status{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  color:#43d17d;
+  margin-top:4px;
+}
+
+.wx-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.wx-stat{
+  padding:10px;
+  border-radius:18px;
+
+  background:rgba(255,255,255,0.04);
+
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.wx-stat-value{
+  font-size:16px;
+  font-weight:700;
+}
+
+.wx-stat-label{
+  font-size:11px;
+  color:rgba(255,255,255,0.55);
+}
+
+.wx-orb{
+  width:54px;
+  height:54px;
+  border-radius:50%;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:
+    radial-gradient(circle at 30% 30%,
+    #4dff9a,
+    #1d8f57);
+
+  box-shadow:
+    0 0 30px rgba(77,255,154,0.45);
+}
+
+.wx-orb-icon{
+  font-size:24px;}
+
     .wx-widget:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.08) inset; }
     .wx-widget:active { transform: scale(0.96); }
     .wx-orb {
@@ -2200,19 +2294,62 @@
       <!-- Greeting + widget météo intégré -->
       <div class="greeting">
         <div class="greet-text">
-          <span class="greet-eyebrow" id="greetEyebrow"></span>
-          <h1 class="greet-title">Bonjour<span class="accent" id="greetName"></span></h1>
-          <div class="greet-sub" id="greetSub">—</div>
-        </div>
+
+  <div class="smartplan-label">
+    SmartPlan
+  </div>
+
+  <span class="greet-eyebrow" id="greetEyebrow"></span>
+
+  <h1 class="greet-title">
+    Bonjour<span class="accent" id="greetName"></span>
+  </h1>
+
+  <div class="greet-description">
+    Planification intelligente selon la météo
+  </div>
+
+  <div class="greet-sub" id="greetSub">—</div>
+
+</div>
         <button type="button" class="wx-widget" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
-          <span class="wx-orb" id="wxOrb" data-level="idle">
-            <span class="wx-orb-icon" id="wxIcon">⏳</span>
-          </span>
-          <span class="wx-info">
-            <span class="wx-temp" id="mwxTemp">—°</span>
-            <span class="wx-status" id="mwxStatus">Météo</span>
-          </span>
-        </button>
+
+  <div class="wx-top">
+    <span class="wx-orb" id="wxOrb" data-level="idle">
+      <span class="wx-orb-icon" id="wxIcon">⏳</span>
+    </span>
+
+    <div class="wx-main">
+      <span class="wx-temp" id="mwxTemp">13°</span>
+      <span class="wx-status" id="mwxStatus">Favorable</span>
+    </div>
+  </div>
+
+  <div class="wx-grid">
+
+    <div class="wx-stat">
+      <span class="wx-stat-value">30%</span>
+      <span class="wx-stat-label">Pluie</span>
+    </div>
+
+    <div class="wx-stat">
+      <span class="wx-stat-value">18km/h</span>
+      <span class="wx-stat-label">Vent</span>
+    </div>
+
+    <div class="wx-stat">
+      <span class="wx-stat-value">0mm</span>
+      <span class="wx-stat-label">Accum.</span>
+    </div>
+
+    <div class="wx-stat">
+      <span class="wx-stat-value">13°</span>
+      <span class="wx-stat-label">Ressenti</span>
+    </div>
+
+  </div>
+
+</button>
       </div>
 
       <!-- 1. JOBS AUJOURD'HUI -->

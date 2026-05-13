@@ -23,9 +23,10 @@
       /* ── canvas (warm-dark, like Linear / Arc) ──────────── */
       --bg-base:    #08080d;
       --bg-canvas:  #0c0d13;
-      --bg-radial:  radial-gradient(140% 80% at 0% -10%, rgba(120,90,255,0.08) 0%, transparent 55%),
-                    radial-gradient(120% 70% at 110% 0%, rgba(50,200,140,0.06) 0%, transparent 55%),
-                    radial-gradient(80% 60% at 50% 110%, rgba(120,90,255,0.05) 0%, transparent 60%);
+      --bg-radial:  radial-gradient(160% 90% at -5% -15%, rgba(120,90,255,0.12) 0%, transparent 52%),
+                    radial-gradient(130% 80% at 115% -5%, rgba(45,200,140,0.08) 0%, transparent 52%),
+                    radial-gradient(90% 70% at 50% 115%, rgba(100,70,240,0.07) 0%, transparent 58%),
+                    radial-gradient(60% 40% at 80% 60%, rgba(118,150,255,0.04) 0%, transparent 55%);
 
       /* ── surfaces (layered) ─────────────────────────────── */
       --surface-0:  #11121a;     /* deepest */
@@ -127,7 +128,7 @@
 
       --shadow-card: var(--sh-2);
       --shadow-card-hi: var(--sh-3);
-      --shadow-fab: 0 12px 28px var(--tint-glow), 0 4px 14px rgba(0,0,0,0.6);
+      --shadow-fab: 0 8px 20px rgba(118,150,255,0.28), 0 4px 12px rgba(0,0,0,0.55);
       --shadow-glow: 0 0 80px var(--tint-glow);
 
       /* ── motion ─────────────────────────────────────────── */
@@ -180,9 +181,9 @@
       content: '';
       position: fixed; inset: 0;
       pointer-events: none;
-      opacity: 0.04;
+      opacity: 0.055;
       mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
       z-index: 0;
     }
 
@@ -270,7 +271,7 @@
     .greeting {
       padding: var(--s4) 0 var(--s6);
       display: flex; align-items: flex-start;
-      gap: var(--s3);
+      gap: var(--s4);
     }
     .greet-text { flex: 1; min-width: 0; }
     .greet-eyebrow {
@@ -461,6 +462,7 @@
     .date-picker:focus { outline: none; border-color: var(--tint); }
 
     /* Widget météo — intégré au hero, à côté du "Bonjour" */
+<<<<<<< HEAD
     .wx-widget{
       margin-top:24px;
       width:250px;
@@ -557,53 +559,125 @@
 
     .wx-widget:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.08) inset; }
     .wx-widget:active { transform: scale(0.96); }
+=======
+    .wx-widget {
+      display: flex; flex-direction: column; gap: 0;
+      padding: 12px 14px 11px;
+      min-width: 148px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: var(--r-xl);
+      color: var(--t-1);
+      box-shadow:
+        0 4px 20px rgba(0,0,0,0.30),
+        0 1px 0 rgba(255,255,255,0.08) inset;
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+      transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+    }
+    .wx-widget::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+      pointer-events: none;
+    }
+    .wx-widget:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.34), 0 1px 0 rgba(255,255,255,0.10) inset; }
+    .wx-widget:active { transform: scale(0.97); }
+
+    .wx-top {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 9px;
+    }
+>>>>>>> ce4305365e3f2d3ab4040813b262984b46f7bae9
     .wx-orb {
-      width: 34px; height: 34px;
+      width: 38px; height: 38px;
       display: grid; place-items: center;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.16), rgba(255,255,255,0.02) 70%),
-                  linear-gradient(135deg, #3a8eff, #1e4fa8);
-      box-shadow: 0 0 14px rgba(58,142,255,0.32), 0 1px 0 rgba(255,255,255,0.12) inset;
+      border-radius: 12px;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(145deg, #3a8eff, #1e4fa8);
+      box-shadow: 0 0 12px rgba(58,142,255,0.28), 0 1px 0 rgba(255,255,255,0.14) inset;
       flex-shrink: 0;
       transition: background var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
     }
     .wx-orb[data-level="ok"] {
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
-                  linear-gradient(135deg, var(--green), #1a7a4a);
-      box-shadow: 0 0 14px var(--green-glow, rgba(45,212,131,0.34)), 0 1px 0 rgba(255,255,255,0.12) inset;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(145deg, #2dd483, #1a7a4a);
+      box-shadow: 0 0 12px rgba(45,212,131,0.30), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
     .wx-orb[data-level="warn"] {
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
-                  linear-gradient(135deg, var(--orange), #cc6e1d);
-      box-shadow: 0 0 14px rgba(255,159,67,0.38), 0 1px 0 rgba(255,255,255,0.12) inset;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(145deg, #ff9f43, #cc6e1d);
+      box-shadow: 0 0 12px rgba(255,159,67,0.30), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
     .wx-orb[data-level="bad"] {
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
-                  linear-gradient(135deg, var(--red, #ff5566), #8a2c1a);
-      box-shadow: 0 0 16px rgba(255,85,102,0.42), 0 1px 0 rgba(255,255,255,0.12) inset;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.20), rgba(255,255,255,0.02) 70%),
+                  linear-gradient(145deg, #ff5566, #8a2c1a);
+      box-shadow: 0 0 14px rgba(255,85,102,0.34), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
-    .wx-orb-icon { font-size: 16px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); }
+    .wx-orb-icon { font-size: 20px; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35)); }
+
     .wx-info {
-      display: flex; flex-direction: column;
-      gap: 2px; line-height: 1;
-      min-width: 0;
+      display: flex; flex-direction: column; gap: 2px; line-height: 1;
     }
     .wx-temp {
-      font-size: 17px; font-weight: 800;
-      letter-spacing: -0.025em;
+      font-size: 26px; font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1;
       color: var(--t-1);
       font-variant-numeric: tabular-nums;
     }
+    .wx-detail {
+      font-size: 10.5px; font-weight: 600;
+      color: var(--t-4);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .wx-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 40%, rgba(255,255,255,0.07) 60%, transparent);
+      margin-bottom: 9px;
+    }
+
+    .wx-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px 6px;
+      margin-bottom: 9px;
+    }
+    .wx-stat { display: flex; flex-direction: column; gap: 1px; }
+    .wx-stat-lbl {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t-4);
+    }
+    .wx-stat-val {
+      font-size: 12px; font-weight: 700;
+      color: var(--t-2);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+    .wx-stat-sub {
+      font-size: 10px; font-weight: 600;
+      color: var(--t-4);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+      margin-top: 1px;
+    }
+
     .wx-status {
-      font-size: 10.5px; font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--t-3);
       white-space: nowrap;
     }
     .wx-status.ok   { color: var(--green); }
     .wx-status.warn { color: var(--orange); }
-    .wx-status.bad  { color: var(--red, #ff5566); }
+    .wx-status.bad  { color: #ff6677; }
 
     /* ════════════════════════════════════════════════════════════════
        7-DAY STRIP — premium pills
@@ -1077,7 +1151,7 @@
     /* ════════════════════════════════════════════════════════════════
        BANQUE DE TRAVAUX — liste backlog
     ════════════════════════════════════════════════════════════════ */
-    .btl-list { display: flex; flex-direction: column; gap: 6px; margin-top: var(--s3); }
+    .btl-list { display: flex; flex-direction: column; gap: 8px; margin-top: var(--s3); }
     .btl-item {
       display: flex; align-items: center; gap: var(--s3);
       padding: 12px 14px;
@@ -1093,7 +1167,245 @@
     .btl-name { display: block; font-size: 14px; font-weight: 700; color: var(--t-1); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .btl-meta { display: block; font-size: 11.5px; color: var(--t-3); margin-top: 2px; }
     .btl-action { font-size: 14px; color: var(--t-4); flex-shrink: 0; }
-    .btl-empty { font-size: 13px; color: var(--t-4); font-style: italic; padding: 10px 2px; margin-top: var(--s2); }
+    .btl-empty { font-size: 13px; color: var(--t-4); font-style: italic; padding: 10px 2px; margin-top: var(--s2); text-align: center; }
+
+    /* Work bank cards (reusable templates) */
+    .wb-card {
+      display: flex; align-items: stretch;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .wb-card:active { background: var(--surface-2); }
+    .wb-main {
+      flex: 1 1 0; min-width: 0;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 12px 12px 14px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .wb-icon { font-size: 22px; line-height: 1; flex-shrink: 0; padding-top: 2px; }
+    .wb-body { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .wb-name { font-size: 14px; font-weight: 700; color: var(--t-1); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wb-meta { font-size: 11.5px; color: var(--t-3); }
+    .wb-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .wb-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 3px 7px;
+      background: var(--glass-2); border: 1px solid var(--glass-bd-2);
+      border-radius: var(--r-pill);
+      color: var(--t-2);
+    }
+    .wb-badge.ok { background: var(--ok-bg); border-color: var(--ok-bd); color: var(--green); }
+    .wb-plan {
+      align-self: stretch;
+      padding: 0 16px;
+      background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
+      color: #fff;
+      font-size: 12px; font-weight: 800;
+      letter-spacing: 0.02em;
+      border-left: 1px solid var(--line-2);
+      transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+      white-space: nowrap;
+    }
+    .wb-plan:active { opacity: 0.85; transform: scale(0.97); }
+    .wb-add {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1px dashed var(--line-3);
+      border-radius: var(--r-lg);
+      color: var(--t-2);
+      font-size: 13px; font-weight: 700;
+      letter-spacing: -0.01em;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .wb-add:active { background: var(--surface-1); border-color: var(--tint); color: var(--t-1); }
+
+    .wb-toggle-row { display: flex; gap: 8px; }
+    .wb-toggle {
+      flex: 1;
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-md);
+      font-size: 13px; font-weight: 600;
+      color: var(--t-2);
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    }
+    .wb-toggle.active {
+      background: linear-gradient(135deg, rgba(118,150,255,0.18), rgba(167,139,255,0.10));
+      border-color: var(--tint);
+      color: var(--t-1);
+    }
+    .wb-flex-label { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px 0; }
+    .wb-flex-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--tint); flex-shrink: 0; }
+    .wb-flex-label span { font-size: 13px; color: var(--t-1); }
+
+    /* Priority badge color variants */
+    .wb-badge.prio-urgent { background: rgba(255,85,102,0.12); border-color: rgba(255,85,102,0.30); color: #ff8a96; }
+    .wb-badge.prio-high   { background: rgba(255,159,67,0.12); border-color: rgba(255,159,67,0.30); color: #ffb672; }
+    .wb-badge.prio-medium { background: rgba(255,213,79,0.10); border-color: rgba(255,213,79,0.28); color: #ffd97a; }
+    .wb-badge.prio-low    { background: rgba(76,217,123,0.10); border-color: rgba(76,217,123,0.28); color: #7be09a; }
+
+    /* Banque de travaux — dedicated view */
+    .bank-header { padding: 18px 4px 6px; }
+    .bank-title {
+      font-size: 26px; font-weight: 800; letter-spacing: -0.02em;
+      color: var(--t-1); margin: 0 0 6px;
+    }
+    .bank-sub {
+      font-size: 13.5px; line-height: 1.45; color: var(--t-3);
+      margin: 0; max-width: 520px;
+    }
+    .bank-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 14px 0 10px;
+      flex-wrap: wrap;
+    }
+    .bank-count {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+      color: var(--t-3); text-transform: uppercase;
+      min-width: 0; flex: 1 1 auto;
+    }
+    .bank-new {
+      padding: 11px 18px;
+      background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
+      color: #fff;
+      font-size: 13px; font-weight: 800; letter-spacing: 0.01em;
+      border-radius: var(--r-pill);
+      border: 0;
+      box-shadow: 0 6px 18px -8px rgba(118,150,255,0.55);
+      transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+      white-space: nowrap;
+      flex: 0 0 auto;
+      min-height: 44px;
+    }
+    .bank-new:active { opacity: 0.85; transform: scale(0.97); }
+    .bank-list { gap: 10px; margin-top: 0; }
+    .bank-empty {
+      padding: 36px 16px; font-size: 14px; line-height: 1.5;
+      color: var(--t-3); text-align: center;
+      background: var(--surface-1);
+      border: 1px dashed var(--line-2);
+      border-radius: var(--r-lg);
+    }
+    @media (max-width: 360px) {
+      .bank-toolbar { padding: 12px 0 10px; }
+      .bank-new { width: 100%; }
+      .bank-count { flex: 1 1 100%; }
+    }
+
+    /* Work bank — thumbnail on cards */
+    .wb-thumb {
+      width: 56px; height: 56px; flex-shrink: 0;
+      border-radius: var(--r-md);
+      background: var(--surface-2);
+      object-fit: cover;
+      border: 1px solid var(--line-1);
+    }
+    /* Work bank — voice + photo blocks */
+    .wb-voice-block {
+      background: rgba(118,150,255,0.04);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      padding: 10px 12px 12px;
+    }
+    .wb-voice-block .label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .wb-voice-block textarea { width: 100%; }
+    .wb-analyze {
+      width: 100%; margin-top: 8px;
+      min-height: 40px;
+    }
+    .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fg-row .fg { margin-bottom: 0; }
+    @media (max-width: 420px) {
+      .fg-row { grid-template-columns: 1fr; gap: 0; }
+      .fg-row .fg { margin-bottom: var(--s3, 12px); }
+    }
+    .fg-opt { font-size: 11px; font-weight: 600; color: var(--t-4); letter-spacing: 0; }
+
+    .wb-photo-zone { width: 100%; }
+    .wb-photo-add {
+      width: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      padding: 18px 12px;
+      background: var(--surface-1);
+      border: 1px dashed var(--line-2);
+      border-radius: var(--r-md);
+      color: var(--t-2);
+      min-height: 92px;
+      transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    }
+    .wb-photo-add:active { background: var(--surface-2); border-color: var(--tint); }
+    .wb-photo-icon { font-size: 24px; line-height: 1; }
+    .wb-photo-label { font-size: 13px; font-weight: 700; color: var(--t-1); }
+    .wb-photo-hint { font-size: 11px; color: var(--t-4); }
+    .wb-photo-preview {
+      position: relative;
+      width: 100%;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      border: 1px solid var(--line-1);
+      background: var(--surface-2);
+    }
+    .wb-photo-preview img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+    .wb-photo-remove {
+      position: absolute; top: 6px; right: 6px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.60);
+      color: #fff;
+      border-radius: 50%;
+      backdrop-filter: blur(6px);
+      font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.20);
+    }
+    .wb-photo-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+      gap: 8px;
+    }
+    .wb-photo-grid:empty { display: none; }
+    .wb-photo-cell {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      border: 1px solid var(--line-1);
+      background: var(--surface-2);
+    }
+    .wb-photo-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .wb-photo-zone { display: flex; flex-direction: column; gap: 8px; }
+    .wb-photo-analyze {
+      width: 100%;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(167,139,255,0.16), rgba(118,150,255,0.10));
+      border: 1px solid rgba(167,139,255,0.28);
+      border-radius: var(--r-md);
+      color: var(--t-1);
+      font-size: 13px; font-weight: 700;
+      min-height: 44px;
+      transition: opacity var(--t-fast) var(--ease);
+    }
+    .wb-photo-analyze:disabled { opacity: 0.6; }
+    .wb-photo-analyze:active { opacity: 0.85; }
+
+    /* Card thumbnail with multi-photo count */
+    .wb-thumb-wrap { position: relative; flex-shrink: 0; }
+    .wb-thumb-count {
+      position: absolute; bottom: -4px; right: -4px;
+      min-width: 22px; height: 18px; padding: 0 5px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--tint); color: #fff;
+      font-size: 10px; font-weight: 800;
+      border-radius: 10px;
+      border: 2px solid var(--bg, #0a0a0c);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
 
     /* alerts (discreet by default, banner only for real danger) */
     .alerts { display: flex; flex-direction: column; gap: 6px; }
@@ -1324,12 +1636,12 @@
     }
     .nav-fab::before {
       content: '';
-      position: absolute; inset: -8px;
-      border-radius: 28px;
-      background: radial-gradient(50% 50% at 50% 50%, var(--tint-glow) 0%, transparent 65%);
-      filter: blur(12px);
+      position: absolute; inset: -6px;
+      border-radius: 26px;
+      background: radial-gradient(50% 50% at 50% 60%, rgba(118,150,255,0.38) 0%, transparent 70%);
+      filter: blur(10px);
       z-index: -1;
-      opacity: 0.85;
+      opacity: 0.50;
     }
     .nav-fab::after {
       content: '';
@@ -2229,6 +2541,155 @@
     .status-pill.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
 
     /* ════════════════════════════════════════════════════════════════
+       DAY DETAIL — chantier dossier first, weather compact
+    ════════════════════════════════════════════════════════════════ */
+    #ddContent { display: flex; flex-direction: column; gap: 14px; }
+    .dd-section { display: flex; flex-direction: column; gap: 10px; }
+    .dd-sec-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 0 2px;
+    }
+    .dd-sec-eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      color: var(--t-3); text-transform: uppercase;
+    }
+    .dd-sec-count {
+      font-size: 11px; font-weight: 800; color: var(--t-2);
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-pill); padding: 3px 9px;
+    }
+    .dd-chev { font-size: 12px; color: var(--t-3); transition: transform 0.2s var(--ease); }
+    details[open] > summary .dd-chev { transform: rotate(180deg); }
+
+    /* Empty state */
+    .dd-empty { text-align: center; padding: 28px 16px; background: var(--surface-1); border: 1px dashed var(--line-2); border-radius: var(--r-lg); }
+    .dd-empty-icon { font-size: 32px; line-height: 1; margin-bottom: 6px; }
+    .dd-empty-title { font-size: 14px; font-weight: 700; color: var(--t-1); margin-bottom: 4px; }
+    .dd-empty-sub { font-size: 12px; color: var(--t-3); margin-bottom: 14px; }
+    .dd-add-btn {
+      padding: 10px 18px;
+      background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
+      color: #fff; font-weight: 800; font-size: 13px;
+      border-radius: var(--r-pill); border: 0;
+      min-height: 44px;
+    }
+
+    /* Job dossier card */
+    .dj-card {
+      display: flex; flex-direction: column; gap: 12px;
+      padding: 14px;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-lg);
+    }
+    .dj-head { display: flex; flex-direction: column; gap: 6px; }
+    .dj-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .dj-title { font-size: 16px; font-weight: 800; color: var(--t-1); letter-spacing: -0.01em; margin: 0; line-height: 1.25; }
+    .dj-type-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      align-self: flex-start;
+      font-size: 11px; font-weight: 700;
+      padding: 4px 9px;
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-pill); color: var(--t-2);
+    }
+    .dj-prio {
+      display: inline-flex; align-items: center;
+      flex-shrink: 0;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: var(--r-pill);
+      background: var(--surface-2); border: 1px solid var(--line-1); color: var(--t-2);
+    }
+    .dj-prio.prio-urgent { background: rgba(255,85,102,0.12); border-color: rgba(255,85,102,0.30); color: #ff8a96; }
+    .dj-prio.prio-high   { background: rgba(255,159,67,0.12); border-color: rgba(255,159,67,0.30); color: #ffb672; }
+    .dj-prio.prio-medium { background: rgba(255,213,79,0.10); border-color: rgba(255,213,79,0.28); color: #ffd97a; }
+    .dj-prio.prio-low    { background: rgba(76,217,123,0.10); border-color: rgba(76,217,123,0.28); color: #7be09a; }
+
+    .dj-sec { display: flex; flex-direction: column; gap: 6px; }
+    .dj-sec-t {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.07em;
+      color: var(--t-4); text-transform: uppercase;
+      margin: 0; padding-left: 2px;
+    }
+    .dj-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+    .dj-list li {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 13px; color: var(--t-1); line-height: 1.4;
+    }
+    .dj-list .dj-i { flex-shrink: 0; font-size: 13px; line-height: 1.4; width: 16px; text-align: center; }
+    .dj-link { color: var(--tint); text-decoration: none; border-bottom: 1px dashed rgba(118,150,255,0.4); }
+    .dj-link:active { opacity: 0.7; }
+    .dj-notes { color: var(--t-2); font-style: normal; }
+
+    .dj-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
+    .dj-photo { display: block; aspect-ratio: 1/1; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line-1); }
+    .dj-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .dj-w-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      align-self: flex-start;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 700;
+      border-radius: var(--r-pill);
+    }
+    .dj-w-chip.ok   { background: var(--ok-bg);   border: 1px solid var(--ok-bd);   color: var(--green); }
+    .dj-w-chip.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--orange); }
+    .dj-w-chip.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
+    .dj-w-chip-i { font-size: 11px; }
+
+    .dj-edit {
+      width: 100%; padding: 11px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      color: var(--t-1); font-size: 13px; font-weight: 700;
+      min-height: 44px;
+      transition: background var(--t-fast) var(--ease);
+    }
+    .dj-edit:active { background: var(--surface-3); }
+
+    /* Compact weather */
+    .dd-w-pill { padding: 5px 11px; font-size: 11px; }
+    .dd-w-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface-1); border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+    }
+    .dd-w-main { display: flex; align-items: center; gap: 12px; }
+    .dd-w-icon { font-size: 30px; line-height: 1; }
+    .dd-w-num { display: flex; flex-direction: column; gap: 1px; }
+    .dd-w-temp { font-size: 20px; font-weight: 800; color: var(--t-1); letter-spacing: -0.02em; line-height: 1.1; }
+    .dd-w-tmin { font-size: 13px; font-weight: 600; color: var(--t-3); }
+    .dd-w-label { font-size: 11px; color: var(--t-3); }
+    .dd-w-stats { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+    .dd-w-stat { font-size: 11.5px; color: var(--t-2); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+    .dd-w-stat-i { font-size: 11px; }
+    @media (max-width: 380px) {
+      .dd-w-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .dd-w-stats { flex-direction: row; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+    }
+
+    /* Risque par métier — collapsed */
+    .dd-risk { background: var(--surface-1); border: 1px solid var(--line-1); border-radius: var(--r-md); padding: 0; }
+    .dd-risk > summary {
+      list-style: none;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+    }
+    .dd-risk > summary::-webkit-details-marker { display: none; }
+    .dd-risk-list { display: flex; flex-direction: column; gap: 4px; padding: 0 12px 12px; }
+    .dd-risk-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--line-1); border-radius: var(--r-sm); }
+    .dd-risk-ico { font-size: 16px; }
+    .dd-risk-name { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--t-1); }
+    .dd-risk-lvl { font-size: 12px; font-weight: 800; }
+    .dd-risk-lvl.ok   { color: var(--green); }
+    .dd-risk-lvl.warn { color: var(--orange); }
+    .dd-risk-lvl.bad  { color: var(--red); }
+
+    /* ════════════════════════════════════════════════════════════════
        TOAST
     ════════════════════════════════════════════════════════════════ */
     #toast {
@@ -2313,6 +2774,7 @@
 
 </div>
         <button type="button" class="wx-widget" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
+<<<<<<< HEAD
 
   <div class="wx-top">
     <span class="wx-orb" id="wxOrb" data-level="idle">
@@ -2350,6 +2812,31 @@
   </div>
 
 </button>
+=======
+          <div class="wx-top">
+            <span class="wx-orb" id="wxOrb" data-level="idle">
+              <span class="wx-orb-icon" id="wxIcon">⏳</span>
+            </span>
+            <span class="wx-info">
+              <span class="wx-temp" id="mwxTemp">—°</span>
+              <span class="wx-detail" id="mwxDetail"></span>
+            </span>
+          </div>
+          <div class="wx-sep"></div>
+          <div class="wx-grid">
+            <div class="wx-stat">
+              <span class="wx-stat-lbl">Vent</span>
+              <span class="wx-stat-val" id="mwxWind">—</span>
+            </div>
+            <div class="wx-stat">
+              <span class="wx-stat-lbl">Pluie</span>
+              <span class="wx-stat-val" id="mwxRain">—</span>
+              <span class="wx-stat-sub" id="mwxRainMm"></span>
+            </div>
+          </div>
+          <span class="wx-status" id="mwxStatus">Météo</span>
+        </button>
+>>>>>>> ce4305365e3f2d3ab4040813b262984b46f7bae9
       </div>
 
       <!-- 1. JOBS AUJOURD'HUI -->
@@ -2461,20 +2948,17 @@
       </div>
     </section>
 
-    <!-- ═══════════════════ BANK (placeholder PR3) ═══════════════════ -->
+    <!-- ═══════════════════ BANQUE DE TRAVAUX ═══════════════════ -->
     <section class="view" id="viewBank" data-view="bank">
-      <div class="ph">
-        <div class="ph-icon">📋</div>
-        <span class="ph-tag">Bientôt disponible</span>
-        <h1 class="ph-title">Banque de jobs</h1>
-        <p class="ph-sub">Vrai backlog chantier façon Kanban mobile. Cartes premium avec image, statut, type, client et CTA planifier.</p>
-        <ul class="ph-feat">
-          <li>Recherche et filtres rapides</li>
-          <li>Cartes avec photo et tags de statut</li>
-          <li>Glisser vers le calendrier pour planifier</li>
-          <li>Vue par client / par type / par priorité</li>
-        </ul>
+      <header class="bank-header">
+        <h1 class="bank-title">Banque de travaux</h1>
+        <p class="bank-sub">Vos travaux réutilisables pour combler les trous météo et réorganiser la semaine rapidement.</p>
+      </header>
+      <div class="bank-toolbar">
+        <span class="bank-count" id="bankCount">0 travail</span>
+        <button type="button" class="bank-new" onclick="openWorkBankForm(null)">+ Nouveau travail</button>
       </div>
+      <div class="btl-list bank-list" id="bankList"></div>
     </section>
 
     <!-- ═══════════════════ FIELD (placeholder PR4) ═══════════════════ -->
@@ -2743,6 +3227,101 @@
   </div>
 </div>
 
+<!-- WORK BANK MODAL — create/edit reusable templates -->
+<div class="overlay" id="workBankOverlay" onclick="overlayClick(event,'workBankOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('workBankOverlay')" aria-label="Fermer">✕</button>
+    <h3 id="wbModalTitle">Nouveau travail</h3>
+
+    <!-- Voice pre-fill block -->
+    <div class="fg wb-voice-block">
+      <label class="label-row">
+        <span>🎙 Pré-remplir par dictée (optionnel)</span>
+        <button type="button" class="mic-inline" data-mic-target="wbVoiceText" aria-label="Dicter">🎤</button>
+      </label>
+      <textarea id="wbVoiceText" rows="2" placeholder="Ex : Inspection toiture Tremblay 2h intérieur priorité haute"></textarea>
+      <button type="button" class="btn-secondary wb-analyze" onclick="applyWbVoice()">Analyser et remplir →</button>
+    </div>
+
+    <div class="fg">
+      <label>Titre</label>
+      <input type="text" id="wbName" placeholder="Ex: Inspection intérieure" />
+    </div>
+    <div class="fg">
+      <label>Client</label>
+      <input type="text" id="wbClient" placeholder="Ex: M. Tremblay" maxlength="50" />
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Téléphone</label>
+        <input type="tel" id="wbPhone" placeholder="514-222-2222" maxlength="14" inputmode="tel" autocomplete="tel-national" oninput="formatPhoneInput(this)" />
+      </div>
+      <div class="fg">
+        <label>Courriel <span class="fg-opt">(optionnel)</span></label>
+        <input type="email" id="wbEmail" placeholder="exemple@courriel.com" maxlength="80" inputmode="email" autocomplete="email" />
+      </div>
+    </div>
+    <div class="fg">
+      <label>Adresse des travaux <span class="fg-opt">(optionnel)</span></label>
+      <input type="text" id="wbAddress" placeholder="Ex : 245 rue Tremblay, Saint-Jean-sur-Richelieu" maxlength="120" autocomplete="street-address" />
+    </div>
+    <div class="fg">
+      <label>Type de métier</label>
+      <select id="wbType"></select>
+    </div>
+    <div class="fg">
+      <label>Durée estimée</label>
+      <input type="text" id="wbDuration" placeholder="Ex: 2h" />
+    </div>
+    <div class="fg">
+      <label>Priorité</label>
+      <select id="wbPrio">
+        <option value="urgent">🔴 Urgente</option>
+        <option value="high">🟠 Haute</option>
+        <option value="medium" selected>🟡 Moyenne</option>
+        <option value="low">🟢 Basse</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Lieu</label>
+      <div class="wb-toggle-row">
+        <button type="button" class="wb-toggle" data-wb-loc="outdoor" onclick="setWbLocation(false)">🌤 Extérieur</button>
+        <button type="button" class="wb-toggle" data-wb-loc="indoor" onclick="setWbLocation(true)">🏠 Intérieur</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="wb-flex-label">
+        <input type="checkbox" id="wbFlexible" />
+        <span>Flexible météo (peut être déplacé)</span>
+      </label>
+    </div>
+    <div class="fg">
+      <label>Photos de référence <span class="fg-opt">(soumission, note, screenshot, chantier)</span></label>
+      <input type="file" id="wbPhotoFile" accept="image/*" capture="environment" multiple style="display:none" onchange="loadWbPhotos(this.files)">
+      <div class="wb-photo-zone" id="wbPhotoZone">
+        <div class="wb-photo-grid" id="wbPhotoGrid"></div>
+        <button type="button" class="wb-photo-add" id="wbPhotoAddBtn" onclick="document.getElementById('wbPhotoFile').click()">
+          <span class="wb-photo-icon">📷</span>
+          <span class="wb-photo-label">Ajouter des photos</span>
+          <span class="wb-photo-hint">Appareil photo ou galerie · jusqu'à 4</span>
+        </button>
+        <button type="button" class="wb-photo-analyze" id="wbPhotoAnalyzeBtn" onclick="analyzeWbPhotos()" style="display:none">
+          <span id="wbAnalyzeLabel">🪄 Analyser les photos (IA)</span>
+        </button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Notes</label>
+      <textarea id="wbNotes" rows="2" placeholder="Notes optionnelles…"></textarea>
+    </div>
+    <div class="mf">
+      <button type="button" class="btn-cancel" id="wbDeleteBtn" onclick="deleteWorkBankItem()" style="display:none">Supprimer</button>
+      <button type="button" class="btn-cancel" onclick="closeModal('workBankOverlay')">Annuler</button>
+      <button type="button" class="btn-primary" onclick="saveWorkBankItem()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- VOICE MODAL -->
 <div class="overlay" id="voiceOverlay" onclick="overlayClick(event,'voiceOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
@@ -2757,6 +3336,8 @@
       <label>Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
     </div>
+    <!-- Debug panel: visible only with ?debug=1 in URL -->
+    <pre id="micDebugPanel" style="display:none;font-size:9px;line-height:1.3;color:#0f0;background:#111;padding:6px;border-radius:6px;margin-top:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('voiceOverlay')">Annuler</button>
       <button class="btn-primary" onclick="analyzeAndCreate()">Analyser →</button>
@@ -3307,6 +3888,7 @@ function switchTab(tabId) {
 function renderActive() {
   if (_activeTab === 'home') renderHome();
   else if (_activeTab === 'calendar') renderCalendar();
+  else if (_activeTab === 'bank') renderBanqueTravaux();
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -3701,6 +4283,10 @@ function renderHome() {
 function renderMiniWeather() {
   var tempEl   = document.getElementById('mwxTemp');
   var statusEl = document.getElementById('mwxStatus');
+  var detailEl = document.getElementById('mwxDetail');
+  var windEl   = document.getElementById('mwxWind');
+  var rainEl   = document.getElementById('mwxRain');
+  var rainMmEl = document.getElementById('mwxRainMm');
   var orbEl    = document.getElementById('wxOrb');
   var iconEl   = document.getElementById('wxIcon');
   if (!tempEl) return;
@@ -3708,6 +4294,10 @@ function renderMiniWeather() {
   var w = ST.forecast && ST.forecast[0];
   if (!w) {
     tempEl.textContent   = '—°';
+    if (detailEl) detailEl.textContent = '';
+    if (windEl)   windEl.textContent   = '—';
+    if (rainEl)   rainEl.textContent   = '—';
+    if (rainMmEl) rainMmEl.textContent = '';
     statusEl.textContent = 'Météo';
     statusEl.className   = 'wx-status';
     if (orbEl) orbEl.setAttribute('data-level', 'idle');
@@ -3716,11 +4306,27 @@ function renderMiniWeather() {
   }
 
   tempEl.textContent = w.temp_max + '°';
+  if (detailEl) detailEl.textContent = w.temp_min + '° / ' + w.temp_max + '°';
+  if (windEl)   windEl.textContent   = w.windspeed + ' km/h';
+  if (rainEl)   rainEl.textContent   = (w.rain_prob != null ? w.rain_prob : 0) + '%';
+  if (rainMmEl) rainMmEl.textContent = w.precipitation > 0 ? w.precipitation + ' mm' : '';
+
   var st = simpleStatus(w);
-  var label = st.level === 'ok'  ? 'Favorable'
-            : st.level === 'warn' ? 'Vigilance'
-            : st.level === 'bad'  ? 'Défavorable'
-            : 'Météo';
+  var label;
+  if (st.level === 'ok') {
+    label = 'Favorable';
+  } else if (st.level === 'warn') {
+    if (w.precipitation > 0)   label = 'Risque pluie';
+    else if (w.windspeed > 25) label = 'Vent léger';
+    else if (w.temp_min < 5)   label = 'Températures fraîches';
+    else                        label = 'À surveiller';
+  } else {
+    if (w.weathercode >= 95)      label = 'Orages';
+    else if (w.precipitation > 5) label = 'Forte pluie';
+    else if (w.windspeed > 40)    label = 'Grand vent';
+    else if (w.temp_min < 0)      label = 'Gel prévu';
+    else                           label = 'Conditions risquées';
+  }
   statusEl.textContent = label;
   statusEl.className   = 'wx-status ' + st.level;
   if (orbEl) orbEl.setAttribute('data-level', st.level);
@@ -3744,9 +4350,9 @@ function renderGreeting() {
   var eb = document.getElementById('greetEyebrow');
   if (ST.forecast && ST.forecast[0]) {
     var risk = dayOverallRisk(ST.forecast[0]);
-    eb.textContent = risk === 'ok' ? 'Tout va bien aujourd\'hui'
-                   : risk === 'risk' ? 'Vigilance requise'
-                   : 'Alerte météo';
+    eb.textContent = risk === 'ok' ? 'Conditions favorables aujourd\'hui'
+                   : risk === 'risk' ? 'Conditions à surveiller'
+                   : 'Conditions défavorables';
   } else {
     eb.textContent = '';
   }
@@ -3846,37 +4452,461 @@ function renderDayStrip() {
   });
 }
 
-function renderBanqueTravaux() {
-  var list = document.getElementById('btlList');
-  var countEl = document.getElementById('btlCount');
-  if (!list) return;
-  var backlog = ST.tasks.filter(function(t) {
-    return t.status === 'backlog' || (!t.scheduledDate && t.dayIndex == null);
+/* ════════════════════════════════════════════════════════════════
+   WORK BANK — reusable work templates (localStorage)
+════════════════════════════════════════════════════════════════ */
+var _workBank = [];
+var _wbEditingId = null;
+var _wbCurrentIndoor = null; // null = unset, true = indoor, false = outdoor
+var _wbPhotos = [];          // array of dataURLs (max WB_PHOTO_MAX)
+var WB_PHOTO_MAX_DIM = 1024;
+var WB_PHOTO_JPEG_Q  = 0.72;
+var WB_PHOTO_MAX     = 4;
+
+function loadWorkBank() {
+  try {
+    var raw = localStorage.getItem('spm_workbank');
+    _workBank = raw ? (JSON.parse(raw) || []) : [];
+  } catch(e) { _workBank = []; }
+}
+function saveWorkBank() {
+  try { localStorage.setItem('spm_workbank', JSON.stringify(_workBank)); } catch(e) {}
+}
+function _wbNewId() { return 'wb_' + Date.now() + '_' + Math.floor(Math.random() * 1000); }
+
+function setWbLocation(indoor) {
+  _wbCurrentIndoor = indoor;
+  _wbUpdateIndoorUI();
+}
+function _wbUpdateIndoorUI() {
+  document.querySelectorAll('.wb-toggle[data-wb-loc]').forEach(function(btn) {
+    btn.classList.remove('active');
+    var v = btn.getAttribute('data-wb-loc');
+    if ((v === 'indoor' && _wbCurrentIndoor === true) ||
+        (v === 'outdoor' && _wbCurrentIndoor === false)) {
+      btn.classList.add('active');
+    }
   });
-  if (countEl) countEl.textContent = backlog.length ? backlog.length + '' : '';
-  list.innerHTML = '';
-  if (!backlog.length) {
-    list.innerHTML = '<div class="btl-empty">Tous les travaux sont planifiés.</div>';
-    return;
-  }
+}
+
+function openWorkBankForm(id) {
+  _wbEditingId = id || null;
+  var titleEl  = document.getElementById('wbModalTitle');
+  var nameEl   = document.getElementById('wbName');
+  var clientEl = document.getElementById('wbClient');
+  var phoneEl  = document.getElementById('wbPhone');
+  var emailEl  = document.getElementById('wbEmail');
+  var addrEl   = document.getElementById('wbAddress');
+  var typeEl   = document.getElementById('wbType');
+  var durEl    = document.getElementById('wbDuration');
+  var prioEl   = document.getElementById('wbPrio');
+  var notesEl  = document.getElementById('wbNotes');
+  var flexEl   = document.getElementById('wbFlexible');
+  var voiceEl  = document.getElementById('wbVoiceText');
+  var fileEl   = document.getElementById('wbPhotoFile');
+  var delBtn   = document.getElementById('wbDeleteBtn');
+
+  // Populate type select
   var jobsDef = getMergedJobTypes();
-  backlog.forEach(function(task) {
-    var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
-    var item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'btl-item';
-    var durStr = task.duration ? ' · ⏱ ' + esc(task.duration) : '';
-    var locStr = task.client ? ' · ' + esc(task.client) : '';
-    item.innerHTML =
-        '<span class="btl-icon">' + jd.icon + '</span>'
-      + '<span class="btl-body">'
-      +   '<span class="btl-name">' + esc(task.name) + '</span>'
-      +   '<span class="btl-meta">' + esc(jd.short || jd.name) + locStr + durStr + '</span>'
-      + '</span>'
-      + '<span class="btl-action">→</span>';
-    item.onclick = (function(id) { return function() { openEditTask(id); }; })(task.id);
-    list.appendChild(item);
+  var keys = Object.keys(jobsDef);
+  typeEl.innerHTML = '';
+  if (!keys.length) {
+    var opt = document.createElement('option');
+    opt.value = ''; opt.textContent = '— Aucun métier configuré —';
+    typeEl.appendChild(opt);
+  } else {
+    keys.forEach(function(k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = jobsDef[k].icon + ' ' + jobsDef[k].name;
+      typeEl.appendChild(o);
+    });
+  }
+
+  if (_wbEditingId) {
+    var item = _workBank.find(function(w) { return w.id === _wbEditingId; }) || {};
+    titleEl.textContent = 'Modifier travail';
+    nameEl.value   = item.name || '';
+    clientEl.value = item.client || '';
+    phoneEl.value  = normalizePhone(item.phone) || item.phone || '';
+    emailEl.value  = item.email || '';
+    if (addrEl) addrEl.value = item.address || '';
+    typeEl.value   = item.type && jobsDef[item.type] ? item.type : (keys[0] || '');
+    durEl.value    = item.duration || '';
+    prioEl.value   = item.priority || 'medium';
+    notesEl.value  = item.notes || '';
+    flexEl.checked = !!item.flexible;
+    _wbCurrentIndoor = (item.indoor === true) ? true : (item.indoor === false ? false : null);
+    _wbPhotos = Array.isArray(item.photos) ? item.photos.slice() : (item.photo ? [item.photo] : []);
+    if (delBtn) delBtn.style.display = '';
+  } else {
+    titleEl.textContent = 'Nouveau travail';
+    nameEl.value = ''; clientEl.value = ''; phoneEl.value = ''; emailEl.value = '';
+    if (addrEl) addrEl.value = '';
+    typeEl.value = keys[0] || '';
+    durEl.value = ''; prioEl.value = 'medium'; notesEl.value = '';
+    flexEl.checked = false;
+    _wbCurrentIndoor = null;
+    _wbPhotos = [];
+    if (delBtn) delBtn.style.display = 'none';
+  }
+  if (voiceEl) voiceEl.value = '';
+  if (fileEl)  fileEl.value  = '';
+  _wbUpdateIndoorUI();
+  _wbUpdatePhotoUI();
+  openModal('workBankOverlay');
+  _bindInlineMicButtons();
+  setTimeout(function() { nameEl.focus(); }, 120);
+}
+
+function _wbUpdatePhotoUI() {
+  var grid       = document.getElementById('wbPhotoGrid');
+  var addBtn     = document.getElementById('wbPhotoAddBtn');
+  var analyzeBtn = document.getElementById('wbPhotoAnalyzeBtn');
+  if (!grid || !addBtn) return;
+  grid.innerHTML = '';
+  _wbPhotos.forEach(function(src, idx) {
+    var cell = document.createElement('div');
+    cell.className = 'wb-photo-cell';
+    cell.innerHTML = '<img alt="" src="' + esc(src) + '">' +
+      '<button type="button" class="wb-photo-remove" aria-label="Retirer" data-idx="' + idx + '">✕</button>';
+    grid.appendChild(cell);
   });
+  grid.querySelectorAll('.wb-photo-remove').forEach(function(b) {
+    b.addEventListener('click', function() { removeWbPhoto(parseInt(b.dataset.idx, 10)); });
+  });
+  addBtn.style.display = (_wbPhotos.length < WB_PHOTO_MAX) ? '' : 'none';
+  if (analyzeBtn) analyzeBtn.style.display = _wbPhotos.length ? '' : 'none';
+}
+
+function loadWbPhotos(files) {
+  if (!files || !files.length) return;
+  var list = Array.from(files).filter(function(f) { return f && f.type && /^image\//.test(f.type); });
+  if (!list.length) { toast('⚠ Sélectionnez des images'); return; }
+  var slots = WB_PHOTO_MAX - _wbPhotos.length;
+  if (slots <= 0) { toast('⚠ Maximum ' + WB_PHOTO_MAX + ' photos'); return; }
+  list.slice(0, slots).forEach(function(f) {
+    compressImageToDataURL(f, WB_PHOTO_MAX_DIM, WB_PHOTO_JPEG_Q).then(function(data) {
+      _wbPhotos.push(data);
+      _wbUpdatePhotoUI();
+    }).catch(function() {
+      var r = new FileReader();
+      r.onload = function(e) { _wbPhotos.push(e.target.result); _wbUpdatePhotoUI(); };
+      r.readAsDataURL(f);
+    });
+  });
+  var input = document.getElementById('wbPhotoFile');
+  if (input) input.value = '';
+}
+
+function removeWbPhoto(idx) {
+  if (idx < 0 || idx >= _wbPhotos.length) return;
+  _wbPhotos.splice(idx, 1);
+  _wbUpdatePhotoUI();
+}
+
+/* Lazy-loaded Tesseract.js OCR for work bank photos */
+var _tesseractLoading = null;
+function _loadTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (_tesseractLoading) return _tesseractLoading;
+  _tesseractLoading = new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.async = true;
+    s.onload = function() { resolve(window.Tesseract); };
+    s.onerror = function() { _tesseractLoading = null; reject(new Error('tesseract load failed')); };
+    document.head.appendChild(s);
+  });
+  return _tesseractLoading;
+}
+
+function analyzeWbPhotos() {
+  if (!_wbPhotos.length) { toast('⚠ Aucune photo à analyser'); return; }
+  var btn = document.getElementById('wbPhotoAnalyzeBtn');
+  var lbl = document.getElementById('wbAnalyzeLabel');
+  if (btn) btn.disabled = true;
+  if (lbl) lbl.textContent = '⏳ Chargement du module IA…';
+  _loadTesseract().then(function(T) {
+    var allText = '';
+    var idx = 0;
+    function next() {
+      if (idx >= _wbPhotos.length) return finish(allText);
+      if (lbl) lbl.textContent = '🔍 Analyse ' + (idx + 1) + '/' + _wbPhotos.length + '…';
+      T.recognize(_wbPhotos[idx], 'fra+eng').then(function(res) {
+        allText += '\n' + (res && res.data && res.data.text ? res.data.text : '');
+        idx++; next();
+      }).catch(function() { idx++; next(); });
+    }
+    function finish(text) {
+      if (btn) btn.disabled = false;
+      if (lbl) lbl.textContent = '🪄 Analyser les photos (IA)';
+      var clean = (text || '').replace(/\s+/g, ' ').trim();
+      if (!clean) { toast('⚠ Aucun texte détecté dans les photos'); return; }
+      applyParsedToWbForm(parseSmartInput(clean));
+      toast('✓ Photos analysées');
+    }
+    next();
+  }).catch(function() {
+    if (btn) btn.disabled = false;
+    if (lbl) lbl.textContent = '🪄 Analyser les photos (IA)';
+    toast('⚠ Module d\'analyse indisponible (hors-ligne ?)');
+  });
+}
+
+function applyWbVoice() {
+  var textEl = document.getElementById('wbVoiceText');
+  var text = textEl ? (textEl.value || '').trim() : '';
+  if (!text) { toast('⚠ Aucun texte à analyser'); return; }
+  applyParsedToWbForm(parseSmartInput(text));
+  toast('✓ Champs pré-remplis');
+}
+
+function applyParsedToWbForm(parsed) {
+  if (!parsed) return;
+  var setVal = function(id, v) { var el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+  setVal('wbName',     parsed.name);
+  setVal('wbClient',   parsed.client);
+  setVal('wbPhone',    normalizePhone(parsed.phone) || parsed.phone);
+  setVal('wbEmail',    parsed.email);
+  setVal('wbAddress',  parsed.location);
+  setVal('wbDuration', parsed.duration);
+  if (parsed.type)     setVal('wbType', parsed.type);
+  if (parsed.priority) setVal('wbPrio', parsed.priority);
+  if (parsed.indoor === true || parsed.indoor === false) _wbCurrentIndoor = parsed.indoor;
+  // Carry remaining context (date, time, amount) into notes
+  var notesEl = document.getElementById('wbNotes');
+  if (notesEl) {
+    var bits = [];
+    if (parsed.date)   bits.push('📅 ' + _formatDateFr(parsed.date));
+    if (parsed.time)   bits.push('🕒 ' + parsed.time);
+    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (bits.length) {
+      var prev = (notesEl.value || '').trim();
+      notesEl.value = bits.join(' · ') + (prev ? '\n' + prev : '');
+    }
+  }
+  _wbUpdateIndoorUI();
+}
+
+/* Normalize a phone string to "XXX-XXX-XXXX" (NA format).
+   Returns the original input if it doesn't yield 10 digits. */
+function normalizePhone(raw) {
+  if (!raw) return '';
+  var digits = String(raw).replace(/\D+/g, '');
+  if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+  if (digits.length < 10) return digits;
+  digits = digits.slice(0, 10);
+  return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6, 10);
+}
+
+/* Live input formatter: keeps the field formatted as the user types.
+   Handles paste and trailing edits gracefully. */
+function formatPhoneInput(el) {
+  if (!el) return;
+  var digits = (el.value || '').replace(/\D+/g, '');
+  if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.slice(1);
+  digits = digits.slice(0, 10);
+  var out = digits;
+  if (digits.length > 6)      out = digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+  else if (digits.length > 3) out = digits.slice(0, 3) + '-' + digits.slice(3);
+  el.value = out;
+}
+
+function _formatDateFr(iso) {
+  if (!iso) return '';
+  var parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  var months = ['janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'];
+  var d = parseInt(parts[2], 10);
+  var m = parseInt(parts[1], 10) - 1;
+  if (isNaN(d) || m < 0 || m > 11) return iso;
+  return d + ' ' + months[m] + ' ' + parts[0];
+}
+
+function saveWorkBankItem() {
+  var name = (document.getElementById('wbName').value || '').trim();
+  if (!name) { toast('⚠ Titre requis'); return; }
+  var rec = {
+    id: _wbEditingId || _wbNewId(),
+    name: name,
+    client: (document.getElementById('wbClient').value || '').trim(),
+    phone: normalizePhone((document.getElementById('wbPhone').value || '').trim()) || (document.getElementById('wbPhone').value || '').trim(),
+    email: (document.getElementById('wbEmail').value || '').trim(),
+    address: ((document.getElementById('wbAddress') || {}).value || '').trim(),
+    type: document.getElementById('wbType').value || '',
+    duration: (document.getElementById('wbDuration').value || '').trim(),
+    priority: document.getElementById('wbPrio').value || 'medium',
+    notes: (document.getElementById('wbNotes').value || '').trim(),
+    flexible: !!document.getElementById('wbFlexible').checked,
+    indoor: _wbCurrentIndoor,
+    photos: _wbPhotos.slice()
+  };
+  if (_wbEditingId) {
+    var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
+    if (idx >= 0) _workBank[idx] = rec; else _workBank.push(rec);
+  } else {
+    _workBank.push(rec);
+  }
+  saveWorkBank();
+  closeModal('workBankOverlay');
+  renderBanqueTravaux();
+  toast(_wbEditingId ? '✓ Travail mis à jour' : '✓ Ajouté à la banque');
+}
+
+function deleteWorkBankItem() {
+  if (!_wbEditingId) return;
+  var item = _workBank.find(function(w) { return w.id === _wbEditingId; });
+  if (!confirm('Supprimer « ' + (item ? item.name : 'ce travail') + ' » de la banque ?')) return;
+  _workBank = _workBank.filter(function(w) { return w.id !== _wbEditingId; });
+  saveWorkBank();
+  closeModal('workBankOverlay');
+  renderBanqueTravaux();
+  toast('✓ Supprimé');
+}
+
+function useWorkBankItem(id) {
+  var item = _workBank.find(function(w) { return w.id === id; });
+  if (!item) return;
+  openAddTask(null);
+  // Pre-fill after openAddTask resets the form
+  setTimeout(function() {
+    var nameEl   = document.getElementById('tName');
+    var clientEl = document.getElementById('tClient');
+    var durEl    = document.getElementById('tDuration');
+    var descEl   = document.getElementById('tDesc');
+    var prioEl   = document.getElementById('tPrio');
+    if (nameEl)   nameEl.value   = item.name || '';
+    if (clientEl) clientEl.value = item.client || '';
+    if (durEl)    durEl.value    = item.duration || '';
+    // Carry phone/email into description if present
+    var notes = item.notes || '';
+    var contact = [];
+    if (item.phone) contact.push('📞 ' + item.phone);
+    if (item.email) contact.push('✉ ' + item.email);
+    if (contact.length) notes = (contact.join(' · ') + (notes ? '\n' + notes : ''));
+    if (descEl && notes) descEl.value = notes;
+    if (prioEl && item.priority) prioEl.value = item.priority;
+    // Pre-select job type in the grid
+    if (item.type) buildTypeGrid(item.type);
+    // Carry photos into the task gallery (supports legacy single-photo field)
+    var photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+    if (photos.length && typeof _taskGallery !== 'undefined') {
+      _taskGallery = photos.slice();
+      if (typeof renderGallery === 'function') renderGallery();
+    }
+    // Carry address to tLocation
+    if (item.address) {
+      var locEl = document.getElementById('tLocation');
+      if (locEl) locEl.value = item.address;
+    }
+    // Weather rules: if the item is indoor, set very permissive defaults
+    if (item.indoor === true) {
+      var minT = document.getElementById('tMinTemp');
+      var maxT = document.getElementById('tMaxTemp');
+      var maxR = document.getElementById('tMaxRain');
+      var maxW = document.getElementById('tMaxWind');
+      if (minT) minT.value = '-20';
+      if (maxT) maxT.value = '40';
+      if (maxR) maxR.value = '100';
+      if (maxW) maxW.value = '150';
+    }
+  }, 30);
+  toast('Travail préparé — choisissez la date');
+}
+
+var _WB_PRIO_LABEL = {
+  urgent: '🔴 Urgente', high: '🟠 Haute',
+  medium: '🟡 Moyenne', low: '🟢 Basse'
+};
+
+function _wbBuildCardHTML(w, jobsDef) {
+  var jd = jobsDef[w.type] || { icon: '🔧', name: w.type || 'Travail', short: w.type || '' };
+  var typeStr = esc(jd.short || jd.name || '');
+  var metaParts = [];
+  if (w.client) metaParts.push('👤 ' + esc(w.client));
+  if (w.phone)  metaParts.push('📞 ' + esc(w.phone));
+  if (typeStr)  metaParts.push(typeStr);
+  if (w.duration) metaParts.push('⏱ ' + esc(w.duration));
+  var badges = '';
+  if (w.priority && _WB_PRIO_LABEL[w.priority]) {
+    badges += '<span class="wb-badge prio-' + w.priority + '">' + _WB_PRIO_LABEL[w.priority] + '</span>';
+  }
+  if (w.indoor === true)  badges += '<span class="wb-badge">🏠 Intérieur</span>';
+  if (w.indoor === false) badges += '<span class="wb-badge">🌤 Extérieur</span>';
+  if (w.flexible)         badges += '<span class="wb-badge ok">☂ Flexible météo</span>';
+  var photos = Array.isArray(w.photos) ? w.photos : (w.photo ? [w.photo] : []);
+  var thumbSrc = photos[0] || '';
+  var leftThumb = thumbSrc
+    ? '<span class="wb-thumb-wrap"><img class="wb-thumb" src="' + esc(thumbSrc) + '" alt="">' +
+        (photos.length > 1 ? '<span class="wb-thumb-count">+' + (photos.length - 1) + '</span>' : '') +
+      '</span>'
+    : '<span class="wb-icon">' + jd.icon + '</span>';
+  return ''
+    + '<button type="button" class="wb-main" data-wb-edit="' + w.id + '">'
+    +   leftThumb
+    +   '<span class="wb-body">'
+    +     '<span class="wb-name">' + esc(w.name) + '</span>'
+    +     (metaParts.length ? '<span class="wb-meta">' + metaParts.join(' · ') + '</span>' : '')
+    +     (badges ? '<span class="wb-badges">' + badges + '</span>' : '')
+    +   '</span>'
+    + '</button>'
+    + '<button type="button" class="wb-plan" data-wb-plan="' + w.id + '">Planifier</button>';
+}
+
+function _wbFillContainer(list, opts) {
+  opts = opts || {};
+  list.innerHTML = '';
+  var jobsDef = getMergedJobTypes();
+  if (!_workBank.length) {
+    var emptyHtml = opts.bigEmpty
+      ? '<div class="btl-empty bank-empty">Aucun travail enregistré.<br>Créez votre premier modèle réutilisable.</div>'
+      : '<div class="btl-empty">Aucun travail enregistré.<br>Créez vos modèles réutilisables.</div>';
+    list.innerHTML = emptyHtml;
+  } else {
+    _workBank.forEach(function(w) {
+      var card = document.createElement('div');
+      card.className = 'wb-card';
+      card.innerHTML = _wbBuildCardHTML(w, jobsDef);
+      list.appendChild(card);
+    });
+    list.querySelectorAll('[data-wb-edit]').forEach(function(b) {
+      b.addEventListener('click', function() { openWorkBankForm(b.getAttribute('data-wb-edit')); });
+    });
+    list.querySelectorAll('[data-wb-plan]').forEach(function(b) {
+      b.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        useWorkBankItem(b.getAttribute('data-wb-plan'));
+      });
+    });
+  }
+  if (opts.showAddBtn) {
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'wb-add';
+    addBtn.textContent = '+ Nouveau travail';
+    addBtn.onclick = function() { openWorkBankForm(null); };
+    list.appendChild(addBtn);
+  }
+}
+
+function renderBanqueTravaux() {
+  // Home section preview
+  var homeList = document.getElementById('btlList');
+  var homeCount = document.getElementById('btlCount');
+  if (homeList) {
+    if (homeCount) homeCount.textContent = _workBank.length ? _workBank.length + '' : '';
+    _wbFillContainer(homeList, { showAddBtn: true });
+  }
+  // Dedicated bank view
+  var bankList = document.getElementById('bankList');
+  var bankCount = document.getElementById('bankCount');
+  if (bankList) {
+    if (bankCount) {
+      var n = _workBank.length;
+      bankCount.textContent = n + ' travail' + (n > 1 ? 's' : '');
+    }
+    _wbFillContainer(bankList, { showAddBtn: false, bigEmpty: true });
+  }
 }
 
 function renderTodayJobs() {
@@ -4096,45 +5126,160 @@ function openTodayDetail() { openDayDetail(0); }
 function openDayDetail(di) {
   if (!ST.forecast || !ST.forecast[di]) return;
   var day = ST.forecast[di];
-  var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS[day.date.getMonth()];
+  var dayName = DAYS_L[day.date.getDay()] + ' ' + day.date.getDate() + ' ' + MONTHS_FULL[day.date.getMonth()];
   document.getElementById('ddTitle').textContent = dayName;
-  var st = simpleStatus(day);
-  var html =
-    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px">'
-    + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline)">'
-    + '<div style="font-size:2.6rem; line-height:1">' + wIcon(day.weathercode) + '</div>'
-    + '<div style="font-weight:700; margin-top:8px">' + wLabel(day.weathercode) + '</div>'
-    + '</div>'
-    + '<div style="text-align:center; padding:14px; background:var(--surface-2); border-radius:14px; border:1px solid var(--hairline); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px">'
-    + '<div style="font-size:.68rem; font-weight:700; color:var(--t-3); text-transform:uppercase; letter-spacing:.07em">Conditions terrain</div>'
-    + '<span class="status-pill ' + st.level + '" style="padding:8px 14px"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
-    + '</div>'
-    + '</div>'
-    + '<div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-bottom:14px">'
-    + ddStat('🌡', 'Max', day.temp_max + '°')
-    + ddStat('🌡', 'Min', day.temp_min + '°')
-    + ddStat('💨', 'Vent', day.windspeed + ' km/h')
-    + ddStat('💧', 'Précip.', day.precipitation + ' mm')
-    + ddStat('☔', 'Prob.', day.rain_prob + '%')
-    + ddStat('⛅', 'Ciel', wLabel(day.weathercode))
-    + '</div>'
-    + '<div style="font-size:.70rem; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px">Risque par métier</div>'
-    + '<div style="display:flex; flex-direction:column; gap:5px">';
-  var jobs = getMergedJobTypes();
-  Object.keys(jobs).forEach(function(key) {
-    var jd  = jobs[key];
-    var res = assess(key, day);
-    var clr = res.level === 'ok' ? 'var(--green)' : res.level === 'risk' ? 'var(--warning)' : 'var(--danger)';
-    var lvlIcon = res.level === 'ok' ? '✓' : res.level === 'risk' ? '⚠' : '✕';
-    html += '<div style="display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--surface-2); border-radius:10px; border:1px solid var(--hairline)">'
-      + '<span style="font-size:1.05rem">' + jd.icon + '</span>'
-      + '<span style="flex:1; font-size:.85rem; font-weight:600">' + esc(jd.name || jd.short) + '</span>'
-      + '<span style="color:' + clr + '; font-size:.78rem; font-weight:700">' + lvlIcon + '</span>'
-      + '</div>';
+  var dayIso = isoDate(day.date);
+  // Tasks on this day
+  var tasks = (ST.tasks || []).filter(function(t) {
+    if (t.status === 'backlog') return false;
+    if (t.scheduledDate) return t.scheduledDate === dayIso;
+    return t.dayIndex === di;
+  }).sort(function(a, b) {
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    if (a.time) return -1;
+    if (b.time) return 1;
+    return 0;
   });
-  html += '</div>';
+
+  var jobsDef = getMergedJobTypes();
+  var st = simpleStatus(day);
+  var html = '';
+
+  // 1) JOB DOSSIERS — chantier first, weather later
+  if (tasks.length) {
+    html += '<section class="dd-section dd-jobs">'
+         +    '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Chantiers</span><span class="dd-sec-count">' + tasks.length + '</span></div>';
+    tasks.forEach(function(t) { html += _ddBuildJobDossier(t, day, jobsDef); });
+    html += '</section>';
+  } else {
+    html += '<section class="dd-section dd-empty">'
+         +    '<div class="dd-empty-icon">📅</div>'
+         +    '<div class="dd-empty-title">Aucun chantier ce jour-là</div>'
+         +    '<div class="dd-empty-sub">Tapez ci-dessous pour en planifier un.</div>'
+         +    '<button type="button" class="dd-add-btn" onclick="closeModal(\'dayDetailOverlay\'); openAddTask(\'' + dayIso + '\')">+ Ajouter un chantier</button>'
+         +  '</section>';
+  }
+
+  // 2) COMPACT WEATHER
+  html += '<section class="dd-section dd-weather">'
+       +    '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Météo</span>'
+       +      '<span class="status-pill ' + st.level + ' dd-w-pill"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
+       +    '</div>'
+       +    '<div class="dd-w-card">'
+       +      '<div class="dd-w-main">'
+       +        '<span class="dd-w-icon">' + wIcon(day.weathercode) + '</span>'
+       +        '<div class="dd-w-num">'
+       +          '<div class="dd-w-temp">' + day.temp_max + '°<span class="dd-w-tmin"> / ' + day.temp_min + '°</span></div>'
+       +          '<div class="dd-w-label">' + wLabel(day.weathercode) + '</div>'
+       +        '</div>'
+       +      '</div>'
+       +      '<div class="dd-w-stats">'
+       +        '<span class="dd-w-stat"><span class="dd-w-stat-i">💨</span>' + day.windspeed + ' km/h</span>'
+       +        '<span class="dd-w-stat"><span class="dd-w-stat-i">☔</span>' + day.rain_prob + '%</span>'
+       +        '<span class="dd-w-stat"><span class="dd-w-stat-i">💧</span>' + day.precipitation + ' mm</span>'
+       +      '</div>'
+       +    '</div>'
+       +  '</section>';
+
+  // 3) RISQUE PAR MÉTIER — collapsed by default if jobs exist
+  var riskOpen = tasks.length ? '' : ' open';
+  html += '<details class="dd-section dd-risk"' + riskOpen + '>'
+       +    '<summary><span class="dd-sec-eyebrow">Risque par métier</span><span class="dd-chev">▾</span></summary>'
+       +    '<div class="dd-risk-list">';
+  Object.keys(jobsDef).forEach(function(key) {
+    var jd  = jobsDef[key];
+    var res = assess(key, day);
+    var lvl = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
+    var ic  = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
+    html += '<div class="dd-risk-row">'
+         +    '<span class="dd-risk-ico">' + jd.icon + '</span>'
+         +    '<span class="dd-risk-name">' + esc(jd.name || jd.short) + '</span>'
+         +    '<span class="dd-risk-lvl ' + lvl + '">' + ic + '</span>'
+         +  '</div>';
+  });
+  html += '</div></details>';
+
   document.getElementById('ddContent').innerHTML = html;
+  // Wire up edit buttons + photo open
+  document.querySelectorAll('#ddContent [data-edit-task]').forEach(function(b) {
+    b.addEventListener('click', function() { closeModal('dayDetailOverlay'); openEditTask(b.dataset.editTask); });
+  });
   openModal('dayDetailOverlay');
+}
+
+function _ddBuildJobDossier(t, day, jobsDef) {
+  var jd = jobsDef[t.type] || { icon: '🔧', name: t.type, short: t.type };
+  var prioMap = { urgent:{lbl:'Urgente',cls:'prio-urgent'}, high:{lbl:'Haute',cls:'prio-high'}, medium:{lbl:'Moyenne',cls:'prio-medium'}, low:{lbl:'Basse',cls:'prio-low'} };
+  var p = prioMap[t.priority] || prioMap.medium;
+  var photos = Array.isArray(t.gallery) && t.gallery.length ? t.gallery : (t.photoPreview ? [t.photoPreview] : []);
+  // Extract phone/email from description (planifier flow stores them there)
+  var desc = t.description || '';
+  var phone = '', email = '';
+  var pm = desc.match(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+  if (pm) phone = pm[1] + '-' + pm[2] + '-' + pm[3];
+  var em = desc.match(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
+  if (em) email = em[1];
+  // Notes = description minus contact lines
+  var notes = desc
+    .replace(/[📞✉][^\n]*\n?/g, '')
+    .replace(/^\s*[\-•·]\s*/gm, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  // Weather assessment for this job
+  var res = assess(t.type, day, t.weather);
+  var resLevel = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
+  var resIcon  = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
+  var flexible = t.weather && t.weather.maxRain >= 50 && t.weather.maxWind >= 80;
+
+  var html = '<article class="dj-card">'
+    + '<header class="dj-head">'
+    +   '<div class="dj-title-row">'
+    +     '<h4 class="dj-title">' + esc(t.name || 'Sans titre') + '</h4>'
+    +     '<span class="dj-prio ' + p.cls + '">' + p.lbl + '</span>'
+    +   '</div>'
+    +   '<span class="dj-type-badge">' + jd.icon + ' ' + esc(jd.short || jd.name) + '</span>'
+    + '</header>';
+
+  // Client section
+  var clientItems = [];
+  if (t.client)   clientItems.push('<li><span class="dj-i">👤</span>' + esc(t.client) + '</li>');
+  if (phone)      clientItems.push('<li><span class="dj-i">📞</span><a class="dj-link" href="tel:' + esc(phone.replace(/\D+/g,'')) + '">' + esc(phone) + '</a></li>');
+  if (email)      clientItems.push('<li><span class="dj-i">✉</span><a class="dj-link" href="mailto:' + esc(email) + '">' + esc(email) + '</a></li>');
+  if (t.location) clientItems.push('<li><span class="dj-i">📍</span>' + esc(t.location) + '</li>');
+  if (clientItems.length) {
+    html += '<section class="dj-sec"><h5 class="dj-sec-t">Client</h5><ul class="dj-list">' + clientItems.join('') + '</ul></section>';
+  }
+
+  // Job section
+  var jobItems = [];
+  if (t.time)     jobItems.push('<li><span class="dj-i">🕒</span>' + esc(t.time) + '</li>');
+  if (t.duration) jobItems.push('<li><span class="dj-i">⏱</span>' + esc(t.duration) + '</li>');
+  if (flexible)   jobItems.push('<li><span class="dj-i">☂</span>Flexible météo</li>');
+  if (notes)      jobItems.push('<li class="dj-notes"><span class="dj-i">📝</span>' + esc(notes).replace(/\n/g, '<br>') + '</li>');
+  if (jobItems.length) {
+    html += '<section class="dj-sec"><h5 class="dj-sec-t">Détails</h5><ul class="dj-list">' + jobItems.join('') + '</ul></section>';
+  }
+
+  // Photos
+  if (photos.length) {
+    html += '<section class="dj-sec"><h5 class="dj-sec-t">Photos</h5><div class="dj-photos">';
+    photos.forEach(function(src) {
+      html += '<a class="dj-photo" href="' + esc(src) + '" target="_blank" rel="noopener"><img src="' + esc(src) + '" alt=""></a>';
+    });
+    html += '</div></section>';
+  }
+
+  // Compact weather chip for the job
+  html += '<div class="dj-w-chip ' + resLevel + '">'
+       +    '<span class="dj-w-chip-i">' + resIcon + '</span>'
+       +    '<span>' + esc(res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller')) + '</span>'
+       +  '</div>';
+
+  // Edit CTA
+  html += '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier ce chantier →</button>';
+
+  html += '</article>';
+  return html;
 }
 
 function ddStat(icon, lbl, val) {
@@ -4212,19 +5357,32 @@ var _micGotResult = false;      // ANY transcript (final or interim) received
 var _micStartFallback = null;
 var _micUserStopped = false;
 var _micRetryScheduled = false;
+var _micSilentRestarts = 0;   // restarts after no-speech (iOS ends session after silence)
 
 // Transcript accumulation (fix iOS Safari "no isFinal" issue)
 var _micBaseline      = '';   // textarea content before listening started
 var _micFinalAccum    = '';   // confirmed final segments
 var _micLatestInterim = '';   // latest interim chunk
 
-// Language fallback chain (iOS Safari sometimes silently fails on fr-CA)
+// Language fallback chain — only used for language-not-supported errors
 var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
 var _micLangIdx   = 0;
 
-// Verbose debug logging (visible in Safari Web Inspector)
+// Debug log — console + on-screen panel when ?debug=1 is in URL
+var _micDebugMode = /[?&]debug=1/.test(location.search);
+var _micDebugLines = [];
 function micLog() {
-  try { console.log.apply(console, ['[mic]'].concat([].slice.call(arguments))); } catch(e) {}
+  try {
+    var args = [].slice.call(arguments);
+    console.log.apply(console, ['[mic]'].concat(args));
+    if (_micDebugMode) {
+      var ts = new Date().toISOString().slice(11,23);
+      _micDebugLines.push(ts + ' ' + args.join(' '));
+      if (_micDebugLines.length > 30) _micDebugLines.shift();
+      var panel = document.getElementById('micDebugPanel');
+      if (panel) panel.textContent = _micDebugLines.join('\n');
+    }
+  } catch(e) {}
 }
 
 function micCheckHTTPS() {
@@ -4250,6 +5408,7 @@ function openVoice() {
   _micLangIdx = 0;
   _micRetryScheduled = false;
   _micUserStopped = false;
+  _micSilentRestarts = 0;
   setMicState('idle', 'Toucher pour parler');
   openModal('voiceOverlay');
   // iOS Safari: do NOT auto-start here — the 350ms timeout breaks the user-gesture
@@ -4261,7 +5420,8 @@ function openVoice() {
 }
 
 function voiceTextElement() {
-  return document.getElementById('taskVoiceText') || document.getElementById('voiceText');
+  // voiceOverlay uses #voiceText; taskOverlay uses #taskVoiceText directly (not via this fn)
+  return document.getElementById('voiceText');
 }
 function voiceStatusElement() {
   return document.getElementById('taskVoiceStatus') || document.getElementById('voiceStatus');
@@ -4378,6 +5538,7 @@ function startMic() {
     _micLatestInterim = '';
     _micLangIdx = 0;
     _micUserStopped = false;
+    _micSilentRestarts = 0;
   }
   _micRetryScheduled = false;
   _micAttemptStart();
@@ -4385,20 +5546,36 @@ function startMic() {
 
 function _micAttemptStart() {
   var SR = getSpeechRecognitionCtor();
-  var lang = _micLangChain[_micLangIdx] || 'fr-FR';
-  micLog('attempt start lang=' + lang + ' idx=' + _micLangIdx + ' iOS=' + isIOSSafari());
+  var lang = _micLangChain[_micLangIdx] || 'fr-CA';
+  micLog('attempt start lang=' + lang + ' iOS=' + isIOSSafari() + ' restart=' + _micSilentRestarts);
   _micStarting = true;
   _micStopping = false;
   _micGotResult = false;
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = lang;
-  // iOS Safari: interimResults can prevent isFinal from ever firing — disable it.
-  _micRec.interimResults = !isIOSSafari();
-  _micRec.continuous = false;
+  // iOS Safari: continuous=true blocks onresult (known iOS bug) → use false + silent restart
+  // interimResults=true on iOS can prevent isFinal from firing → disable
+  var ios = isIOSSafari();
+  _micRec.interimResults = !ios;
+  _micRec.continuous = !ios;
   _micRec.maxAlternatives = 1;
 
-  setMicState('listening', 'Écoute...', '🎙');
+  setMicState('listening', _micSilentRestarts > 0 ? 'Je t\'écoute…' : 'Je t\'écoute…', '🎙');
+
+  // Auto-stop safety valve: 30 seconds max per session
+  var _autoStop = null;
+  function _armAutoStop() {
+    if (_autoStop) clearTimeout(_autoStop);
+    _autoStop = setTimeout(function() {
+      if (_micActive && !_micUserStopped) {
+        micLog('auto-stop 30s');
+        _micUserStopped = true;
+        _micStopping = true;
+        if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+      }
+    }, 30000);
+  }
 
   _micRec.onstart = function() {
     _micStarting = false;
@@ -4406,24 +5583,27 @@ function _micAttemptStart() {
     _micStartedAt = Date.now();
     clearMicStartFallback();
     micLog('onstart lang=' + lang);
-    setMicState('listening', 'Parlez maintenant', '🔴');
+    setMicState('listening', 'Parlez…', '🔴');
+    _armAutoStop();
   };
-  _micRec.onspeechstart = function() { micLog('onspeechstart'); };
+  _micRec.onspeechstart = function() { micLog('onspeechstart'); setMicState('listening', 'Parlez…', '🔴'); };
   _micRec.onspeechend   = function() { micLog('onspeechend'); };
   _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
   _micRec.onaudioend    = function() { micLog('onaudioend'); };
 
   _micRec.onresult = function(e) {
     var nRes = e && e.results ? e.results.length : 0;
-    micLog('onresult results=' + nRes + ' resultIndex=' + (e && e.resultIndex));
+    // Use resultIndex to avoid re-processing previous finals in continuous mode
+    var rIdx = (e && e.resultIndex != null) ? e.resultIndex : 0;
+    micLog('onresult results=' + nRes + ' resultIndex=' + rIdx);
     if (!nRes) return;
     var newFinal = '';
     var interim  = '';
-    for (var i = 0; i < e.results.length; i++) {
+    for (var i = rIdx; i < e.results.length; i++) {
       var res = e.results[i];
       if (!res || !res[0]) continue;
       var t = (res[0].transcript || '');
-      micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' transcript=' + JSON.stringify(t));
+      micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' t=' + JSON.stringify(t));
       if (res.isFinal) newFinal += t + ' ';
       else interim    += t + ' ';
     }
@@ -4432,15 +5612,18 @@ function _micAttemptStart() {
     if (newFinal) {
       _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
       _micGotResult = true;
+      _micSilentRestarts = 0; // speech detected — reset restart counter
     }
     if (interim) {
       _micLatestInterim = interim;
       _micGotResult = true;
     }
+    micLog('→ final=' + JSON.stringify(_micFinalAccum) + ' interim=' + JSON.stringify(_micLatestInterim));
     if (newFinal || interim) {
       _micWriteLive();
-      if (newFinal) setMicState('processing', 'Transcription...', '✨');
-      else          setMicState('listening',  'Parlez maintenant', '🔴');
+      var _dbgEl = document.getElementById('voiceText');
+      micLog('→ textarea#voiceText val=' + JSON.stringify(_dbgEl ? _dbgEl.value : 'NOT FOUND'));
+      setMicState('listening', 'Parlez…', '🔴');
     }
   };
 
@@ -4449,38 +5632,45 @@ function _micAttemptStart() {
     clearMicStartFallback();
     _micStarting = false;
     micLog('onerror ' + err);
-    if (err === 'aborted' || _micStopping || _micUserStopped) {
-      // Handled in onend
-      return;
-    }
+    if (err === 'aborted' || _micStopping || _micUserStopped) return;
     if (err === 'not-allowed' || err === 'service-not-allowed') {
       _micActive = false;
-      setMicState('error', 'Autorisez le micro dans Safari, puis réessayer', '⚠');
+      if (_autoStop) clearTimeout(_autoStop);
+      setMicState('error', 'Autoriser le micro dans Safari puis réessayer', '⚠');
       return;
     }
     if (err === 'audio-capture') {
       _micActive = false;
+      if (_autoStop) clearTimeout(_autoStop);
       setMicState('error', 'Micro introuvable — saisir ci-dessous', '⚠');
       return;
     }
     if (err === 'network') {
       _micActive = false;
+      if (_autoStop) clearTimeout(_autoStop);
       setMicState('error', 'Service vocal hors ligne — saisir ci-dessous', '⚠');
       return;
     }
-    // 'no-speech' and other recoverable errors → onend handles retry
+    if (err === 'language-not-supported' && _micLangIdx + 1 < _micLangChain.length) {
+      // Cycle language — onend will restart via _micRetryScheduled
+      _micLangIdx++;
+      _micRetryScheduled = true;
+      micLog('lang-not-supported → try ' + _micLangChain[_micLangIdx]);
+      return;
+    }
+    // no-speech and other recoverable errors → onend handles silent restart
   };
 
   _micRec.onend = function() {
     clearMicStartFallback();
+    if (_autoStop) clearTimeout(_autoStop);
     _micStarting = false;
     var wasActive = _micActive;
     _micActive = false;
     micLog('onend wasActive=' + wasActive + ' gotResult=' + _micGotResult
-           + ' final=' + JSON.stringify(_micFinalAccum)
-           + ' interim=' + JSON.stringify(_micLatestInterim));
+           + ' userStopped=' + _micUserStopped + ' silentRestarts=' + _micSilentRestarts);
 
-    // User explicitly stopped → commit whatever we have
+    // 1. User explicitly stopped
     if (_micUserStopped || _micStopping) {
       _micStopping = false;
       _micUserStopped = false;
@@ -4488,40 +5678,51 @@ function _micAttemptStart() {
       setMicState('idle', committed ? 'Toucher pour reprendre' : 'Toucher pour parler');
       return;
     }
-    // Natural end → commit interim if final never came
+
+    // 2. Natural end — commit whatever was captured (includes interim fallback)
     if (_micCommitFinal()) {
       setMicState('idle', 'Toucher pour reprendre');
       return;
     }
-    // No transcript captured → try next language in chain
-    if (_micLangIdx + 1 < _micLangChain.length) {
-      _micLangIdx++;
-      _micRetryScheduled = true;
-      var nextLang = _micLangChain[_micLangIdx];
-      micLog('no transcript → retry with ' + nextLang);
-      setMicState('listening', 'Nouvel essai (' + nextLang + ')…', '🎙');
-      setTimeout(function() { _micAttemptStart(); }, 250);
+
+    // 3. Language-not-supported retry
+    if (_micRetryScheduled) {
+      _micRetryScheduled = false;
+      setMicState('listening', 'Nouvel essai…', '🎙');
+      setTimeout(function() { _micAttemptStart(); }, 200);
       return;
     }
-    // All languages exhausted with no transcript
-    micLog('all langs exhausted, no transcript');
-    setMicState('error', 'Transcription indisponible sur cet appareil', '⚠');
+
+    // 4. No speech → silent restart (iOS Safari ends session after silence even with continuous=true)
+    //    Allow up to 4 restarts (~2 min of patient listening)
+    if (_micSilentRestarts < 4) {
+      _micSilentRestarts++;
+      micLog('silent restart ' + _micSilentRestarts + '/4');
+      setMicState('listening', 'Je t\'écoute…', '🎙');
+      setTimeout(function() { _micAttemptStart(); }, 300);
+      return;
+    }
+
+    // 5. Gave up after 4 silent restarts
+    setMicState('error', 'Aucune voix captée — toucher pour réessayer', '⚠');
   };
 
   try {
+    micLog('calling start() lang=' + lang + ' continuous=' + _micRec.continuous + ' interim=' + _micRec.interimResults);
     _micRec.start();
+    micLog('start() called OK');
     _micStartFallback = setTimeout(function() {
       if (_micStarting && !_micActive) {
         _micStarting = false;
-        micLog('onstart never fired within 1800ms');
+        micLog('onstart never fired within 2500ms');
         try { _micRec.stop(); } catch(e) {}
-        setMicState('error', 'Le micro ne répond pas — vérifiez les permissions Safari', '⚠');
+        setMicState('error', 'Micro ne répond pas — vérifiez les permissions', '⚠');
       }
-    }, 1800);
-  } catch(e) {
+    }, 2500);
+  } catch(ex) {
     _micStarting = false;
     _micActive = false;
-    micLog('start() threw: ' + (e && e.message));
+    micLog('start() threw: ' + (ex && ex.message));
     setMicState('error', 'Dictée déjà active — toucher pour reprendre', '⚠');
   }
 }
@@ -4538,6 +5739,7 @@ function startTaskMic() {
     _micLatestInterim = '';
     _micLangIdx = 0;
     _micUserStopped = false;
+    _micSilentRestarts = 0;
   }
   _micRetryScheduled = false;
   _taskMicAttempt(textEl);
@@ -4545,18 +5747,20 @@ function startTaskMic() {
 
 function _taskMicAttempt(textEl) {
   var SR = getSpeechRecognitionCtor();
-  var lang = _micLangChain[_micLangIdx] || 'fr-FR';
+  var lang = _micLangChain[_micLangIdx] || 'fr-CA';
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
+  var ios = isIOSSafari();
   _micRec.lang = lang;
-  _micRec.interimResults = !isIOSSafari();
-  _micRec.continuous = false;
+  _micRec.interimResults = !ios;
+  _micRec.continuous = !ios;
   _micRec.maxAlternatives = 1;
   _micStarting = true;
   _micGotResult = false;
-  micLog('task attempt lang=' + lang);
+  micLog('task attempt lang=' + lang + ' restart=' + _micSilentRestarts);
   setInlineMicState('listening', '🎙');
 
+  var _autoStop = null;
   function writeLive() {
     if (!textEl) return;
     var parts = [];
@@ -4575,63 +5779,85 @@ function _taskMicAttempt(textEl) {
     return true;
   }
 
-  _micRec.onstart       = function() { _micStarting = false; _micActive = true; setInlineMicState('listening', '🔴'); micLog('task onstart'); };
+  _micRec.onstart = function() {
+    _micStarting = false; _micActive = true;
+    setInlineMicState('listening', '🔴'); micLog('task onstart');
+    _autoStop = setTimeout(function() {
+      if (_micActive) { _micUserStopped = true; _micStopping = true; try { _micRec.stop(); } catch(e) {} }
+    }, 30000);
+  };
   _micRec.onspeechstart = function() { micLog('task onspeechstart'); };
   _micRec.onspeechend   = function() { micLog('task onspeechend'); };
 
   _micRec.onresult = function(e) {
     var nRes = e && e.results ? e.results.length : 0;
-    micLog('task onresult results=' + nRes);
+    var rIdx = (e && e.resultIndex != null) ? e.resultIndex : 0;
+    micLog('task onresult results=' + nRes + ' rIdx=' + rIdx);
     if (!nRes) return;
     var newFinal = '', interim = '';
-    for (var i = 0; i < e.results.length; i++) {
+    for (var i = rIdx; i < e.results.length; i++) {
       var res = e.results[i];
       if (!res || !res[0]) continue;
       var t = res[0].transcript || '';
       if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
     }
     newFinal = newFinal.trim(); interim = interim.trim();
-    if (newFinal) { _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim(); _micGotResult = true; }
-    if (interim)  { _micLatestInterim = interim; _micGotResult = true; }
-    if (newFinal || interim) {
-      writeLive();
-      setInlineMicState(newFinal ? 'processing' : 'listening', newFinal ? '✨' : '🔴');
+    if (newFinal) {
+      _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
+      _micGotResult = true; _micSilentRestarts = 0;
     }
+    if (interim) { _micLatestInterim = interim; _micGotResult = true; }
+    if (newFinal || interim) { writeLive(); setInlineMicState('listening', '🔴'); }
   };
 
   _micRec.onerror = function(e) {
     _micStarting = false;
-    micLog('task onerror ' + (e && e.error));
     var err = e && e.error;
+    micLog('task onerror ' + err);
+    if (err === 'aborted' || _micStopping || _micUserStopped) return;
     if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
       _micActive = false;
+      if (_autoStop) clearTimeout(_autoStop);
       setInlineMicState('error', '⚠');
+      return;
     }
-    // 'no-speech' / 'aborted' → handled in onend (lang fallback)
+    if (err === 'language-not-supported' && _micLangIdx + 1 < _micLangChain.length) {
+      _micLangIdx++; _micRetryScheduled = true;
+    }
   };
 
   _micRec.onend = function() {
-    _micStarting = false;
-    _micActive = false;
-    micLog('task onend gotResult=' + _micGotResult);
+    _micStarting = false; _micActive = false;
+    if (_autoStop) clearTimeout(_autoStop);
+    micLog('task onend gotResult=' + _micGotResult + ' userStopped=' + _micUserStopped);
+
+    if (_micUserStopped || _micStopping) {
+      _micStopping = false; _micUserStopped = false;
+      if (commit()) setInlineMicState('idle', '✅');
+      else setInlineMicState('idle', '🎤');
+      return;
+    }
     if (commit()) { setInlineMicState('idle', '✅'); return; }
-    if (_micLangIdx + 1 < _micLangChain.length) {
-      _micLangIdx++;
-      _micRetryScheduled = true;
-      micLog('task no result → retry ' + _micLangChain[_micLangIdx]);
+    if (_micRetryScheduled) {
+      _micRetryScheduled = false;
+      setTimeout(function() { _taskMicAttempt(textEl); }, 200);
+      return;
+    }
+    if (_micSilentRestarts < 4) {
+      _micSilentRestarts++;
+      micLog('task silent restart ' + _micSilentRestarts + '/4');
       setInlineMicState('listening', '🎙');
-      setTimeout(function() { _taskMicAttempt(textEl); }, 250);
+      setTimeout(function() { _taskMicAttempt(textEl); }, 300);
       return;
     }
     setInlineMicState('error', '⚠');
-    toast('⚠ Transcription indisponible sur cet appareil');
+    toast('Aucune voix captée — réessayez');
   };
 
   try { _micRec.start(); }
-  catch(e) {
-    _micStarting = false;
-    _micActive = false;
-    micLog('task start() threw: ' + (e && e.message));
+  catch(ex) {
+    _micStarting = false; _micActive = false;
+    micLog('task start() threw: ' + (ex && ex.message));
     setInlineMicState('error', '⚠');
   }
 }
@@ -4656,38 +5882,144 @@ function applyTaskVoice() {
 }
 
 function parseVoiceInput(text) {
-  var t = text.toLowerCase();
-  var today = new Date();
-  var dayIndex = 0;
-  var dayNamesFr = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  var dayNamesEn = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  var nextWord = /\b(?:next|prochain|prochaine)\b/.test(t);
-  if (/\b(?:demain|tomorrow)\b/.test(t))       { dayIndex = 1; }
-  else if (/\b(?:aujourd'hui|aujourd hui|today|auj)\b/.test(t)) { dayIndex = 0; }
-  else {
-    var foundDay = null;
-    for (var i = 0; i < dayNamesFr.length; i++) {
-      if (new RegExp('\\b' + dayNamesFr[i] + '\\b').test(t)) { foundDay = i; break; }
-    }
-    if (foundDay === null) {
-      for (var j = 0; j < dayNamesEn.length; j++) {
-        if (new RegExp('\\b' + dayNamesEn[j] + '\\b').test(t)) { foundDay = j; break; }
+  return parseSmartInput(text);
+}
+
+/* Smart structured parser: extracts phone/email/date FR/time/duration/priority/
+   address/amount/client/job-type from one block of text. Leftover becomes the title. */
+function parseSmartInput(originalText) {
+  var text = originalText || '';
+  var result = {
+    name: '', client: '', phone: '', email: '',
+    type: null, priority: 'medium',
+    duration: '', time: '',
+    date: '', dayIndex: null,
+    indoor: null, location: '', amount: ''
+  };
+  var work = ' ' + text + ' ';
+  function clip(re) {
+    var m = work.match(re);
+    if (m) work = work.replace(re, ' ');
+    return m;
+  }
+
+  var em = clip(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
+  if (em) result.email = em[1];
+
+  var ph = clip(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+  if (ph) result.phone = ph[1] + '-' + ph[2] + '-' + ph[3];
+
+  var amt = clip(/(?:\$\s*\d+(?:[.,]\d{1,2})?|\b\d+(?:[.,]\d{1,2})?\s*\$)/);
+  if (amt) result.amount = amt[0].trim();
+
+  var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|montée|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
+  if (addr) result.location = addr[1].trim();
+
+  var monthsFr = { janvier:0, 'février':1, fevrier:1, mars:2, avril:3, mai:4, juin:5, juillet:6, 'août':7, aout:7, septembre:8, octobre:9, novembre:10, 'décembre':11, decembre:11 };
+  var monthsRe = Object.keys(monthsFr).join('|');
+  var dM = clip(new RegExp('\\b(?:du\\s+|le\\s+)?(\\d{1,2})(?:\\s*er)?\\s+(' + monthsRe + ')(?:\\s+(\\d{4}))?\\b', 'i'));
+  if (dM) {
+    var dd = parseInt(dM[1], 10);
+    var mo = monthsFr[dM[2].toLowerCase()];
+    var yr = dM[3] ? parseInt(dM[3], 10) : new Date().getFullYear();
+    var dt = new Date(yr, mo, dd);
+    var today0 = new Date(); today0.setHours(0,0,0,0);
+    if (!dM[3] && dt < today0) dt = new Date(yr + 1, mo, dd);
+    result.date = isoDate(dt);
+  }
+
+  if (!result.date) {
+    var dN = clip(/\b(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2}|\d{4}))?\b/);
+    if (dN) {
+      var nd = parseInt(dN[1], 10), nm = parseInt(dN[2], 10) - 1;
+      var ny = dN[3] ? (dN[3].length === 2 ? 2000 + parseInt(dN[3], 10) : parseInt(dN[3], 10)) : new Date().getFullYear();
+      if (nm >= 0 && nm <= 11 && nd >= 1 && nd <= 31) {
+        var d2 = new Date(ny, nm, nd);
+        var t0 = new Date(); t0.setHours(0,0,0,0);
+        if (!dN[3] && d2 < t0) d2 = new Date(ny + 1, nm, nd);
+        result.date = isoDate(d2);
       }
     }
-    if (foundDay !== null) {
-      var diff = (foundDay - today.getDay() + 7) % 7;
-      if (diff === 0 && nextWord) diff = 7;
-      dayIndex = diff;
+  }
+
+  var todayD = new Date();
+  if (!result.date) {
+    if (/\b(?:apr[eè]s[\-\s]demain)\b/i.test(work)) {
+      result.dayIndex = 2;
+      work = work.replace(/\b(?:apr[eè]s[\-\s]demain)\b/gi, ' ');
+    } else if (/\b(?:demain|tomorrow)\b/i.test(work)) {
+      result.dayIndex = 1;
+      work = work.replace(/\b(?:demain|tomorrow)\b/gi, ' ');
+    } else if (/\b(?:aujourd[''’]?hui|aujourd hui|today|auj)\b/i.test(work)) {
+      result.dayIndex = 0;
+      work = work.replace(/\b(?:aujourd[''’]?hui|aujourd hui|today|auj)\b/gi, ' ');
+    } else if (/\b(?:fin\s+de\s+semaine|week[-\s]?end)\b/i.test(work)) {
+      var diffW = (6 - todayD.getDay() + 7) % 7;
+      if (diffW === 0) diffW = 7;
+      result.dayIndex = diffW;
+    } else {
+      var dayNamesFr = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+      var dayNamesEn = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+      var nextWord = /\b(?:next|prochain|prochaine)\b/i.test(work);
+      var found = null;
+      for (var di = 0; di < 7; di++) {
+        if (new RegExp('\\b' + dayNamesFr[di] + '\\b', 'i').test(work)) { found = di; break; }
+        if (new RegExp('\\b' + dayNamesEn[di] + '\\b', 'i').test(work)) { found = di; break; }
+      }
+      if (found !== null) {
+        var diffD = (found - todayD.getDay() + 7) % 7;
+        if (diffD === 0 && nextWord) diffD = 7;
+        result.dayIndex = diffD;
+        work = work.replace(new RegExp('\\b(' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')(?:\\s+prochain[e]?)?\\b', 'gi'), ' ');
+        work = work.replace(/\b(?:next|prochain|prochaine)\b/gi, ' ');
+      }
     }
   }
-  if (dayIndex > 6) dayIndex = 6;
-  var priority = 'medium';
-  if (t.indexOf('urgent') !== -1) priority = 'urgent';
-  else if (t.indexOf('haute') !== -1) priority = 'high';
-  else if (t.indexOf('basse') !== -1 || t.indexOf('low') !== -1) priority = 'low';
-  var client = '';
-  var clientMatch = t.match(/\b(?:chez|pour|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ'’]+)/i);
-  if (clientMatch) client = clientMatch[1].replace(/[’']s$/i, '');
+
+  var tm = clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
+  if (tm) {
+    var hh = parseInt(tm[1], 10), mm2 = tm[2] ? parseInt(tm[2], 10) : 0;
+    result.time = ('0' + hh).slice(-2) + ':' + ('0' + mm2).slice(-2);
+  }
+  if (!result.time) {
+    if (/\bce\s+matin\b/i.test(work))                                          result.time = '08:00';
+    else if (/\bce\s+midi\b/i.test(work))                                      result.time = '12:00';
+    else if (/\b(?:cet?\s+)?apr[èe]s[\-\s]midi\b/i.test(work))                 result.time = '14:00';
+    else if (/\bce\s+soir\b/i.test(work))                                      result.time = '18:00';
+  }
+
+  var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
+  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['’]?\s*)?/gi, ' ');
+  var d1 = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
+  if (d1) result.duration = d1[1].replace(',', '.') + 'h';
+  if (!result.duration) {
+    var nKeys = Object.keys(frNums).join('|');
+    var d2 = clip(new RegExp('\\b(' + nKeys + ')\\s+heures?\\b', 'i'));
+    if (d2) result.duration = frNums[d2[1].toLowerCase()] + 'h';
+  }
+  if (!result.duration) {
+    var d3 = clip(/\b(\d+)\s*min(?:utes?)?\b/i);
+    if (d3) result.duration = d3[1] + ' min';
+  }
+  if (!result.duration) {
+    if (clip(/\bdemi[\-\s]journ[eé]e\b/i))                  result.duration = '1/2 journée';
+    else if (clip(/\b(?:une\s+)?journ[eé]e\b|\b1\s*jour\b/i)) result.duration = '1 journée';
+  }
+
+  if      (/\b(?:urgent[e]?|asap)\b/i.test(work))                                                            { result.priority = 'urgent'; }
+  else if (/\b(?:priorit[eé]\s+(?:haute|élev[eé]e)|haute\s+priorit[eé]|\bhaute\b)\b/i.test(work))             { result.priority = 'high'; }
+  else if (/\b(?:priorit[eé]\s+basse|basse\s+priorit[eé]|\bbasse\b|low)\b/i.test(work))                       { result.priority = 'low'; }
+  else if (/\b(?:priorit[eé]\s+moyenne|moyenne)\b/i.test(work))                                              { result.priority = 'medium'; }
+  work = work.replace(/\b(?:urgent[e]?|asap|priorit[eé]\s+(?:haute|basse|moyenne|élev[eé]e)|haute\s+priorit[eé]|basse\s+priorit[eé]|haute|basse|moyenne|low|priorit[eé])\b/gi, ' ');
+
+  if (/\b(?:int[eé]rieur|indoor|inside|au\s+chaud)\b/i.test(work)) {
+    result.indoor = true;
+    work = work.replace(/\b(?:int[eé]rieur|indoor|inside|au\s+chaud)\b/gi, ' ');
+  } else if (/\b(?:ext[eé]rieur|outdoor|outside|dehors)\b/i.test(work)) {
+    result.indoor = false;
+    work = work.replace(/\b(?:ext[eé]rieur|outdoor|outside|dehors)\b/gi, ' ');
+  }
+
   var jobAliases = {
     beton:      ['béton','beton','dalle','fondation','coulage','asphalte','asphaltage'],
     hauteur:    ['hauteur','échafaudage','echafaudage'],
@@ -4696,43 +6028,44 @@ function parseVoiceInput(text) {
     paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','tree','trees','coupe','cut','cutting','abattage'],
     electrique: ['électrique','electrique','électricité','electricite'],
     toiture:    ['toiture','toit','couverture','bardeau'],
-    peinture:   ['peinture','peindre'],
+    peinture:   ['peinture','peindre']
   };
-  var jobs = getMergedJobTypes();
+  var jobs = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
   Object.keys(jobs).forEach(function(k) {
     if (!jobAliases[k]) jobAliases[k] = [(jobs[k].name || '').toLowerCase(), (jobs[k].short || '').toLowerCase()];
   });
-  var jobType = Object.keys(jobs)[0] || null;
-  var found = false;
+  var lowerWork = work.toLowerCase();
   Object.keys(jobAliases).forEach(function(k) {
-    if (found) return;
+    if (result.type) return;
     var aliases = jobAliases[k];
-    for (var i = 0; i < aliases.length; i++) {
-      if (aliases[i] && t.indexOf(aliases[i]) !== -1) { jobType = k; found = true; break; }
+    for (var ai = 0; ai < aliases.length; ai++) {
+      if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
     }
   });
-  var name = text;
-  name = name.replace(/\b(?:chez|pour|at|for)\s+[A-Za-zÀ-ÖØ-öø-ÿ'’]+/gi, '');
-  name = name.replace(/\b(?:samedi prochain|vendredi prochain|dimanche prochain|jeudi prochain|mercredi prochain|mardi prochain|lundi prochain|next saturday|next friday|next sunday|next thursday|next wednesday|next tuesday|next monday|après-demain|apres-demain|tomorrow|demain)\b/gi, '');
-  name = name.replace(new RegExp('\\b(?:' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')\\b', 'gi'), '');
-  name = name.replace(/\b(?:urgent[e]?|priorit[eé]\s+\w+|haute?|basse?|moyenne?)\b/gi, '');
-  var time = '';
-  var timeMatch = text.match(/\b(?:à\s*)?([0-1]?\d|2[0-3])(?:h|:)([0-5]?\d)?\b/i);
-  if (timeMatch) {
-    var hour = parseInt(timeMatch[1], 10);
-    var min  = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-    time = ('0' + hour).slice(-2) + ':' + ('0' + min).slice(-2);
-    name = name.replace(timeMatch[0], '');
+  if (!result.type) result.type = Object.keys(jobs)[0] || null;
+
+  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}(?:\s+(?:[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/;
+  var cm = work.match(contextRe);
+  if (cm) {
+    result.client = cm[1].trim();
+    work = work.replace(cm[0], ' ');
+  } else {
+    var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\b/);
+    if (titleM) {
+      result.client = titleM[0].trim();
+      work = work.replace(titleM[0], ' ');
+    }
   }
-  if (!time) {
-    if (/\b(?:ce matin|this morning)\b/i.test(text))       time = '08:00';
-    else if (/\b(?:cet après-midi|après-midi|apres-midi|this afternoon)\b/i.test(text)) time = '14:00';
-    else if (/\b(?:ce soir|this evening)\b/i.test(text))   time = '18:00';
-  }
-  name = name.replace(/\s+/g, ' ').trim();
-  if (/\b(?:arbre|arbres|tree|trees|coupe|cut|cutting|abattage)\b/i.test(t)) name = 'Coupe d’arbres';
-  if (!name) name = text.trim();
-  return { name: name, client: client, type: jobType, priority: priority, dayIndex: dayIndex, time: time };
+
+  var leftover = work.replace(/\s+/g, ' ').trim();
+  leftover = leftover.replace(/^[\s,\.\-]+|[\s,\.\-]+$/g, '');
+  leftover = leftover.replace(/^(?:à|de|et|du|le|la|les|au|aux|en|d['’])\s+/i, '');
+  leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d['’])$/i, '');
+  leftover = leftover.replace(/\s{2,}/g, ' ').trim();
+  if (!leftover || leftover.length < 2) leftover = (text.split(/[\.,;]/)[0] || text).trim();
+  if (leftover) leftover = leftover.charAt(0).toUpperCase() + leftover.slice(1);
+  result.name = leftover;
+  return result;
 }
 
 function applyVoiceParsed(parsed) {
@@ -4747,9 +6080,20 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tDuration').value = parsed.duration || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
+  // Pipe phone/email/amount into description if present
+  var descEl = document.getElementById('tDesc');
+  if (descEl) {
+    var bits = [];
+    if (parsed.phone)  bits.push('📞 ' + parsed.phone);
+    if (parsed.email)  bits.push('✉ ' + parsed.email);
+    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (bits.length) descEl.value = bits.join(' · ');
+  }
   buildTypeGrid(parsed.type);
   var dateValue = '';
-  if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
+  if (parsed.date) {
+    dateValue = parsed.date;
+  } else if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
     dateValue = isoDate(ST.forecast[parsed.dayIndex].date);
   }
   populateDateInput(dateValue);
@@ -5013,24 +6357,30 @@ function toggleInlineMic(btn) {
   _inlineMicLatestInterim = '';
   _inlineMicLangIdx = 0;
   _inlineMicGotResult = false;
+  _inlineMicSilentRestarts = 0;
   _inlineMicAttempt();
 }
+
+var _inlineMicSilentRestarts = 0;
 
 function _inlineMicAttempt() {
   var SR = getSpeechRecognitionCtor();
   if (!SR || !_inlineMicEl) return;
-  var lang = _micLangChain[_inlineMicLangIdx] || 'fr-FR';
+  var lang = _micLangChain[_inlineMicLangIdx] || 'fr-CA';
   if (_inlineMicRec) { try { _inlineMicRec.stop(); } catch(e) {} _inlineMicRec = null; }
   _inlineMicRec = new SR();
+  var ios = isIOSSafari();
   _inlineMicRec.lang = lang;
-  _inlineMicRec.interimResults = !isIOSSafari();
-  _inlineMicRec.continuous = false;
+  _inlineMicRec.interimResults = !ios;
+  _inlineMicRec.continuous = !ios;
   _inlineMicRec.maxAlternatives = 1;
   _inlineMicStarting = true;
   _inlineMicGotResult = false;
   setInlineMicBtnState(_inlineMicBtn, 'listening', '⏺');
 
+  var _autoStop = null;
   function writeLive() {
+    if (!_inlineMicEl) return;
     var combined = (_inlineMicFinalAccum + ' ' + _inlineMicLatestInterim).replace(/\s+/g, ' ').trim();
     var parts = [];
     if (_inlineMicBaseline) parts.push(_inlineMicBaseline);
@@ -5051,19 +6401,26 @@ function _inlineMicAttempt() {
     _inlineMicStarting = false;
     _inlineMicActive = true;
     setInlineMicBtnState(_inlineMicBtn, 'listening', '⏺');
+    _autoStop = setTimeout(function() {
+      if (_inlineMicActive) { try { _inlineMicRec.stop(); } catch(e) {} }
+    }, 30000);
   };
   _inlineMicRec.onresult = function(e) {
     if (!e || !e.results || !e.results.length) return;
+    var rIdx = (e.resultIndex != null) ? e.resultIndex : 0;
     var newFinal = '', interim = '';
-    for (var i = 0; i < e.results.length; i++) {
+    for (var i = rIdx; i < e.results.length; i++) {
       var res = e.results[i];
       if (!res || !res[0]) continue;
       var t = res[0].transcript || '';
       if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
     }
     newFinal = newFinal.trim(); interim = interim.trim();
-    if (newFinal) { _inlineMicFinalAccum = (_inlineMicFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim(); _inlineMicGotResult = true; }
-    if (interim)  { _inlineMicLatestInterim = interim; _inlineMicGotResult = true; }
+    if (newFinal) {
+      _inlineMicFinalAccum = (_inlineMicFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
+      _inlineMicGotResult = true; _inlineMicSilentRestarts = 0;
+    }
+    if (interim) { _inlineMicLatestInterim = interim; _inlineMicGotResult = true; }
     if (newFinal || interim) writeLive();
   };
   _inlineMicRec.onerror = function(e) {
@@ -5071,30 +6428,33 @@ function _inlineMicAttempt() {
     var err = e && e.error;
     if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
       _inlineMicActive = false;
+      if (_autoStop) clearTimeout(_autoStop);
       setInlineMicBtnState(_inlineMicBtn, 'error', '⚠');
-      toast('⚠ Permission micro refusée ou capture indisponible');
+      toast('Permission micro refusée — autoriser dans les réglages');
     }
   };
   _inlineMicRec.onend = function() {
     _inlineMicStarting = false;
     _inlineMicActive = false;
+    if (_autoStop) clearTimeout(_autoStop);
     if (commit()) {
       setInlineMicBtnState(_inlineMicBtn, 'idle', '🎤');
       _inlineMicBtn = null; _inlineMicEl = null; _inlineMicRec = null;
       return;
     }
-    if (_inlineMicLangIdx + 1 < _micLangChain.length) {
-      _inlineMicLangIdx++;
-      setTimeout(_inlineMicAttempt, 250);
+    // Silent restart (iOS ends session after silence)
+    if (_inlineMicSilentRestarts < 4) {
+      _inlineMicSilentRestarts++;
+      setTimeout(_inlineMicAttempt, 300);
       return;
     }
     setInlineMicBtnState(_inlineMicBtn, 'error', '⚠');
-    toast('⚠ Aucune voix détectée — réessayez');
+    toast('Aucune voix captée — réessayez');
     _inlineMicBtn = null; _inlineMicEl = null; _inlineMicRec = null;
   };
 
   try { _inlineMicRec.start(); }
-  catch(e) {
+  catch(ex) {
     _inlineMicStarting = false;
     setInlineMicBtnState(_inlineMicBtn, 'error', '⚠');
   }
@@ -5479,6 +6839,7 @@ function isoDate(d) {
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
   loadCustomJobs();
+  loadWorkBank();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;
   // Pre-render calendar so its title is set even before first navigation
@@ -5486,6 +6847,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Detect dictation support and adapt UI
   applyVoiceSupportUI();
   _bindInlineMicButtons();
+  if (_micDebugMode) {
+    var dp = document.getElementById('micDebugPanel');
+    if (dp) { dp.style.display = 'block'; dp.textContent = 'DEBUG ON — SR=' + (getSpeechRecognitionCtor() ? 'OK' : 'ABSENT') + ' iOS=' + isIOSSafari() + '\n'; }
+  }
   _initGalleryDnD();
 
   document.addEventListener('keydown', function(e) {

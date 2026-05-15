@@ -464,9 +464,10 @@
     /* Widget météo — carré compact premium (style iOS dashboard) */
     .wx-widget {
       width: 132px;
+      aspect-ratio: 1;
       flex-shrink: 0;
-      display: flex; flex-direction: column; gap: 8px;
-      padding: 10px 11px 9px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 11px 11px 10px;
       background: linear-gradient(160deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
       border: 1px solid rgba(255,255,255,0.11);
       border-radius: 20px;

@@ -1660,9 +1660,11 @@
       position: relative;
       width: 100%;
       max-width: var(--app-max);
-      /* --vvh is set by JS visualViewport listener — tracks actual visible height
-         excluding keyboard. Overlay is also repositioned by JS so no kb-h subtraction needed. */
+      /* --vvh = visual viewport height (set by JS, excludes keyboard)
+         max-height limits the modal to what's visible above keyboard */
       max-height: calc(var(--vvh, 96vh) - 8px);
+      /* margin-bottom pushes modal above the keyboard without moving the overlay */
+      margin-bottom: var(--kb-h, 0px);
       overflow-y: auto;
       overflow-x: hidden;
       background: var(--surface-1);
@@ -1670,7 +1672,6 @@
       border-top-right-radius: var(--r-3xl);
       border: 1px solid var(--line-2);
       border-bottom: 0;
-      /* Bottom padding: safe-area only — overlay already sits above keyboard */
       padding: var(--s5) var(--s5) calc(var(--safe-bot) + var(--s5));
       animation: shIn var(--t-slow) var(--ease);
       -webkit-overflow-scrolling: touch;
@@ -6683,12 +6684,12 @@ var _savedScrollY = 0;
 function openModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
-  // Anchor overlay to current visual viewport so keyboard doesn't shift it
+  // Seed --vvh / --kb-h immediately so the modal has correct dimensions on first paint
   if (window.visualViewport) {
     var _vv = window.visualViewport;
-    el.style.top    = (_vv.offsetTop  || 0) + 'px';
-    el.style.height = _vv.height + 'px';
+    var _kbH = Math.max(0, (window.innerHeight || 0) - _vv.height - (_vv.offsetTop || 0));
     document.documentElement.style.setProperty('--vvh', _vv.height + 'px');
+    document.documentElement.style.setProperty('--kb-h', _kbH + 'px');
   }
   el.classList.add('open');
   var modal = el.querySelector('.modal');
@@ -6705,8 +6706,6 @@ function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
-  el.style.top    = '';
-  el.style.height = '';
   _openModals = _openModals.filter(function(x) { return x !== id; });
   // Blur to dismiss soft keyboard on iOS (do this BEFORE unlocking body)
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
@@ -6721,9 +6720,10 @@ function closeModal(id) {
   }
 }
 
-/* ── Visual-viewport tracking: keeps --vvh in sync and repositions open overlays
-   so they always occupy the visible area above the soft keyboard.
-   Works on iOS Safari (visualViewport = true visual area) and Android Chrome. */
+/* ── Visual-viewport tracking: sets --vvh (visible height) and --kb-h (keyboard height)
+   on documentElement. The overlay stays position:fixed inset:0 at all times.
+   The modal uses margin-bottom:var(--kb-h) to float above the keyboard, and
+   max-height:var(--vvh) to stay within the visible area. No element repositioning. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;
@@ -6733,15 +6733,9 @@ function closeModal(id) {
     raf = 0;
     var vvH   = vv.height;
     var vvTop = vv.offsetTop || 0;
-    // --kb-h kept for legacy references; --vvh is what modals use for max-height
-    var kbH = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
+    var kbH   = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
     document.documentElement.style.setProperty('--kb-h', kbH + 'px');
     document.documentElement.style.setProperty('--vvh',  vvH + 'px');
-    // Reposition every open overlay to match the visual viewport
-    document.querySelectorAll('.overlay.open').forEach(function(el) {
-      el.style.top    = vvTop + 'px';
-      el.style.height = vvH   + 'px';
-    });
   }
   function schedule() {
     if (raf) return;

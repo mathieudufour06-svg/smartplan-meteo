@@ -1714,12 +1714,15 @@
     html.modal-open { overflow: hidden; }
 
     .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s3); }
+    .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
+    .fg-row .fg { margin-bottom: 0; }
     .fg label {
       font-size: 12px; font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--t-3);
     }
+    .fg-opt { font-size: 10px; font-weight: 500; color: var(--t-4); text-transform: none; letter-spacing: 0; margin-left: 3px; }
     .fg input, .fg select, .fg textarea {
       padding: 13px 14px;
       background: var(--surface-2);
@@ -2957,43 +2960,41 @@
     <button type="button" class="modal-close" onclick="closeModal('taskOverlay')" aria-label="Fermer">✕</button>
     <h3 id="taskModalTitle">Nouveaux travaux</h3>
     <div class="fg">
-      <label>Type de travail</label>
-      <div class="type-grid" id="typeGrid"></div>
-    </div>
-    <div class="fg">
       <label>Nom des travaux</label>
       <input type="text" id="tName" placeholder="ex : Terrasse Tremblay" maxlength="60">
     </div>
-    <div class="fg">
-      <label>Client</label>
-      <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50">
+    <div class="fg-row">
+      <div class="fg">
+        <label>Date</label>
+        <input type="date" id="tDate">
+      </div>
+      <div class="fg">
+        <label>Heure</label>
+        <input type="time" id="tTime" value="">
+      </div>
     </div>
     <div class="fg">
-      <label>Lieu</label>
-      <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80">
+      <label>Type de travail</label>
+      <div class="type-grid" id="typeGrid"></div>
     </div>
     <div class="fg">
       <label>Durée</label>
       <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30">
     </div>
     <div class="fg">
+      <label>Lieu / Adresse</label>
+      <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80">
+    </div>
+    <div class="fg">
+      <label>Client <span class="fg-opt">(optionnel)</span></label>
+      <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50">
+    </div>
+    <div class="fg">
       <label class="label-row">
-        <span>Description / Notes</span>
+        <span>Notes</span>
         <button type="button" class="mic-inline" data-mic-target="tDesc" aria-label="Dicter la description">🎤</button>
       </label>
       <textarea id="tDesc" rows="3" placeholder="Notes, instructions client, accès travaux…"></textarea>
-    </div>
-    <div class="fg">
-      <label>Photos des travaux</label>
-      <div class="gallery-zone" id="galleryZone">
-        <div class="gallery-grid" id="galleryGrid"></div>
-        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(this.files)">
-        <button type="button" class="gallery-add" onclick="document.getElementById('galleryInput').click()">
-          <span class="ga-icon">📷</span>
-          <span class="ga-label">Ajouter des photos</span>
-          <span class="ga-hint">Glissez-déposez ou cliquez · plusieurs photos</span>
-        </button>
-      </div>
     </div>
     <div class="task-mode-tabs">
       <button type="button" id="taskModeBtnManual" class="mode-btn sel" onclick="setTaskMode('manual')">Manuel</button>
@@ -3020,12 +3021,16 @@
       </div>
     </div>
     <div class="fg">
-      <label>Date</label>
-      <input type="date" id="tDate">
-    </div>
-    <div class="fg">
-      <label>Heure</label>
-      <input type="time" id="tTime" value="">
+      <label>Photos des travaux</label>
+      <div class="gallery-zone" id="galleryZone">
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(this.files)">
+        <button type="button" class="gallery-add" onclick="document.getElementById('galleryInput').click()">
+          <span class="ga-icon">📷</span>
+          <span class="ga-label">Ajouter des photos</span>
+          <span class="ga-hint">Glissez-déposez ou cliquez · plusieurs photos</span>
+        </button>
+      </div>
     </div>
     <div class="fg">
       <label>Priorité</label>
@@ -6392,6 +6397,8 @@ function openAddTask(dayIdx) {
   document.getElementById('tMaxRain').value  = '';
   document.getElementById('tMaxWind').value  = '';
   buildTypeGrid();
+  var firstTypeBtn = document.querySelector('#typeGrid .type-btn');
+  if (firstTypeBtn) firstTypeBtn.classList.add('sel');
   var dateValue = '';
   if (typeof dayIdx === 'string' && dayIdx) dateValue = dayIdx;
   else if (typeof dayIdx === 'number' && ST.forecast && ST.forecast[dayIdx]) dateValue = isoDate(ST.forecast[dayIdx].date);

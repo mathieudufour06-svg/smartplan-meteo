@@ -461,15 +461,15 @@
     }
     .date-picker:focus { outline: none; border-color: var(--tint); }
 
-    /* Widget météo — carré premium dans le greeting */
+    /* Widget météo — carré compact premium (style iOS dashboard) */
     .wx-widget {
-      width: 118px; height: 118px;
+      width: 132px;
       flex-shrink: 0;
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding: 11px 11px 10px;
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 10px 11px 9px;
       background: linear-gradient(160deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
       border: 1px solid rgba(255,255,255,0.11);
-      border-radius: 22px;
+      border-radius: 20px;
       color: var(--t-1);
       box-shadow: 0 4px 20px rgba(0,0,0,0.30), 0 1px 0 rgba(255,255,255,0.08) inset;
       backdrop-filter: blur(28px) saturate(180%);
@@ -491,11 +491,35 @@
 
     .wx-head {
       display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
     }
+    .wx-temp-block {
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 0;
+    }
+    .wx-temp {
+      font-size: 26px; font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1;
+      color: var(--t-1);
+      font-variant-numeric: tabular-nums;
+    }
+    .wx-status {
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--t-4);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .wx-status.ok   { color: var(--green); }
+    .wx-status.warn { color: var(--orange); }
+    .wx-status.bad  { color: #ff6677; }
+
     .wx-orb {
-      width: 26px; height: 26px;
+      width: 30px; height: 30px;
       display: grid; place-items: center;
-      border-radius: 8px;
+      border-radius: 9px;
       background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%),
                   linear-gradient(145deg, #3a8eff, #1e4fa8);
       box-shadow: 0 0 10px rgba(58,142,255,0.28), 0 1px 0 rgba(255,255,255,0.14) inset;
@@ -517,47 +541,34 @@
                   linear-gradient(145deg, #ff5566, #8a2c1a);
       box-shadow: 0 0 12px rgba(255,85,102,0.34), 0 1px 0 rgba(255,255,255,0.14) inset;
     }
-    .wx-orb-icon { font-size: 14px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
+    .wx-orb-icon { font-size: 16px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
 
-    .wx-temp {
-      font-size: 30px; font-weight: 800;
-      letter-spacing: -0.04em; line-height: 1;
-      color: var(--t-1);
-      font-variant-numeric: tabular-nums;
+    .wx-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent);
+      margin: 0 -2px;
     }
 
     .wx-grid {
       display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 0 2px;
+      gap: 0 4px;
     }
-    .wx-stat { display: flex; flex-direction: column; gap: 1px; }
+    .wx-stat {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1px;
+    }
     .wx-stat-val {
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       color: var(--t-2);
       letter-spacing: -0.02em;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
-      overflow: hidden;
     }
     .wx-stat-lbl {
       font-size: 7.5px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.05em;
       color: var(--t-4);
     }
-
-    .wx-status {
-      font-size: 8px; font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--t-4);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 68px;
-    }
-    .wx-status.ok   { color: var(--green); }
-    .wx-status.warn { color: var(--orange); }
-    .wx-status.bad  { color: #ff6677; }
 
     /* ════════════════════════════════════════════════════════════════
        7-DAY STRIP — premium pills
@@ -2670,12 +2681,15 @@
 </div>
         <button type="button" class="wx-widget" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
           <div class="wx-head">
+            <div class="wx-temp-block">
+              <span class="wx-temp" id="mwxTemp">—°</span>
+              <span class="wx-status" id="mwxStatus">Météo</span>
+            </div>
             <span class="wx-orb" id="wxOrb" data-level="idle">
               <span class="wx-orb-icon" id="wxIcon">⏳</span>
             </span>
-            <span class="wx-status" id="mwxStatus">Météo</span>
           </div>
-          <span class="wx-temp" id="mwxTemp">—°</span>
+          <div class="wx-sep"></div>
           <div class="wx-grid">
             <div class="wx-stat">
               <span class="wx-stat-val" id="mwxRain">—</span>

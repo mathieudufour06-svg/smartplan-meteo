@@ -1660,8 +1660,9 @@
       position: relative;
       width: 100%;
       max-width: var(--app-max);
-      /* Cap modal height so it stays scrollable above the soft keyboard */
-      max-height: calc(100dvh - var(--kb-h, 0px) - 8px);
+      /* --vvh is set by JS visualViewport listener — tracks actual visible height
+         excluding keyboard. Overlay is also repositioned by JS so no kb-h subtraction needed. */
+      max-height: calc(var(--vvh, 96vh) - 8px);
       overflow-y: auto;
       overflow-x: hidden;
       background: var(--surface-1);
@@ -1669,15 +1670,12 @@
       border-top-right-radius: var(--r-3xl);
       border: 1px solid var(--line-2);
       border-bottom: 0;
-      /* Bottom padding leaves room for safe-area AND keyboard so the last button is reachable */
-      padding: var(--s5) var(--s5) calc(var(--safe-bot) + var(--kb-h, 0px) + var(--s5));
+      /* Bottom padding: safe-area only — overlay already sits above keyboard */
+      padding: var(--s5) var(--s5) calc(var(--safe-bot) + var(--s5));
       animation: shIn var(--t-slow) var(--ease);
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       scroll-padding-bottom: 80px;
-    }
-    @supports (max-height: 100svh) {
-      .overlay .modal { max-height: calc(100svh - var(--kb-h, 0px) - 8px); }
     }
     @keyframes shIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .overlay .modal h3 {
@@ -5802,8 +5800,14 @@ function parseSmartInput(originalText) {
   var amt = clip(/(?:\$\s*\d+(?:[.,]\d{1,2})?|\b\d+(?:[.,]\d{1,2})?\s*\$)/);
   if (amt) result.amount = amt[0].trim();
 
-  var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|montée|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
+  // Civic + street keyword (e.g. "123 rue Principale")
+  var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
   if (addr) result.location = addr[1].trim();
+  if (!result.location) {
+    // "à/au/dans [City/Neighbourhood]" without civic number
+    var addrCity = clip(/\b(?:à|au|dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-' ]{1,30})\b/i);
+    if (addrCity) result.location = addrCity[1].trim();
+  }
 
   var monthsFr = { janvier:0, 'février':1, fevrier:1, mars:2, avril:3, mai:4, juin:5, juillet:6, 'août':7, aout:7, septembre:8, octobre:9, novembre:10, 'décembre':11, decembre:11 };
   var monthsRe = Object.keys(monthsFr).join('|');
@@ -5934,12 +5938,14 @@ function parseSmartInput(originalText) {
   });
   if (!result.type) result.type = Object.keys(jobs)[0] || null;
 
-  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}(?:\s+(?:[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/;
+  // Client detection — case-insensitive to handle mobile STT lowercase output
+  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ][a-zà-ÿ\-']{1,}(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ][a-zà-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/i;
   var cm = work.match(contextRe);
   if (cm) {
-    result.client = cm[1].trim();
+    result.client = cm[1].trim().replace(/^(.)/, function(c) { return c.toUpperCase(); });
     work = work.replace(cm[0], ' ');
   } else {
+    // Fallback: two capitalized words side by side (STT may give Title Case on proper nouns)
     var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\b/);
     if (titleM) {
       result.client = titleM[0].trim();
@@ -5983,8 +5989,15 @@ function applyVoiceParsed(parsed) {
   var dateValue = '';
   if (parsed.date) {
     dateValue = parsed.date;
-  } else if (typeof parsed.dayIndex === 'number' && ST.forecast && ST.forecast[parsed.dayIndex]) {
-    dateValue = isoDate(ST.forecast[parsed.dayIndex].date);
+  } else if (typeof parsed.dayIndex === 'number') {
+    // Prefer forecast array; fall back to arithmetic when forecast not yet loaded
+    if (ST.forecast && ST.forecast[parsed.dayIndex]) {
+      dateValue = isoDate(ST.forecast[parsed.dayIndex].date);
+    } else {
+      var fallbackDate = new Date();
+      fallbackDate.setDate(fallbackDate.getDate() + parsed.dayIndex);
+      dateValue = isoDate(fallbackDate);
+    }
   }
   populateDateInput(dateValue);
   setTaskMode('manual');
@@ -6670,6 +6683,13 @@ var _savedScrollY = 0;
 function openModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
+  // Anchor overlay to current visual viewport so keyboard doesn't shift it
+  if (window.visualViewport) {
+    var _vv = window.visualViewport;
+    el.style.top    = (_vv.offsetTop  || 0) + 'px';
+    el.style.height = _vv.height + 'px';
+    document.documentElement.style.setProperty('--vvh', _vv.height + 'px');
+  }
   el.classList.add('open');
   var modal = el.querySelector('.modal');
   if (modal) modal.scrollTop = 0;
@@ -6685,6 +6705,8 @@ function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
+  el.style.top    = '';
+  el.style.height = '';
   _openModals = _openModals.filter(function(x) { return x !== id; });
   // Blur to dismiss soft keyboard on iOS (do this BEFORE unlocking body)
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
@@ -6699,9 +6721,9 @@ function closeModal(id) {
   }
 }
 
-/* ── Soft-keyboard tracking on iOS: expose --kb-h on documentElement so the
-   active modal can size its max-height and bottom padding around the keyboard.
-   Also auto-scrolls the focused field into view inside the open modal. */
+/* ── Visual-viewport tracking: keeps --vvh in sync and repositions open overlays
+   so they always occupy the visible area above the soft keyboard.
+   Works on iOS Safari (visualViewport = true visual area) and Android Chrome. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;
@@ -6709,8 +6731,17 @@ function closeModal(id) {
   var raf = 0;
   function update() {
     raf = 0;
-    var diff = Math.max(0, (window.innerHeight || 0) - (vv.height + vv.offsetTop));
-    document.documentElement.style.setProperty('--kb-h', diff + 'px');
+    var vvH   = vv.height;
+    var vvTop = vv.offsetTop || 0;
+    // --kb-h kept for legacy references; --vvh is what modals use for max-height
+    var kbH = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
+    document.documentElement.style.setProperty('--kb-h', kbH + 'px');
+    document.documentElement.style.setProperty('--vvh',  vvH + 'px');
+    // Reposition every open overlay to match the visual viewport
+    document.querySelectorAll('.overlay.open').forEach(function(el) {
+      el.style.top    = vvTop + 'px';
+      el.style.height = vvH   + 'px';
+    });
   }
   function schedule() {
     if (raf) return;

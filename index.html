@@ -1700,9 +1700,12 @@
     }
     .modal-close:active { transform: scale(0.92); background: var(--glass-3); }
 
-    /* Body lock when any modal open — overflow:hidden stops background scroll.
-       No position:fixed to avoid iOS coordinate-system shift on child scrollers. */
-    body.modal-open { overflow: hidden; }
+    /* Body scroll-lock when modal open.
+       position:fixed is the only reliable way on iOS Safari to prevent the browser
+       from panning the visual viewport when an input inside the modal is focused.
+       overflow:hidden alone does NOT block viewport pan on iOS — inputs still cause
+       a "jump" even with overflow:hidden on the body. */
+    body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
     html.modal-open { overflow: hidden; }
 
     .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s3); }
@@ -6684,46 +6687,52 @@ var _savedScrollY = 0;
 function openModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
-  // Seed --vvh / --kb-h immediately so the modal has correct dimensions on first paint
-  if (window.visualViewport) {
-    var _vv = window.visualViewport;
-    var _kbH = Math.max(0, (window.innerHeight || 0) - _vv.height - (_vv.offsetTop || 0));
-    document.documentElement.style.setProperty('--vvh', _vv.height + 'px');
-    document.documentElement.style.setProperty('--kb-h', _kbH + 'px');
-  }
-  el.classList.add('open');
-  var modal = el.querySelector('.modal');
-  if (modal) modal.scrollTop = 0;
   var wasEmpty = _openModals.length === 0;
   if (_openModals.indexOf(id) === -1) _openModals.push(id);
   if (wasEmpty) {
     _savedScrollY = window.scrollY || window.pageYOffset || 0;
+    // Apply body scroll-lock BEFORE classList so the CSS rule picks up top correctly.
+    // top:-scrollY keeps the page content visually in place while body is fixed.
+    document.body.style.top = (-_savedScrollY) + 'px';
     document.body.classList.add('modal-open');
     document.documentElement.classList.add('modal-open');
   }
+  // Seed --vvh (visual viewport height) and --kb-h (keyboard height) immediately.
+  // With body fixed, iOS can no longer pan the visual viewport, so offsetTop stays 0.
+  if (window.visualViewport) {
+    var _vv = window.visualViewport;
+    document.documentElement.style.setProperty('--vvh', _vv.height + 'px');
+    document.documentElement.style.setProperty('--kb-h', '0px');
+  }
+  el.classList.add('open');
+  var modal = el.querySelector('.modal');
+  if (modal) modal.scrollTop = 0;
 }
 function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
   _openModals = _openModals.filter(function(x) { return x !== id; });
-  // Blur to dismiss soft keyboard on iOS (do this BEFORE unlocking body)
+  // Blur first to dismiss keyboard, then release body lock
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
     try { document.activeElement.blur(); } catch(e) {}
   }
   if (!_openModals.length) {
+    var scrollY = _savedScrollY;
+    // Release body scroll-lock: clear inline top BEFORE removing the class
+    // (the class drives position:fixed; removing it before clearing top would flash)
+    document.body.style.top = '';
     document.body.classList.remove('modal-open');
     document.documentElement.classList.remove('modal-open');
-    document.body.style.removeProperty('--scroll-y');
-    // Restore scroll position
-    window.scrollTo(0, _savedScrollY);
+    window.scrollTo(0, scrollY);
   }
 }
 
-/* ── Visual-viewport tracking: sets --vvh (visible height) and --kb-h (keyboard height)
-   on documentElement. The overlay stays position:fixed inset:0 at all times.
-   The modal uses margin-bottom:var(--kb-h) to float above the keyboard, and
-   max-height:var(--vvh) to stay within the visible area. No element repositioning. */
+/* ── Visual-viewport tracking: keeps --vvh and --kb-h in sync with the visual
+   viewport. Body scroll-lock (position:fixed) prevents iOS viewport-pan, so
+   visualViewport.offsetTop stays 0 while a modal is open. The overlay stays
+   position:fixed inset:0. The modal uses margin-bottom:var(--kb-h) to float
+   above the keyboard, and max-height:var(--vvh) to stay within visible area. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;
@@ -6731,11 +6740,11 @@ function closeModal(id) {
   var raf = 0;
   function update() {
     raf = 0;
-    var vvH   = vv.height;
-    var vvTop = vv.offsetTop || 0;
-    var kbH   = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
+    var vvH = vv.height;
+    // When body is fixed, offsetTop is 0; keep the subtraction for correctness on Android
+    var kbH = Math.max(0, (window.innerHeight || 0) - vvH - (vv.offsetTop || 0));
+    document.documentElement.style.setProperty('--vvh', vvH + 'px');
     document.documentElement.style.setProperty('--kb-h', kbH + 'px');
-    document.documentElement.style.setProperty('--vvh',  vvH + 'px');
   }
   function schedule() {
     if (raf) return;

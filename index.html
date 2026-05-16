@@ -1701,11 +1701,14 @@
     .modal-close:active { transform: scale(0.92); background: var(--glass-3); }
 
     /* Body scroll-lock when modal open.
-       position:fixed is the only reliable way on iOS Safari to prevent the browser
-       from panning the visual viewport when an input inside the modal is focused.
-       overflow:hidden alone does NOT block viewport pan on iOS — inputs still cause
-       a "jump" even with overflow:hidden on the body. */
-    body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
+       overflow:hidden on both body and html prevents page scroll while the modal
+       is open. We do NOT use position:fixed on the body — on iOS Safari, combining
+       body:fixed with a position:fixed overlay creates a compositing conflict: when
+       the keyboard opens and the layout changes (--kb-h / margin-bottom update),
+       WebKit invalidates the overlay's compositing layer, causing a black-screen
+       flash until the layer is rebuilt. overflow:hidden alone is sufficient to
+       block page scroll and avoids this WebKit rendering bug entirely. */
+    body.modal-open { overflow: hidden; }
     html.modal-open { overflow: hidden; }
 
     .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s3); }
@@ -6691,14 +6694,11 @@ function openModal(id) {
   if (_openModals.indexOf(id) === -1) _openModals.push(id);
   if (wasEmpty) {
     _savedScrollY = window.scrollY || window.pageYOffset || 0;
-    // Apply body scroll-lock BEFORE classList so the CSS rule picks up top correctly.
-    // top:-scrollY keeps the page content visually in place while body is fixed.
-    document.body.style.top = (-_savedScrollY) + 'px';
     document.body.classList.add('modal-open');
     document.documentElement.classList.add('modal-open');
   }
-  // Seed --vvh (visual viewport height) and --kb-h (keyboard height) immediately.
-  // With body fixed, iOS can no longer pan the visual viewport, so offsetTop stays 0.
+  // Seed --vvh / --kb-h before el.classList.add('open') so the modal renders
+  // at the correct size on the very first frame (no layout jump).
   if (window.visualViewport) {
     var _vv = window.visualViewport;
     document.documentElement.style.setProperty('--vvh', _vv.height + 'px');
@@ -6713,26 +6713,22 @@ function closeModal(id) {
   if (!el) return;
   el.classList.remove('open');
   _openModals = _openModals.filter(function(x) { return x !== id; });
-  // Blur first to dismiss keyboard, then release body lock
+  // Blur to dismiss the soft keyboard before releasing the body lock
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
     try { document.activeElement.blur(); } catch(e) {}
   }
   if (!_openModals.length) {
-    var scrollY = _savedScrollY;
-    // Release body scroll-lock: clear inline top BEFORE removing the class
-    // (the class drives position:fixed; removing it before clearing top would flash)
-    document.body.style.top = '';
     document.body.classList.remove('modal-open');
     document.documentElement.classList.remove('modal-open');
-    window.scrollTo(0, scrollY);
+    window.scrollTo(0, _savedScrollY);
   }
 }
 
-/* ── Visual-viewport tracking: keeps --vvh and --kb-h in sync with the visual
-   viewport. Body scroll-lock (position:fixed) prevents iOS viewport-pan, so
-   visualViewport.offsetTop stays 0 while a modal is open. The overlay stays
-   position:fixed inset:0. The modal uses margin-bottom:var(--kb-h) to float
-   above the keyboard, and max-height:var(--vvh) to stay within visible area. */
+/* ── Visual-viewport tracking: keeps --vvh (visible height) and --kb-h (keyboard
+   height) accurate on iOS Safari and Android Chrome. The overlay stays at
+   position:fixed inset:0 — it is NEVER repositioned. The modal uses
+   margin-bottom:var(--kb-h) to float above the keyboard and
+   max-height:calc(var(--vvh)-8px) to stay within the visible area. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;

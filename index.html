@@ -1647,23 +1647,14 @@
     .overlay {
       position: fixed; inset: 0;
       z-index: 220;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.62);
       display: none;
-      /* NO backdrop-filter on this element:
-         backdrop-filter creates a GPU compositing layer that becomes the containing
-         block for position:absolute children on iOS Safari. When the keyboard opens
-         and the compositing layer is resized, child coordinates are computed against
-         the NEW (visual-viewport-sized) layer, not the original layout-viewport-sized
-         fixed element — so bottom/top values come out wrong and the modal appears
-         at the wrong position. Blur is applied via ::before instead. */
-    }
-    .overlay::before {
-      content: '';
-      position: absolute; inset: 0;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      pointer-events: none;
-      z-index: 0;
+      /* NO backdrop-filter anywhere on this element or its pseudo-elements.
+         backdrop-filter (even on ::before) causes WebKit to promote the overlay
+         to a GPU compositing layer. Compositing layers on iOS Safari resize to
+         the VISUAL viewport when the keyboard opens — so position:absolute children
+         whose bottom/height are computed against the layout viewport get the wrong
+         coordinates. No blur = no compositing layer = correct positioning always. */
     }
     .overlay.open { display: block; animation: ovIn var(--t-mid) var(--ease); }
     @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1673,7 +1664,6 @@
       margin: 0 auto;
       width: 100%;
       max-width: var(--app-max);
-      z-index: 1; /* above ::before blur layer */
       /* height (not max-height) set by JS = visualViewport.height.
          Using explicit height fills the full visible area even when form content
          is short — prevents the "dark backdrop above a tiny panel" problem.
@@ -1721,14 +1711,21 @@
     .modal-close:active { transform: scale(0.92); background: var(--glass-3); }
 
     /* Body scroll-lock when modal open.
-       overflow:hidden on both body and html prevents page scroll while the modal
-       is open. We do NOT use position:fixed on the body — on iOS Safari, combining
-       body:fixed with a position:fixed overlay creates a compositing conflict: when
-       the keyboard opens and the layout changes (--kb-h / margin-bottom update),
-       WebKit invalidates the overlay's compositing layer, causing a black-screen
-       flash until the layer is rebuilt. overflow:hidden alone is sufficient to
-       block page scroll and avoids this WebKit rendering bug entirely. */
-    body.modal-open { overflow: hidden; }
+       Must use position:fixed (not just overflow:hidden) on iOS Safari.
+       overflow:hidden alone does NOT prevent iOS from panning the visual viewport
+       when an input inside a position:fixed overlay is focused — vv.offsetTop
+       becomes positive (iOS shifts the view to show the input), which breaks the
+       bottom/height calculation in sync() and makes the modal appear at the wrong
+       position with a black gap above it.
+       position:fixed removes the body from normal flow; iOS cannot pan it.
+       The previous compositing-conflict black screen was caused by backdrop-filter
+       on the overlay, which is now fully removed. */
+    body.modal-open {
+      position: fixed;
+      width: 100%;
+      overflow: hidden;
+      /* top: set by JS openModal to -scrollY, restored in closeModal */
+    }
     html.modal-open { overflow: hidden; }
 
     .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s3); }
@@ -2979,7 +2976,7 @@
     <h3 id="taskModalTitle">Nouveaux travaux</h3>
     <div class="fg">
       <label>Nom des travaux</label>
-      <input type="text" id="tName" placeholder="ex : Terrasse Tremblay" maxlength="60">
+      <input type="text" id="tName" placeholder="ex : Terrasse Tremblay" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
     </div>
     <div class="fg-row">
       <div class="fg">
@@ -2997,15 +2994,15 @@
     </div>
     <div class="fg">
       <label>Durée</label>
-      <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30">
+      <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="fg">
       <label>Lieu / Adresse</label>
-      <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80">
+      <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="fg">
       <label>Client <span class="fg-opt">(optionnel)</span></label>
-      <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50">
+      <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="fg">
       <label class="label-row">
@@ -6713,17 +6710,18 @@ function openModal(id) {
   var wasEmpty = _openModals.length === 0;
   if (_openModals.indexOf(id) === -1) _openModals.push(id);
   if (wasEmpty) {
+    // Save scroll position BEFORE applying position:fixed (which resets scrollY to 0).
+    // body.style.top = -scrollY preserves the visual position while the body is locked.
     _savedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.top = '-' + _savedScrollY + 'px';
     document.body.classList.add('modal-open');
     document.documentElement.classList.add('modal-open');
   }
   var modal = el.querySelector('.modal');
   if (modal) {
     modal.scrollTop = 0;
-    // Set initial size SYNCHRONOUSLY before adding .open.
-    // height = full visual viewport so the modal surface fills the visible area
-    // even when form content is short (avoids large dark backdrop above panel).
-    // bottom = 0 because keyboard isn't open yet.
+    // Set size synchronously before .open is added.
+    // height = full visual viewport; bottom = 0 (no keyboard yet).
     if (window.visualViewport) {
       modal.style.height = window.visualViewport.height + 'px';
       modal.style.bottom = '0px';
@@ -6735,7 +6733,6 @@ function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
-  // Reset direct styles so CSS fallback (height:92dvh, bottom:0) applies on reuse
   var modal = el.querySelector('.modal');
   if (modal) { modal.style.height = ''; modal.style.bottom = ''; }
   _openModals = _openModals.filter(function(x) { return x !== id; });
@@ -6744,30 +6741,28 @@ function closeModal(id) {
   }
   if (!_openModals.length) {
     document.body.classList.remove('modal-open');
+    document.body.style.top = '';
     document.documentElement.classList.remove('modal-open');
+    // Restore scroll position after removing position:fixed from body
     window.scrollTo(0, _savedScrollY);
   }
 }
 
-/* ── Keyboard / visual-viewport tracking (architectural version)
-   Uses position:absolute bottom=kbH on the modal instead of margin-bottom.
+/* ── Keyboard / visual-viewport tracking
+   Sets height=vvH and bottom=kbH directly on open modal elements.
+   No CSS transitions, no CSS variables, no rAF — synchronous, idempotent.
 
-   Why absolute+bottom instead of flex+margin-bottom:
-     visualViewport.resize fires many times during the iOS keyboard animation.
-     With margin-bottom and CSS transitions, each sync() call interrupts and
-     restarts the 0.25s transition → chaotic overlapping → modal stuck at a
-     wrong intermediate position with a black zone above it.
-     With absolute positioning and NO transitions, every sync() call is
-     instantaneous and idempotent — no animation to interrupt.
+   body { position:fixed } (applied by openModal) prevents iOS from panning the
+   visual viewport when an input is focused. Without it, vv.offsetTop becomes
+   positive (iOS shifts the view), which breaks the bottom/kbH formula and
+   leaves the modal at the wrong position. With body:fixed, vv.offsetTop
+   stays 0 and kbH always equals the true keyboard height.
 
-   Why direct styles instead of CSS variables:
-     CSS variable → browser re-evaluates calc() → extra layout pass.
-     Direct element.style.* → single layout pass per sync call.
-
-   Why delayed re-sync at 400ms:
-     iOS keyboard animation takes ~250-350ms. The last resize event fires
-     mid-animation; the keyboard may not be at its final height yet.
-     A second sync at 400ms captures the settled keyboard height. */
+   scrollIntoView is intentionally NOT used here. The modal fills 100% of the
+   visual viewport (height:vvH), so the focused input is always visible near the
+   top. Calling scrollIntoView on iOS can re-trigger viewport panning and undo
+   the sync(). iOS natively scrolls the nearest overflow:auto ancestor to
+   reveal the focused input — relying on that native behaviour is correct. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;
@@ -6780,17 +6775,13 @@ function closeModal(id) {
     var vvTop = vv.offsetTop || 0;
     var kbH   = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
     document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
-      // height = full visual viewport: modal surface fills the entire visible area
-      // above the keyboard, eliminating the dark backdrop gap when content is short.
       m.style.height = vvH + 'px';
-      // bottom = keyboard height: anchors the modal just above the keyboard.
       m.style.bottom = kbH + 'px';
     });
   }
 
   function syncWithDelay() {
     sync();
-    // Delayed re-sync to catch final keyboard height after iOS animation settles
     clearTimeout(_delayedSyncTimer);
     _delayedSyncTimer = setTimeout(sync, 400);
   }
@@ -6798,30 +6789,14 @@ function closeModal(id) {
   vv.addEventListener('resize', syncWithDelay);
   vv.addEventListener('scroll', sync);
 
-  // Prevent iOS from panning the viewport when the user touches the backdrop
-  // (the dark area above the modal). Without this, iOS can pan the page,
-  // making the backdrop area grow and the modal appear too low.
+  // Block touchmove on the backdrop (dark area outside the modal panel).
+  // Without this, iOS can rubber-band scroll through the backdrop which
+  // shifts the visual viewport and makes the modal appear displaced.
   document.addEventListener('touchmove', function(e) {
-    var modal = e.target.closest && e.target.closest('.overlay .modal');
-    if (!modal) {
-      // Touch is on the backdrop — block the pan
-      var overlay = e.target.closest && e.target.closest('.overlay.open');
-      if (overlay) e.preventDefault();
+    if (!e.target.closest('.overlay.open .modal')) {
+      if (e.target.closest('.overlay.open')) e.preventDefault();
     }
   }, { passive: false });
-
-  // After keyboard opens (~250-350ms animation), scroll the focused field into
-  // view within the modal's scroll container so it's not hidden behind keyboard.
-  document.addEventListener('focusin', function(e) {
-    var t = e.target;
-    if (!t || !t.matches) return;
-    if (!t.matches('input, textarea, select')) return;
-    var modal = t.closest('.overlay .modal');
-    if (!modal) return;
-    setTimeout(function() {
-      try { t.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(_) {}
-    }, 400);
-  });
 })();
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
 

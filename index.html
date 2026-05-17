@@ -1647,14 +1647,23 @@
     .overlay {
       position: fixed; inset: 0;
       z-index: 220;
-      background: rgba(0,0,0,0.65);
+      background: rgba(0,0,0,0.55);
+      display: none;
+      /* NO backdrop-filter on this element:
+         backdrop-filter creates a GPU compositing layer that becomes the containing
+         block for position:absolute children on iOS Safari. When the keyboard opens
+         and the compositing layer is resized, child coordinates are computed against
+         the NEW (visual-viewport-sized) layer, not the original layout-viewport-sized
+         fixed element — so bottom/top values come out wrong and the modal appears
+         at the wrong position. Blur is applied via ::before instead. */
+    }
+    .overlay::before {
+      content: '';
+      position: absolute; inset: 0;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      display: none;
-      /* block layout: modal uses position:absolute inside, anchored to bottom.
-         JS sets modal.style.bottom = keyboardHeight to keep it above keyboard.
-         No flex+margin-bottom — that caused chaotic overlapping CSS transitions
-         when visualViewport.resize fired repeatedly during keyboard animation. */
+      pointer-events: none;
+      z-index: 0;
     }
     .overlay.open { display: block; animation: ovIn var(--t-mid) var(--ease); }
     @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1664,9 +1673,15 @@
       margin: 0 auto;
       width: 100%;
       max-width: var(--app-max);
-      /* max-height set by JS synchronously (visualViewport.height - 8).
-         92dvh is the CSS-only fallback for no-JS / before first sync. */
-      max-height: 92dvh;
+      z-index: 1; /* above ::before blur layer */
+      /* height (not max-height) set by JS = visualViewport.height.
+         Using explicit height fills the full visible area even when form content
+         is short — prevents the "dark backdrop above a tiny panel" problem.
+         With max-height the modal only grows to content size (~150px for a few
+         fields), leaving a large dark gap above it. With height it always fills
+         the entire space above the keyboard.
+         CSS fallback: 92dvh for no-JS / before first sync. */
+      height: 92dvh;
       overflow-y: auto;
       overflow-x: hidden;
       background: var(--surface-1);
@@ -1679,9 +1694,9 @@
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       scroll-padding-bottom: 80px;
-      /* NO transition on bottom/max-height: rapid visualViewport.resize events
-         during keyboard animation cause chaotic overlapping transitions and
-         the modal gets stuck at a wrong intermediate position. */
+      /* NO CSS transitions: rapid visualViewport.resize events during keyboard
+         animation would interrupt/restart the transition on every event, causing
+         the modal to animate chaotically and settle at a wrong position. */
     }
     @keyframes shIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .overlay .modal h3 {
@@ -6705,11 +6720,12 @@ function openModal(id) {
   var modal = el.querySelector('.modal');
   if (modal) {
     modal.scrollTop = 0;
-    // Set initial position SYNCHRONOUSLY before adding .open.
-    // bottom=0 anchors the modal to the bottom of the fixed overlay.
-    // JS keyboard tracking will override bottom with the keyboard height.
+    // Set initial size SYNCHRONOUSLY before adding .open.
+    // height = full visual viewport so the modal surface fills the visible area
+    // even when form content is short (avoids large dark backdrop above panel).
+    // bottom = 0 because keyboard isn't open yet.
     if (window.visualViewport) {
-      modal.style.maxHeight = (window.visualViewport.height - 8) + 'px';
+      modal.style.height = window.visualViewport.height + 'px';
       modal.style.bottom = '0px';
     }
   }
@@ -6719,9 +6735,9 @@ function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
-  // Reset direct styles so CSS fallback (absolute bottom:0) applies on reuse
+  // Reset direct styles so CSS fallback (height:92dvh, bottom:0) applies on reuse
   var modal = el.querySelector('.modal');
-  if (modal) { modal.style.maxHeight = ''; modal.style.bottom = ''; }
+  if (modal) { modal.style.height = ''; modal.style.bottom = ''; }
   _openModals = _openModals.filter(function(x) { return x !== id; });
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
     try { document.activeElement.blur(); } catch(e) {}
@@ -6764,8 +6780,11 @@ function closeModal(id) {
     var vvTop = vv.offsetTop || 0;
     var kbH   = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
     document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
-      m.style.maxHeight = (vvH - 8) + 'px';
-      m.style.bottom    = kbH       + 'px';
+      // height = full visual viewport: modal surface fills the entire visible area
+      // above the keyboard, eliminating the dark backdrop gap when content is short.
+      m.style.height = vvH + 'px';
+      // bottom = keyboard height: anchors the modal just above the keyboard.
+      m.style.bottom = kbH + 'px';
     });
   }
 

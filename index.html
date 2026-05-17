@@ -1651,19 +1651,22 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: none;
-      align-items: flex-end; justify-content: center;
-      padding: 0;
+      /* block layout: modal uses position:absolute inside, anchored to bottom.
+         JS sets modal.style.bottom = keyboardHeight to keep it above keyboard.
+         No flex+margin-bottom — that caused chaotic overlapping CSS transitions
+         when visualViewport.resize fired repeatedly during keyboard animation. */
     }
-    .overlay.open { display: flex; animation: ovIn var(--t-mid) var(--ease); }
+    .overlay.open { display: block; animation: ovIn var(--t-mid) var(--ease); }
     @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
     .overlay .modal {
-      position: relative;
+      position: absolute;
+      left: 0; right: 0; bottom: 0; /* JS overrides bottom = keyboardHeight */
+      margin: 0 auto;
       width: 100%;
       max-width: var(--app-max);
-      /* max-height and margin-bottom are set directly by JS (setupKeyboardTracking)
-         synchronously, without CSS variables or rAF delay.
-         92vh is the CSS-only fallback (no-JS / before first sync). */
-      max-height: 92vh;
+      /* max-height set by JS synchronously (visualViewport.height - 8).
+         92dvh is the CSS-only fallback for no-JS / before first sync. */
+      max-height: 92dvh;
       overflow-y: auto;
       overflow-x: hidden;
       background: var(--surface-1);
@@ -1676,9 +1679,9 @@
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       scroll-padding-bottom: 80px;
-      /* Smooth keyboard open/close — only applied to JS-driven properties */
-      transition: margin-bottom 0.25s cubic-bezier(0.4,0,0.2,1),
-                  max-height    0.25s cubic-bezier(0.4,0,0.2,1);
+      /* NO transition on bottom/max-height: rapid visualViewport.resize events
+         during keyboard animation cause chaotic overlapping transitions and
+         the modal gets stuck at a wrong intermediate position. */
     }
     @keyframes shIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .overlay .modal h3 {
@@ -6702,11 +6705,12 @@ function openModal(id) {
   var modal = el.querySelector('.modal');
   if (modal) {
     modal.scrollTop = 0;
-    // Set initial dimensions SYNCHRONOUSLY before adding .open.
-    // Direct style on the element — no CSS variable, no rAF, no frame delay.
+    // Set initial position SYNCHRONOUSLY before adding .open.
+    // bottom=0 anchors the modal to the bottom of the fixed overlay.
+    // JS keyboard tracking will override bottom with the keyboard height.
     if (window.visualViewport) {
       modal.style.maxHeight = (window.visualViewport.height - 8) + 'px';
-      modal.style.marginBottom = '0px';
+      modal.style.bottom = '0px';
     }
   }
   el.classList.add('open');
@@ -6715,9 +6719,9 @@ function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
-  // Reset direct styles so CSS fallback applies if the modal is reused
+  // Reset direct styles so CSS fallback (absolute bottom:0) applies on reuse
   var modal = el.querySelector('.modal');
-  if (modal) { modal.style.maxHeight = ''; modal.style.marginBottom = ''; }
+  if (modal) { modal.style.maxHeight = ''; modal.style.bottom = ''; }
   _openModals = _openModals.filter(function(x) { return x !== id; });
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
     try { document.activeElement.blur(); } catch(e) {}
@@ -6729,40 +6733,66 @@ function closeModal(id) {
   }
 }
 
-/* ── Keyboard / visual-viewport tracking
-   Applies maxHeight and marginBottom DIRECTLY on open modal elements —
-   no CSS variables, no requestAnimationFrame — to eliminate the 1-2 frame
-   delay that caused the visible "jump" and "compression" on iOS Safari.
+/* ── Keyboard / visual-viewport tracking (architectural version)
+   Uses position:absolute bottom=kbH on the modal instead of margin-bottom.
+
+   Why absolute+bottom instead of flex+margin-bottom:
+     visualViewport.resize fires many times during the iOS keyboard animation.
+     With margin-bottom and CSS transitions, each sync() call interrupts and
+     restarts the 0.25s transition → chaotic overlapping → modal stuck at a
+     wrong intermediate position with a black zone above it.
+     With absolute positioning and NO transitions, every sync() call is
+     instantaneous and idempotent — no animation to interrupt.
 
    Why direct styles instead of CSS variables:
-     CSS variable → browser re-evaluates calc() → layout pass → paint
-     That's 2 extra rendering steps after the visualViewport event fires.
-     Direct element.style.* → browser batches the write → single layout pass.
+     CSS variable → browser re-evaluates calc() → extra layout pass.
+     Direct element.style.* → single layout pass per sync call.
 
-   Why no rAF wrapper:
-     rAF defers to the NEXT frame — meaning one frame always renders with
-     stale values. Browsers batch DOM style writes between frames on their own;
-     calling sync() synchronously in the event handler is safe and faster. */
+   Why delayed re-sync at 400ms:
+     iOS keyboard animation takes ~250-350ms. The last resize event fires
+     mid-animation; the keyboard may not be at its final height yet.
+     A second sync at 400ms captures the settled keyboard height. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;
   if (!vv) return;
+
+  var _delayedSyncTimer = null;
 
   function sync() {
     var vvH   = vv.height;
     var vvTop = vv.offsetTop || 0;
     var kbH   = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
     document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
-      m.style.maxHeight    = (vvH - 8) + 'px';
-      m.style.marginBottom = kbH       + 'px';
+      m.style.maxHeight = (vvH - 8) + 'px';
+      m.style.bottom    = kbH       + 'px';
     });
   }
 
-  vv.addEventListener('resize', sync);
+  function syncWithDelay() {
+    sync();
+    // Delayed re-sync to catch final keyboard height after iOS animation settles
+    clearTimeout(_delayedSyncTimer);
+    _delayedSyncTimer = setTimeout(sync, 400);
+  }
+
+  vv.addEventListener('resize', syncWithDelay);
   vv.addEventListener('scroll', sync);
 
-  // After keyboard opens (~250ms animation), scroll the focused field into view
-  // within the modal's scroll container so it's above the keyboard.
+  // Prevent iOS from panning the viewport when the user touches the backdrop
+  // (the dark area above the modal). Without this, iOS can pan the page,
+  // making the backdrop area grow and the modal appear too low.
+  document.addEventListener('touchmove', function(e) {
+    var modal = e.target.closest && e.target.closest('.overlay .modal');
+    if (!modal) {
+      // Touch is on the backdrop — block the pan
+      var overlay = e.target.closest && e.target.closest('.overlay.open');
+      if (overlay) e.preventDefault();
+    }
+  }, { passive: false });
+
+  // After keyboard opens (~250-350ms animation), scroll the focused field into
+  // view within the modal's scroll container so it's not hidden behind keyboard.
   document.addEventListener('focusin', function(e) {
     var t = e.target;
     if (!t || !t.matches) return;
@@ -6771,7 +6801,7 @@ function closeModal(id) {
     if (!modal) return;
     setTimeout(function() {
       try { t.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(_) {}
-    }, 350);
+    }, 400);
   });
 })();
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }

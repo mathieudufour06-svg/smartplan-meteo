@@ -1660,11 +1660,10 @@
       position: relative;
       width: 100%;
       max-width: var(--app-max);
-      /* --vvh = visual viewport height (set by JS, excludes keyboard)
-         max-height limits the modal to what's visible above keyboard */
-      max-height: calc(var(--vvh, 96vh) - 8px);
-      /* margin-bottom pushes modal above the keyboard without moving the overlay */
-      margin-bottom: var(--kb-h, 0px);
+      /* max-height and margin-bottom are set directly by JS (setupKeyboardTracking)
+         synchronously, without CSS variables or rAF delay.
+         92vh is the CSS-only fallback (no-JS / before first sync). */
+      max-height: 92vh;
       overflow-y: auto;
       overflow-x: hidden;
       background: var(--surface-1);
@@ -1677,6 +1676,9 @@
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       scroll-padding-bottom: 80px;
+      /* Smooth keyboard open/close — only applied to JS-driven properties */
+      transition: margin-bottom 0.25s cubic-bezier(0.4,0,0.2,1),
+                  max-height    0.25s cubic-bezier(0.4,0,0.2,1);
     }
     @keyframes shIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .overlay .modal h3 {
@@ -6697,23 +6699,26 @@ function openModal(id) {
     document.body.classList.add('modal-open');
     document.documentElement.classList.add('modal-open');
   }
-  // Seed --vvh / --kb-h before el.classList.add('open') so the modal renders
-  // at the correct size on the very first frame (no layout jump).
-  if (window.visualViewport) {
-    var _vv = window.visualViewport;
-    document.documentElement.style.setProperty('--vvh', _vv.height + 'px');
-    document.documentElement.style.setProperty('--kb-h', '0px');
+  var modal = el.querySelector('.modal');
+  if (modal) {
+    modal.scrollTop = 0;
+    // Set initial dimensions SYNCHRONOUSLY before adding .open.
+    // Direct style on the element — no CSS variable, no rAF, no frame delay.
+    if (window.visualViewport) {
+      modal.style.maxHeight = (window.visualViewport.height - 8) + 'px';
+      modal.style.marginBottom = '0px';
+    }
   }
   el.classList.add('open');
-  var modal = el.querySelector('.modal');
-  if (modal) modal.scrollTop = 0;
 }
 function closeModal(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('open');
+  // Reset direct styles so CSS fallback applies if the modal is reused
+  var modal = el.querySelector('.modal');
+  if (modal) { modal.style.maxHeight = ''; modal.style.marginBottom = ''; }
   _openModals = _openModals.filter(function(x) { return x !== id; });
-  // Blur to dismiss the soft keyboard before releasing the body lock
   if (document.activeElement && document.activeElement.blur && document.activeElement.tagName !== 'BODY') {
     try { document.activeElement.blur(); } catch(e) {}
   }
@@ -6724,31 +6729,40 @@ function closeModal(id) {
   }
 }
 
-/* ── Visual-viewport tracking: keeps --vvh (visible height) and --kb-h (keyboard
-   height) accurate on iOS Safari and Android Chrome. The overlay stays at
-   position:fixed inset:0 — it is NEVER repositioned. The modal uses
-   margin-bottom:var(--kb-h) to float above the keyboard and
-   max-height:calc(var(--vvh)-8px) to stay within the visible area. */
+/* ── Keyboard / visual-viewport tracking
+   Applies maxHeight and marginBottom DIRECTLY on open modal elements —
+   no CSS variables, no requestAnimationFrame — to eliminate the 1-2 frame
+   delay that caused the visible "jump" and "compression" on iOS Safari.
+
+   Why direct styles instead of CSS variables:
+     CSS variable → browser re-evaluates calc() → layout pass → paint
+     That's 2 extra rendering steps after the visualViewport event fires.
+     Direct element.style.* → browser batches the write → single layout pass.
+
+   Why no rAF wrapper:
+     rAF defers to the NEXT frame — meaning one frame always renders with
+     stale values. Browsers batch DOM style writes between frames on their own;
+     calling sync() synchronously in the event handler is safe and faster. */
 (function setupKeyboardTracking() {
   if (typeof window === 'undefined') return;
   var vv = window.visualViewport;
   if (!vv) return;
-  var raf = 0;
-  function update() {
-    raf = 0;
-    var vvH = vv.height;
-    // When body is fixed, offsetTop is 0; keep the subtraction for correctness on Android
-    var kbH = Math.max(0, (window.innerHeight || 0) - vvH - (vv.offsetTop || 0));
-    document.documentElement.style.setProperty('--vvh', vvH + 'px');
-    document.documentElement.style.setProperty('--kb-h', kbH + 'px');
+
+  function sync() {
+    var vvH   = vv.height;
+    var vvTop = vv.offsetTop || 0;
+    var kbH   = Math.max(0, (window.innerHeight || 0) - vvH - vvTop);
+    document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
+      m.style.maxHeight    = (vvH - 8) + 'px';
+      m.style.marginBottom = kbH       + 'px';
+    });
   }
-  function schedule() {
-    if (raf) return;
-    raf = requestAnimationFrame(update);
-  }
-  vv.addEventListener('resize', schedule);
-  vv.addEventListener('scroll', schedule);
-  // When a field is focused inside a modal, ensure it's visible above the keyboard
+
+  vv.addEventListener('resize', sync);
+  vv.addEventListener('scroll', sync);
+
+  // After keyboard opens (~250ms animation), scroll the focused field into view
+  // within the modal's scroll container so it's above the keyboard.
   document.addEventListener('focusin', function(e) {
     var t = e.target;
     if (!t || !t.matches) return;
@@ -6756,8 +6770,8 @@ function closeModal(id) {
     var modal = t.closest('.overlay .modal');
     if (!modal) return;
     setTimeout(function() {
-      try { t.scrollIntoView({ block: 'nearest' }); } catch(_) {}
-    }, 100);
+      try { t.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(_) {}
+    }, 350);
   });
 })();
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }

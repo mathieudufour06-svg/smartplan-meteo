@@ -5364,13 +5364,29 @@ function renderOptimization() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   OCR IMPORT — Photo / PDF → multi-job pipeline
+   OCR IMPORT — Photo / PDF → multi-job pipeline (context-aware)
 ════════════════════════════════════════════════════════════════ */
-var _ocrResults = [];   // array of parsed job objects
-var _ocrPdfLoading = null;
+var _ocrResults      = [];
+var _ocrPdfLoading   = null;
+var _ocrMode         = 'bank';     // 'bank' | 'schedule'
+var _ocrScheduleDate = null;       // ISO date when mode === 'schedule'
 
-function openImportOcr() {
-  _ocrResults = [];
+function openImportOcr(mode, date) {
+  _ocrMode         = mode || 'bank';
+  _ocrScheduleDate = date || null;
+  _ocrResults      = [];
+
+  var isSchedule = _ocrMode === 'schedule';
+  var header     = document.querySelector('#importOcrOverlay .ocr-header h2');
+  var intro      = document.querySelector('#ocrStepSource > p');
+  var confirmBtn = document.getElementById('ocrConfirmBtn');
+
+  if (header)     header.textContent     = isSchedule ? '📷 Analyser les travaux'  : '📷 Importer des travaux';
+  if (intro)      intro.textContent      = isSchedule
+    ? 'SmartPlan lit la photo et pré-remplit le formulaire automatiquement.'
+    : 'SmartPlan analyse vos photos et détecte automatiquement les travaux.';
+  if (confirmBtn) confirmBtn.textContent = isSchedule ? 'Planifier ce travail →' : 'Ajouter à la banque →';
+
   _ocrShowStep('source');
   openModal('importOcrOverlay');
 }
@@ -5387,7 +5403,7 @@ function _ocrShowStep(name) {
 }
 
 function ocrSelectSource(src) {
-  var inputId = src === 'camera' ? 'ocrInputCamera'
+  var inputId = src === 'camera'  ? 'ocrInputCamera'
               : src === 'gallery' ? 'ocrInputGallery'
               : 'ocrInputFiles';
   var inp = document.getElementById(inputId);
@@ -5398,11 +5414,19 @@ function ocrHandleFiles(files) {
   if (!files || !files.length) return;
   var arr = Array.prototype.slice.call(files);
   _ocrShowStep('scan');
-  _ocrSetScanLabel('Chargement du module IA…', '');
+  _ocrSetScanLabel('Chargement du module IA…', 'Connexion internet requise');
   _ocrSetProgress(5);
+
+  var _loadTimeout = setTimeout(function() {
+    _ocrShowStep('source');
+    toast('⚠ Délai dépassé — vérifiez votre connexion');
+  }, 30000);
+
   _loadTesseract().then(function(T) {
+    clearTimeout(_loadTimeout);
     _ocrProcessFiles(arr, T);
   }).catch(function() {
+    clearTimeout(_loadTimeout);
     _ocrShowStep('source');
     toast('⚠ Module IA indisponible (connexion ?)');
   });
@@ -5428,10 +5452,9 @@ function _ocrResizeImage(dataURL, maxDim, quality) {
       if (w <= maxDim && h <= maxDim) { resolve(dataURL); return; }
       var scale = maxDim / Math.max(w, h);
       var canvas = document.createElement('canvas');
-      canvas.width = Math.round(w * scale);
+      canvas.width  = Math.round(w * scale);
       canvas.height = Math.round(h * scale);
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL('image/jpeg', quality || 0.82));
     };
     img.onerror = function() { resolve(dataURL); };
@@ -5463,19 +5486,16 @@ function _ocrPdfToDataURLs(file) {
       var fr = new FileReader();
       fr.onload = function(e) {
         pdfjs.getDocument({ data: e.target.result }).promise.then(function(pdf) {
-          var pages = [];
-          var total = Math.min(pdf.numPages, 6);
+          var pages = [], total = Math.min(pdf.numPages, 6);
           function renderPage(n) {
             if (n > total) { resolve(pages); return; }
             pdf.getPage(n).then(function(page) {
               var vp = page.getViewport({ scale: 2 });
               var canvas = document.createElement('canvas');
               canvas.width = vp.width; canvas.height = vp.height;
-              var ctx = canvas.getContext('2d');
-              page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
-                pages.push(canvas.toDataURL('image/jpeg', 0.85));
-                renderPage(n + 1);
-              }).catch(function() { renderPage(n + 1); });
+              page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise
+                .then(function() { pages.push(canvas.toDataURL('image/jpeg', 0.85)); renderPage(n + 1); })
+                .catch(function() { renderPage(n + 1); });
             }).catch(function() { renderPage(n + 1); });
           }
           renderPage(1);
@@ -5488,28 +5508,22 @@ function _ocrPdfToDataURLs(file) {
 }
 
 function _ocrProcessFiles(files, T) {
-  var allText = '';
-  var idx = 0;
-  var total = files.length;
+  var allText = '', idx = 0, total = files.length;
 
   function next() {
     if (idx >= total) { finish(allText); return; }
     var file = files[idx];
-    var pct = 10 + Math.round((idx / total) * 75);
-    _ocrSetProgress(pct);
-    _ocrSetScanLabel(
-      'Analyse ' + (idx + 1) + '/' + total + '…',
-      file.name || 'document'
-    );
+    _ocrSetProgress(10 + Math.round((idx / total) * 78));
+    _ocrSetScanLabel('Analyse ' + (idx + 1) + '/' + total + '…', (file.name || '').substring(0, 30) || 'image');
 
     if (file.type === 'application/pdf') {
       _ocrPdfToDataURLs(file).then(function(pages) {
         var pi = 0;
         function nextPage() {
           if (pi >= pages.length) { idx++; next(); return; }
-          _ocrResizeImage(pages[pi], 1600, 0.85).then(function(resized) {
-            T.recognize(resized, 'fra+eng').then(function(res) {
-              allText += '\n' + (res && res.data ? res.data.text : '');
+          _ocrResizeImage(pages[pi], 1600, 0.85).then(function(img) {
+            T.recognize(img, 'fra+eng').then(function(r) {
+              allText += '\n' + (r && r.data ? r.data.text : '');
               pi++; nextPage();
             }).catch(function() { pi++; nextPage(); });
           });
@@ -5519,9 +5533,9 @@ function _ocrProcessFiles(files, T) {
     } else {
       var fr = new FileReader();
       fr.onload = function(e) {
-        _ocrResizeImage(e.target.result, 1600, 0.85).then(function(resized) {
-          T.recognize(resized, 'fra+eng').then(function(res) {
-            allText += '\n' + (res && res.data ? res.data.text : '');
+        _ocrResizeImage(e.target.result, 1600, 0.85).then(function(img) {
+          T.recognize(img, 'fra+eng').then(function(r) {
+            allText += '\n' + (r && r.data ? r.data.text : '');
             idx++; next();
           }).catch(function() { idx++; next(); });
         });
@@ -5534,16 +5548,10 @@ function _ocrProcessFiles(files, T) {
   function finish(text) {
     _ocrSetProgress(100);
     var clean = (text || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-    if (!clean) {
-      _ocrShowStep('empty');
-      return;
-    }
+    if (!clean) { _ocrShowStep('empty'); return; }
     var segments = _ocrSegmentJobs(clean);
-    _ocrResults = segments.map(_ocrParseSegment).filter(function(j) { return j.name; });
-    if (!_ocrResults.length) {
-      _ocrShowStep('empty');
-      return;
-    }
+    _ocrResults = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
+    if (!_ocrResults.length) { _ocrShowStep('empty'); return; }
     _ocrRenderResults(_ocrResults);
     _ocrShowStep('results');
   }
@@ -5551,30 +5559,30 @@ function _ocrProcessFiles(files, T) {
   next();
 }
 
-/* Split raw OCR text into per-job segments */
+/* ─ Segment raw OCR into per-job chunks ─ */
 function _ocrSegmentJobs(text) {
-  // Strategy 1: numbered list (1. ... 2. ...)
+  // Strategy 1: numbered list
   var numbered = text.match(/(?:^|\n)\s*\d+[\.\)]\s+.+/g);
-  if (numbered && numbered.length >= 2) {
+  if (numbered && numbered.length >= 2)
     return numbered.map(function(s) { return s.replace(/^\s*\d+[\.\)]\s+/, '').trim(); });
-  }
-  // Strategy 2: bullet list (- ... or • ...)
+
+  // Strategy 2: bullet list
   var bullets = text.match(/(?:^|\n)\s*[-•–*]\s+.+/g);
-  if (bullets && bullets.length >= 2) {
+  if (bullets && bullets.length >= 2)
     return bullets.map(function(s) { return s.replace(/^\s*[-•–*]\s+/, '').trim(); });
-  }
-  // Strategy 3: double-newline paragraphs
+
+  // Strategy 3: paragraphs separated by blank line
   var paras = text.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
   if (paras.length >= 2) return paras;
-  // Strategy 4: single-line chunks
-  var lines = text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 6; });
+
+  // Strategy 4: merge short lines sensibly
+  var lines = text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 4; });
   if (lines.length >= 2) {
-    // Merge very short consecutive lines that look like continuation
     var merged = [lines[0]];
     for (var i = 1; i < lines.length; i++) {
       var prev = merged[merged.length - 1];
-      // If current line starts with a capital and previous doesn't end sentence → new job
-      if (/^[A-ZÀ-Ö]/.test(lines[i]) && /[.!?:;]$/.test(prev)) {
+      // New job heuristic: new capitalized word after a sentence-end
+      if (/^[A-ZÀ-ÖÙ-Þ]/.test(lines[i]) && /[.!?:;]$/.test(prev)) {
         merged.push(lines[i]);
       } else {
         merged[merged.length - 1] += ' ' + lines[i];
@@ -5585,31 +5593,56 @@ function _ocrSegmentJobs(text) {
   return [text];
 }
 
+/* ─ Parse one segment into a job object ─ */
 function _ocrParseSegment(seg) {
-  var parsed = parseSmartInput(seg);
-  if (!parsed.name) {
-    // Fallback: use first meaningful line as name
-    var firstLine = seg.split(/\n/)[0].replace(/^[-•–*\d.\)]\s*/, '').trim();
-    if (firstLine.length > 2) parsed.name = firstLine.substring(0, 60);
+  var clean = (seg || '').replace(/\f/g, '\n').replace(/\r\n?/g, '\n').trim();
+  var parsed = parseSmartInput(clean);
+
+  // Strengthen name: parseSmartInput leftover can be garbage on messy OCR
+  var hasName = parsed.name && parsed.name.length > 2 && /[a-zA-ZÀ-ÿ]{2,}/.test(parsed.name);
+  if (!hasName) {
+    // Walk lines top-to-bottom, pick first one with >= 3 letters
+    var lines = clean.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].replace(/^[-•–*\d.\)\s]+/, '').trim();
+      if (l.length > 2 && /[a-zA-ZÀ-ÿ]{2,}/.test(l)) {
+        parsed.name = l.substring(0, 60);
+        break;
+      }
+    }
+    // Last resort: first 60 chars of the whole segment
+    if (!parsed.name || parsed.name.length < 2) {
+      parsed.name = clean.replace(/\s+/g, ' ').substring(0, 60).trim();
+    }
   }
+  // Capitalise first letter
+  if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
   return parsed;
 }
 
-/* Build editable result cards */
+/* ─ Build an editable result card ─ */
 function _ocrBuildCard(job, idx) {
   var card = document.createElement('div');
   card.className = 'ocr-card ocr-card-checked';
   card.dataset.idx = idx;
 
   var prio = job.priority || 'medium';
-  var typeOpts = ['','Toiture','Fondation','Electrical','Plomberie','Peinture','Terrassement','Menuiserie','Maçonnerie','Autre']
-    .map(function(t) {
-      return '<option value="' + t + '"' + (job.type === t ? ' selected' : '') + '>' + (t || '— Type —') + '</option>';
-    }).join('');
+
+  // Use real merged job types
+  var mergedTypes = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
+  var typeKeys = Object.keys(mergedTypes);
+  var typeOpts = [''].concat(typeKeys).map(function(k) {
+    var label    = k ? (mergedTypes[k] ? (mergedTypes[k].short || mergedTypes[k].name || k) : k) : '— Type —';
+    var selected = k && k === (job.type || '');
+    return '<option value="' + k + '"' + (selected ? ' selected' : '') + '>' + label + '</option>';
+  }).join('');
+
   var prioOpts = ['urgent','high','medium','low'].map(function(p) {
     var labels = { urgent:'🔴 Urgente', high:'🟠 Haute', medium:'🟡 Moyenne', low:'🟢 Basse' };
     return '<option value="' + p + '"' + (prio === p ? ' selected' : '') + '>' + labels[p] + '</option>';
   }).join('');
+
+  var notesVal = [job.notes || '', job.amount ? '💰 ' + job.amount : ''].filter(Boolean).join(' · ');
 
   card.innerHTML =
     '<div class="ocr-card-head">'
@@ -5624,7 +5657,7 @@ function _ocrBuildCard(job, idx) {
     + '<div class="ocr-card-field"><label>Adresse</label><input type="text" placeholder="Adresse" value="' + _escAttr(job.location || '') + '" autocomplete="off"></div>'
     + '<div class="ocr-card-field"><label>Priorité</label><select>' + prioOpts + '</select></div>'
     + '</div>'
-    + '<div class="ocr-card-notes"><input type="text" placeholder="Notes…" value="' + _escAttr(job.notes || '') + '" autocomplete="off"></div>';
+    + '<div class="ocr-card-notes"><input type="text" placeholder="Notes, montant…" value="' + _escAttr(notesVal) + '" autocomplete="off"></div>';
 
   return card;
 }
@@ -5635,34 +5668,31 @@ function _escAttr(s) {
 
 function _ocrToggleCard(checkEl) {
   var card = checkEl.closest('.ocr-card');
-  if (!card) return;
-  card.classList.toggle('ocr-card-checked');
+  if (card) card.classList.toggle('ocr-card-checked');
 }
 
 function _ocrRenderResults(jobs) {
-  var list = document.getElementById('ocrCardsList');
+  var list  = document.getElementById('ocrCardsList');
   var count = document.getElementById('ocrResultsCount');
   if (!list) return;
   list.innerHTML = '';
-  jobs.forEach(function(job, i) {
-    list.appendChild(_ocrBuildCard(job, i));
-  });
+  jobs.forEach(function(job, i) { list.appendChild(_ocrBuildCard(job, i)); });
   if (count) count.textContent = jobs.length;
 }
 
 function _ocrReadCard(card) {
-  var inputs = card.querySelectorAll('input, select');
   var name     = (card.querySelector('.ocr-card-name') || {}).value || '';
-  var client   = inputs[1] ? inputs[1].value : '';
-  var phone    = inputs[2] ? inputs[2].value : '';
-  var duration = inputs[3] ? inputs[3].value : '';
-  var type     = inputs[4] ? inputs[4].value : '';
-  var address  = inputs[5] ? inputs[5].value : '';
-  var priority = inputs[6] ? inputs[6].value : 'medium';
-  var notes    = inputs[7] ? inputs[7].value : '';
-  return { name: name.trim(), client: client.trim(), phone: phone.trim(),
-           duration: duration.trim(), type: type.trim(), address: address.trim(),
-           priority: priority, notes: notes.trim() };
+  var inputs   = card.querySelectorAll('input:not(.ocr-card-name), select');
+  return {
+    name:     name.trim(),
+    client:   (inputs[0] ? inputs[0].value : '').trim(),
+    phone:    (inputs[1] ? inputs[1].value : '').trim(),
+    duration: (inputs[2] ? inputs[2].value : '').trim(),
+    type:     (inputs[3] ? inputs[3].value : '').trim(),
+    address:  (inputs[4] ? inputs[4].value : '').trim(),
+    priority: (inputs[5] ? inputs[5].value : 'medium'),
+    notes:    (inputs[6] ? inputs[6].value : '').trim()
+  };
 }
 
 function ocrConfirmImport() {
@@ -5670,24 +5700,56 @@ function ocrConfirmImport() {
   if (!list) return;
   var cards = list.querySelectorAll('.ocr-card.ocr-card-checked');
   if (!cards.length) { toast('⚠ Sélectionnez au moins un travail'); return; }
+
+  /* ── Schedule context: first card → task form, extras → bank ── */
+  if (_ocrMode === 'schedule') {
+    var first = _ocrReadCard(cards[0]);
+    if (!first.name) { toast('⚠ Nom du travail requis'); return; }
+
+    closeModal('importOcrOverlay');
+    openAddTask(_ocrScheduleDate);
+
+    setTimeout(function() {
+      var set = function(id, v) { var e = document.getElementById(id); if (e && v) e.value = v; };
+      set('tName',     first.name);
+      set('tClient',   first.client);
+      set('tDuration', first.duration);
+      set('tPrio',     first.priority);
+      set('tLocation', first.address);
+      var descEl = document.getElementById('tDesc');
+      var descParts = [first.notes, first.phone ? '📞 ' + first.phone : ''].filter(Boolean);
+      if (descEl && descParts.length) descEl.value = descParts.join('\n');
+    }, 60);
+
+    // Bank any extra selected cards
+    var banked = 0;
+    Array.prototype.slice.call(cards, 1).forEach(function(card) {
+      var d = _ocrReadCard(card);
+      if (!d.name) return;
+      _workBank.push({
+        id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: '',
+        address: d.address, type: d.type, duration: d.duration,
+        priority: d.priority, notes: d.notes, flexible: false, indoor: null, photos: []
+      });
+      banked++;
+    });
+    if (banked) { saveWorkBank(); renderBanqueTravaux(); }
+
+    var msg = '✓ Champs pré-remplis';
+    if (banked) msg += ' · ' + banked + ' autre' + (banked > 1 ? 's' : '') + ' → banque';
+    toast(msg);
+    return;
+  }
+
+  /* ── Bank context (default): all selected cards → bank ── */
   var added = 0;
-  cards.forEach(function(card) {
-    var data = _ocrReadCard(card);
-    if (!data.name) return;
+  Array.prototype.forEach.call(cards, function(card) {
+    var d = _ocrReadCard(card);
+    if (!d.name) return;
     _workBank.push({
-      id: _wbNewId(),
-      name: data.name,
-      client: data.client,
-      phone: data.phone,
-      email: '',
-      address: data.address,
-      type: data.type,
-      duration: data.duration,
-      priority: data.priority,
-      notes: data.notes,
-      flexible: false,
-      indoor: null,
-      photos: []
+      id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: '',
+      address: d.address, type: d.type, duration: d.duration,
+      priority: d.priority, notes: d.notes, flexible: false, indoor: null, photos: []
     });
     added++;
   });
@@ -6018,15 +6080,8 @@ function getSpeechRecognitionCtor() {
 }
 function applyVoiceSupportUI() {
   var supported = !!getSpeechRecognitionCtor();
-  var sub = document.getElementById('sheetOptVoiceSub');
-  var btn = document.getElementById('sheetOptVoice');
-  if (!supported) {
-    if (sub) sub.textContent = "Non supportée sur ce navigateur — saisie manuelle";
-    if (btn) btn.style.opacity = '0.55';
-  } else {
-    if (sub) sub.textContent = "« Asphaltage chez Tremblay samedi à 8h »";
-    if (btn) btn.style.opacity = '';
-  }
+  var sub = document.getElementById('sheetVoiceSub');
+  if (!supported && sub) sub.textContent = 'Non supportée sur ce navigateur — saisie manuelle';
 }
 function isIOSSafari() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent || '')
@@ -7498,8 +7553,7 @@ function _sheetAction(action) {
   if (action === 'voice') {
     openVoice();
   } else if (action === 'photo') {
-    if (_sheetMode === 'bank') openImportOcr();
-    else openPhotoModal();
+    openImportOcr(_sheetMode, _sheetDate);
   } else if (action === 'manual') {
     if (_sheetMode === 'bank') openWorkBankForm(null);
     else openAddTask(_sheetDate);

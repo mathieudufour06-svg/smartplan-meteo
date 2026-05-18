@@ -2718,6 +2718,43 @@
     /* ── Unified Add Sheet — option colors ── */
     .sheet-opt-icon.blue { --so-c1: rgba(100,160,255,0.28); --so-c2: rgba(60,100,200,0.16); }
 
+    /* ── OCR raw text editing ── */
+    .ocr-quality-note {
+      font-size: .72rem; color: var(--t-3); text-align: center;
+      margin-bottom: var(--s3); line-height: 1.5;
+    }
+    .ocr-raw-details {
+      margin-bottom: var(--s4);
+      background: var(--surface-3); border: 1px solid var(--line-2);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    .ocr-raw-summary {
+      padding: var(--s3) var(--s4); font-size: .8rem; font-weight: 600;
+      color: var(--t-2); cursor: pointer; list-style: none;
+      display: flex; align-items: center; gap: 6px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ocr-raw-summary::-webkit-details-marker { display: none; }
+    .ocr-raw-summary::after { content: '›'; margin-left: auto; font-size: 1rem; color: var(--t-3); transition: transform var(--t-fast); }
+    details[open] .ocr-raw-summary::after { transform: rotate(90deg); }
+    .ocr-raw-body { padding: 0 var(--s4) var(--s4); }
+    .ocr-raw-ta {
+      width: 100%; box-sizing: border-box;
+      background: var(--surface-1); border: 1px solid var(--line-2);
+      border-radius: var(--r-sm); padding: var(--s3);
+      font-size: .8rem; color: var(--t-1); font-family: inherit;
+      resize: vertical; min-height: 100px; outline: none;
+    }
+    .ocr-raw-ta:focus { border-color: var(--tint); }
+    .ocr-reparse-btn {
+      margin-top: var(--s3); width: 100%; padding: 9px;
+      background: var(--surface-2); border: 1.5px solid var(--tint);
+      border-radius: var(--r-lg); color: var(--tint);
+      font-size: .82rem; font-weight: 600; cursor: pointer;
+      transition: background var(--t-fast);
+    }
+    .ocr-reparse-btn:active { background: var(--surface-3); }
+
     /* ── OCR Import Overlay ── */
     #importOcrOverlay .modal {
       display: flex; flex-direction: column;
@@ -3630,6 +3667,14 @@
         <span class="ocr-results-title">Travaux détectés</span>
         <span class="ocr-results-count" id="ocrResultsCount">0</span>
       </div>
+      <details class="ocr-raw-details" id="ocrRawDetails">
+        <summary class="ocr-raw-summary">📝 Voir / corriger le texte reconnu</summary>
+        <div class="ocr-raw-body">
+          <p class="ocr-quality-note">Texte imprimé et screenshots : bonne précision.<br>Écriture manuscrite : corrigez les erreurs ci-dessous puis ré-analysez.</p>
+          <textarea id="ocrRawText" class="ocr-raw-ta" rows="6" placeholder="Texte lu par OCR…" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+          <button class="ocr-reparse-btn" onclick="ocrReparse()">↺ Ré-analyser ce texte</button>
+        </div>
+      </details>
       <div class="ocr-cards-list" id="ocrCardsList"></div>
       <div class="ocr-cards-confirm">
         <button class="ocr-confirm-btn" id="ocrConfirmBtn" onclick="ocrConfirmImport()">Ajouter à la banque →</button>
@@ -3642,8 +3687,8 @@
       <div class="ocr-empty-wrap">
         <div class="ocr-empty-icon">🔍</div>
         <div class="ocr-empty-title">Aucun travail détecté</div>
-        <div class="ocr-empty-sub">Essayez avec une photo plus nette ou un document texte lisible.</div>
-        <button class="ocr-empty-retry" onclick="ocrGoBackToSource()">Réessayer</button>
+        <div class="ocr-empty-sub">Texte illisible ou photo floue ? Essayez un screenshot ou corrigez le texte ci-dessous.</div>
+        <button class="ocr-empty-retry" onclick="ocrGoBackToSource()">Réessayer avec une autre photo</button>
       </div>
     </div>
 
@@ -3662,7 +3707,20 @@ var DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 var MONTHS = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
 var MONTHS_FULL = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 
-var JOB_TYPES = {};
+var JOB_TYPES = {
+  toiture:    { name:'Toiture',     short:'Toit',     icon:'🏠', color:'slate',  rain:1,  wind:40, temp:5   },
+  terrasse:   { name:'Terrasse',    short:'Terr.',    icon:'🪵', color:'brown',  rain:3,  wind:50, temp:5   },
+  excavation: { name:'Excavation',  short:'Excav.',   icon:'🚛', color:'amber',  rain:10, wind:70, temp:-5  },
+  beton:      { name:'Béton',       short:'Béton',    icon:'🧱', color:'slate',  rain:2,  wind:40, temp:5   },
+  paysagisme: { name:'Paysagisme',  short:'Paysage',  icon:'🌿', color:'green',  rain:5,  wind:60, temp:3   },
+  peinture:   { name:'Peinture',    short:'Peint.',   icon:'🎨', color:'yellow', rain:0,  wind:30, temp:10  },
+  maconnerie: { name:'Maçonnerie',  short:'Macon.',   icon:'🧱', color:'orange', rain:3,  wind:50, temp:5   },
+  plomberie:  { name:'Plomberie',   short:'Plomb.',   icon:'🔧', color:'slate',  rain:100,wind:100,temp:-20 },
+  electrique: { name:'Électricité', short:'Élec.',    icon:'⚡', color:'yellow', rain:0,  wind:60, temp:-10 },
+  renovation: { name:'Rénovation',  short:'Rénov.',   icon:'🏗', color:'slate',  rain:5,  wind:100,temp:-10 },
+  entretien:  { name:'Entretien',   short:'Entret.',  icon:'🔧', color:'slate',  rain:10, wind:70, temp:-5  },
+  commercial: { name:'Commercial',  short:'Comm.',    icon:'🏢', color:'slate',  rain:5,  wind:100,temp:-10 },
+};
 
 var RISK_RULES = {};
 
@@ -5367,6 +5425,7 @@ function renderOptimization() {
    OCR IMPORT — Photo / PDF → multi-job pipeline (context-aware)
 ════════════════════════════════════════════════════════════════ */
 var _ocrResults      = [];
+var _ocrRawText      = '';
 var _ocrPdfLoading   = null;
 var _ocrMode         = 'bank';     // 'bank' | 'schedule'
 var _ocrScheduleDate = null;       // ISO date when mode === 'schedule'
@@ -5393,6 +5452,25 @@ function openImportOcr(mode, date) {
 
 function ocrGoBackToSource() {
   _ocrShowStep('source');
+}
+
+function ocrReparse() {
+  var ta = document.getElementById('ocrRawText');
+  var text = (ta ? ta.value : _ocrRawText).trim();
+  if (!text) { toast('⚠ Texte vide — écrivez ou collez le contenu à analyser'); return; }
+  var segments = _ocrSegmentJobs(text);
+  var results = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
+  var list  = document.getElementById('ocrCardsList');
+  var count = document.getElementById('ocrResultsCount');
+  if (!results.length) {
+    if (list) list.innerHTML = '<div style="text-align:center;padding:var(--s5);color:var(--t-3);font-size:.84rem">Aucun travail détecté — vérifiez les noms de travaux.</div>';
+    if (count) count.textContent = '0';
+    toast('⚠ Aucun travail trouvé dans ce texte');
+    return;
+  }
+  _ocrResults = results;
+  _ocrRenderResults(results);
+  toast('✓ ' + results.length + ' travail' + (results.length > 1 ? 's' : '') + ' détecté' + (results.length > 1 ? 's' : ''));
 }
 
 function _ocrShowStep(name) {
@@ -5444,18 +5522,28 @@ function _ocrSetProgress(pct) {
   if (f) f.style.width = Math.min(100, pct) + '%';
 }
 
-function _ocrResizeImage(dataURL, maxDim, quality) {
+function _ocrProcessImage(dataURL) {
   return new Promise(function(resolve) {
     var img = new Image();
     img.onload = function() {
       var w = img.naturalWidth, h = img.naturalHeight;
-      if (w <= maxDim && h <= maxDim) { resolve(dataURL); return; }
-      var scale = maxDim / Math.max(w, h);
+      // Scale: upscale small images to min 1500px, cap at 2400px
+      var longest = Math.max(w, h);
+      var scale = longest < 1500 ? 1500 / longest : (longest > 2400 ? 2400 / longest : 1);
+      var cw = Math.round(w * scale), ch = Math.round(h * scale);
       var canvas = document.createElement('canvas');
-      canvas.width  = Math.round(w * scale);
-      canvas.height = Math.round(h * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality || 0.82));
+      canvas.width = cw; canvas.height = ch;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, cw, ch);
+      // Grayscale + contrast boost (1.4×): dramatically improves Tesseract on printed text
+      var id = ctx.getImageData(0, 0, cw, ch), d = id.data;
+      for (var i = 0; i < d.length; i += 4) {
+        var g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        g = Math.max(0, Math.min(255, 1.4 * (g - 128) + 128));
+        d[i] = d[i+1] = d[i+2] = g;
+      }
+      ctx.putImageData(id, 0, 0);
+      resolve(canvas.toDataURL('image/png')); // PNG: no JPEG artifacts
     };
     img.onerror = function() { resolve(dataURL); };
     img.src = dataURL;
@@ -5521,7 +5609,7 @@ function _ocrProcessFiles(files, T) {
         var pi = 0;
         function nextPage() {
           if (pi >= pages.length) { idx++; next(); return; }
-          _ocrResizeImage(pages[pi], 1600, 0.85).then(function(img) {
+          _ocrProcessImage(pages[pi]).then(function(img) {
             T.recognize(img, 'fra+eng').then(function(r) {
               allText += '\n' + (r && r.data ? r.data.text : '');
               pi++; nextPage();
@@ -5533,7 +5621,7 @@ function _ocrProcessFiles(files, T) {
     } else {
       var fr = new FileReader();
       fr.onload = function(e) {
-        _ocrResizeImage(e.target.result, 1600, 0.85).then(function(img) {
+        _ocrProcessImage(e.target.result).then(function(img) {
           T.recognize(img, 'fra+eng').then(function(r) {
             allText += '\n' + (r && r.data ? r.data.text : '');
             idx++; next();
@@ -5548,10 +5636,25 @@ function _ocrProcessFiles(files, T) {
   function finish(text) {
     _ocrSetProgress(100);
     var clean = (text || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    _ocrRawText = clean;
+    // Populate raw text textarea (collapsed by default)
+    var rawArea    = document.getElementById('ocrRawText');
+    var rawDetails = document.getElementById('ocrRawDetails');
+    if (rawArea)    rawArea.value = clean;
+    if (rawDetails) rawDetails.removeAttribute('open');
     if (!clean) { _ocrShowStep('empty'); return; }
     var segments = _ocrSegmentJobs(clean);
     _ocrResults = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
-    if (!_ocrResults.length) { _ocrShowStep('empty'); return; }
+    if (!_ocrResults.length) {
+      // Still show results step with raw text editing (user can correct and reparse)
+      var list = document.getElementById('ocrCardsList');
+      if (list) list.innerHTML = '<div style="text-align:center;padding:var(--s5);color:var(--t-3);font-size:.84rem">Aucun travail extrait automatiquement.<br>Corrigez le texte ci-dessus et ré-analysez.</div>';
+      var count = document.getElementById('ocrResultsCount');
+      if (count) count.textContent = '0';
+      if (rawDetails) rawDetails.setAttribute('open', '');
+      _ocrShowStep('results');
+      return;
+    }
     _ocrRenderResults(_ocrResults);
     _ocrShowStep('results');
   }
@@ -5642,8 +5745,6 @@ function _ocrBuildCard(job, idx) {
     return '<option value="' + p + '"' + (prio === p ? ' selected' : '') + '>' + labels[p] + '</option>';
   }).join('');
 
-  var notesVal = [job.notes || '', job.amount ? '💰 ' + job.amount : ''].filter(Boolean).join(' · ');
-
   card.innerHTML =
     '<div class="ocr-card-head">'
     + '<div class="ocr-card-check" onclick="_ocrToggleCard(this)">✓</div>'
@@ -5652,12 +5753,14 @@ function _ocrBuildCard(job, idx) {
     + '<div class="ocr-card-fields">'
     + '<div class="ocr-card-field"><label>Client</label><input type="text" placeholder="Nom du client" value="' + _escAttr(job.client || '') + '" autocomplete="off"></div>'
     + '<div class="ocr-card-field"><label>Téléphone</label><input type="tel" placeholder="514-000-0000" value="' + _escAttr(job.phone || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Courriel</label><input type="email" placeholder="client@email.com" value="' + _escAttr(job.email || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Montant</label><input type="text" placeholder="ex: 12 500 $" value="' + _escAttr(job.amount || '') + '" autocomplete="off"></div>'
     + '<div class="ocr-card-field"><label>Durée</label><input type="text" placeholder="ex: 2 jours" value="' + _escAttr(job.duration || '') + '" autocomplete="off"></div>'
     + '<div class="ocr-card-field"><label>Type</label><select>' + typeOpts + '</select></div>'
-    + '<div class="ocr-card-field"><label>Adresse</label><input type="text" placeholder="Adresse" value="' + _escAttr(job.location || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Adresse</label><input type="text" placeholder="Adresse complète" value="' + _escAttr(job.location || '') + '" autocomplete="off"></div>'
     + '<div class="ocr-card-field"><label>Priorité</label><select>' + prioOpts + '</select></div>'
     + '</div>'
-    + '<div class="ocr-card-notes"><input type="text" placeholder="Notes, montant…" value="' + _escAttr(notesVal) + '" autocomplete="off"></div>';
+    + '<div class="ocr-card-notes"><input type="text" placeholder="Notes additionnelles…" value="' + _escAttr(job.notes || '') + '" autocomplete="off"></div>';
 
   return card;
 }
@@ -5681,17 +5784,19 @@ function _ocrRenderResults(jobs) {
 }
 
 function _ocrReadCard(card) {
-  var name     = (card.querySelector('.ocr-card-name') || {}).value || '';
-  var inputs   = card.querySelectorAll('input:not(.ocr-card-name), select');
+  var name   = (card.querySelector('.ocr-card-name') || {}).value || '';
+  var inputs = card.querySelectorAll('input:not(.ocr-card-name), select');
   return {
     name:     name.trim(),
     client:   (inputs[0] ? inputs[0].value : '').trim(),
     phone:    (inputs[1] ? inputs[1].value : '').trim(),
-    duration: (inputs[2] ? inputs[2].value : '').trim(),
-    type:     (inputs[3] ? inputs[3].value : '').trim(),
-    address:  (inputs[4] ? inputs[4].value : '').trim(),
-    priority: (inputs[5] ? inputs[5].value : 'medium'),
-    notes:    (inputs[6] ? inputs[6].value : '').trim()
+    email:    (inputs[2] ? inputs[2].value : '').trim(),
+    amount:   (inputs[3] ? inputs[3].value : '').trim(),
+    duration: (inputs[4] ? inputs[4].value : '').trim(),
+    type:     (inputs[5] ? inputs[5].value : '').trim(),
+    address:  (inputs[6] ? inputs[6].value : '').trim(),
+    priority: (inputs[7] ? inputs[7].value : 'medium'),
+    notes:    (inputs[8] ? inputs[8].value : '').trim()
   };
 }
 
@@ -5717,7 +5822,12 @@ function ocrConfirmImport() {
       set('tPrio',     first.priority);
       set('tLocation', first.address);
       var descEl = document.getElementById('tDesc');
-      var descParts = [first.notes, first.phone ? '📞 ' + first.phone : ''].filter(Boolean);
+      var descParts = [
+        first.notes,
+        first.phone  ? '📞 ' + first.phone  : '',
+        first.email  ? '✉ '  + first.email  : '',
+        first.amount ? '💰 ' + first.amount  : ''
+      ].filter(Boolean);
       if (descEl && descParts.length) descEl.value = descParts.join('\n');
     }, 60);
 
@@ -5726,10 +5836,11 @@ function ocrConfirmImport() {
     Array.prototype.slice.call(cards, 1).forEach(function(card) {
       var d = _ocrReadCard(card);
       if (!d.name) return;
+      var noteParts = [d.notes, d.amount ? '💰 ' + d.amount : ''].filter(Boolean);
       _workBank.push({
-        id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: '',
+        id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: d.email,
         address: d.address, type: d.type, duration: d.duration,
-        priority: d.priority, notes: d.notes, flexible: false, indoor: null, photos: []
+        priority: d.priority, notes: noteParts.join(' · '), flexible: false, indoor: null, photos: []
       });
       banked++;
     });
@@ -5746,10 +5857,11 @@ function ocrConfirmImport() {
   Array.prototype.forEach.call(cards, function(card) {
     var d = _ocrReadCard(card);
     if (!d.name) return;
+    var noteParts = [d.notes, d.amount ? '💰 ' + d.amount : ''].filter(Boolean);
     _workBank.push({
-      id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: '',
+      id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: d.email,
       address: d.address, type: d.type, duration: d.duration,
-      priority: d.priority, notes: d.notes, flexible: false, indoor: null, photos: []
+      priority: d.priority, notes: noteParts.join(' · '), flexible: false, indoor: null, photos: []
     });
     added++;
   });
@@ -6547,7 +6659,8 @@ function parseSmartInput(originalText) {
   var ph = clip(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
   if (ph) result.phone = ph[1] + '-' + ph[2] + '-' + ph[3];
 
-  var amt = clip(/(?:\$\s*\d+(?:[.,]\d{1,2})?|\b\d+(?:[.,]\d{1,2})?\s*\$)/);
+  // Canadian format: 12 500 $, $12,500, 12500$, 1 200,00 $
+  var amt = clip(/(?:\$\s*\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d{1,2})?|\b\d{1,3}(?:[\s,]\d{3})+(?:[.,]\d{1,2})?\s*\$|\b\d+(?:[.,]\d{1,2})?\s*\$)/);
   if (amt) result.amount = amt[0].trim();
 
   // Civic + street keyword (e.g. "123 rue Principale")
@@ -6665,14 +6778,20 @@ function parseSmartInput(originalText) {
   }
 
   var jobAliases = {
-    beton:      ['béton','beton','dalle','fondation','coulage','asphalte','asphaltage'],
-    hauteur:    ['hauteur','échafaudage','echafaudage'],
-    pave:       ['pavé','pave','pavage','dallage'],
-    excavation: ['excavation','terrassement','fouille','tranchée'],
-    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','tree','trees','coupe','cut','cutting','abattage'],
-    electrique: ['électrique','electrique','électricité','electricite'],
-    toiture:    ['toiture','toit','couverture','bardeau'],
-    peinture:   ['peinture','peindre']
+    beton:      ['béton','beton','dalle','coulage','asphalte','asphaltage','ciment','concrete'],
+    terrasse:   ['terrasse','composite','deck','patio','balcon','galerie','porche'],
+    hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
+    pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
+    excavation: ['excavation','terrassement','fouille','tranchée','deblai','remblai','creusage'],
+    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','coupe','abattage','tonte','pelouse','landscape','haie','fleur'],
+    electrique: ['électrique','electrique','électricité','electricite','câblage','cablage','panneau','circuit','luminaire'],
+    toiture:    ['toiture','toit','couverture','bardeau','membrane','gouttière','gutters','shingles'],
+    peinture:   ['peinture','peindre','enduit','revêtement'],
+    maconnerie: ['maçonnerie','maconnerie','brique','pierre','mortier','block','blocs','parpaing'],
+    plomberie:  ['plomberie','plombier','tuyau','drain','égout','aqueduc','robinetterie','tuyaux','soupape'],
+    renovation: ['renovation','rénovation','reno','rénov','agrandissement','cuisine','sdb','salle de bain','sous-sol','plancher'],
+    entretien:  ['entretien','maintenance','nettoyage','lavage','déneigement','deneigement','entretien'],
+    commercial: ['commercial','immeuble','complexe','local','bureau','industriel','warehouse'],
   };
   var jobs = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
   Object.keys(jobs).forEach(function(k) {
@@ -7593,6 +7712,10 @@ function isoDate(d) {
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
   loadCustomJobs();
+  // Seed RISK_RULES for default JOB_TYPES not already covered by custom jobs
+  Object.keys(JOB_TYPES).forEach(function(k) {
+    if (!RISK_RULES[k]) RISK_RULES[k] = buildCustomRules(JOB_TYPES[k]);
+  });
   loadWorkBank();
   buildTypeGrid();
   document.getElementById('locName').textContent = ST.loc.name;

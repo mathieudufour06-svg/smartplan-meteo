@@ -3436,6 +3436,7 @@
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('taskOverlay')">Annuler</button>
       <button class="btn-del" id="btnDel" style="display:none" onclick="showDelConfirm()">🗑</button>
+      <button class="btn-secondary" id="btnSaveModel" onclick="saveTaskAsModel()" style="display:none">+ Modèle</button>
       <button class="btn-primary" id="btnSave" onclick="saveTask()">Ajouter →</button>
     </div>
   </div>
@@ -7340,9 +7341,10 @@ function applyVoiceParsed(parsed) {
   }
   populateDateInput(dateValue);
   setTaskMode('manual');
-  document.getElementById('btnDel').style.display     = 'none';
-  document.getElementById('btnSave').textContent      = 'Ajouter →';
-  document.getElementById('delConfirm').style.display = 'none';
+  document.getElementById('btnDel').style.display       = 'none';
+  document.getElementById('btnSaveModel').style.display = '';
+  document.getElementById('btnSave').textContent        = 'Ajouter →';
+  document.getElementById('delConfirm').style.display   = 'none';
   openModal('taskOverlay');
 }
 
@@ -7750,9 +7752,10 @@ function openAddTask(dayIdx) {
   populateDateInput(dateValue);
   setTaskMode('manual');
   document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
-  document.getElementById('btnDel').style.display     = 'none';
-  document.getElementById('btnSave').textContent      = 'Ajouter →';
-  document.getElementById('delConfirm').style.display = 'none';
+  document.getElementById('btnDel').style.display       = 'none';
+  document.getElementById('btnSaveModel').style.display = '';
+  document.getElementById('btnSave').textContent        = 'Ajouter →';
+  document.getElementById('delConfirm').style.display   = 'none';
   openModal('taskOverlay');
   setTimeout(function() { document.getElementById('tName').focus(); }, 120);
 }
@@ -7790,9 +7793,10 @@ function openEditTask(id, title) {
   } else {
     document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
   }
-  document.getElementById('btnDel').style.display     = '';
-  document.getElementById('btnSave').textContent      = 'Enregistrer';
-  document.getElementById('delConfirm').style.display = 'none';
+  document.getElementById('btnDel').style.display       = '';
+  document.getElementById('btnSaveModel').style.display = 'none';
+  document.getElementById('btnSave').textContent        = 'Enregistrer';
+  document.getElementById('delConfirm').style.display   = 'none';
   openModal('taskOverlay');
 }
 
@@ -7869,6 +7873,35 @@ function saveTask() {
   saveST();
   closeModal('taskOverlay');
   renderActive();
+}
+
+function saveTaskAsModel() {
+  var nameEl = document.getElementById('tName');
+  var name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { toast('⚠ Titre requis pour enregistrer un modèle'); if (nameEl) nameEl.focus(); return; }
+  var sel = document.querySelector('.type-btn.sel');
+  var rec = {
+    id:       _wbNewId(),
+    name:     name,
+    client:   (document.getElementById('tClient').value || '').trim(),
+    phone:    '',
+    email:    '',
+    address:  (document.getElementById('tLocation').value || '').trim(),
+    type:     sel ? sel.dataset.type : '',
+    duration: (document.getElementById('tDuration').value || '').trim(),
+    priority: document.getElementById('tPrio').value || 'medium',
+    notes:    ((document.getElementById('tDesc') || {}).value || '').trim(),
+    flexible: false,
+    indoor:   null,
+    photos:   _taskGallery ? _taskGallery.slice(0) : []
+  };
+  _workBank.push(rec);
+  var saved = _saveWorkBankSafe();
+  if (saved) {
+    toast('✓ Modèle enregistré dans la banque');
+  } else {
+    toast('⚠ Modèle en mémoire — stockage local indisponible');
+  }
 }
 
 function showDelConfirm() {
@@ -8146,8 +8179,8 @@ function openNewJobSheet(date, mode) {
   if (voiceSub)   voiceSub.textContent   = isBank ? '« Toiture Tremblay urgente 2 jours »' : '« Asphaltage chez Tremblay samedi à 8h »';
   if (photoTitle) photoTitle.textContent = isBank ? 'Photo / OCR multi-travaux' : 'Photo / Document';
   if (photoSub)   photoSub.textContent   = isBank ? 'Détecter plusieurs travaux dans une photo' : 'Importer une photo de soumission ou note';
-  if (manualTitle) manualTitle.textContent = isBank ? 'Travail réutilisable' : 'Création manuelle';
-  if (manualSub)  manualSub.textContent  = isBank ? 'Créer un modèle réutilisable' : 'Saisir tous les détails à la main';
+  if (manualTitle) manualTitle.textContent = 'Création manuelle';
+  if (manualSub)  manualSub.textContent  = 'Saisir tous les détails à la main';
 
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById('newJobSheet').classList.add('open');

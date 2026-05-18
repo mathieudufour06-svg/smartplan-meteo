@@ -1863,6 +1863,18 @@
       border-color: var(--tint);
       color: var(--t-1);
     }
+    .type-search {
+      width: 100%; padding: 8px 10px; margin-bottom: 6px;
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-sm); font-size: 13px; color: var(--t-1);
+      box-sizing: border-box;
+    }
+    .voice-preview { background: var(--surface-2); border: 1px solid var(--line-1); border-radius: var(--r-sm); padding: 10px 12px; margin: 10px 0 4px; }
+    .vp-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line-0); }
+    .vp-row:last-child { border-bottom: none; }
+    .vp-lbl { font-size: 11px; font-weight: 700; color: var(--t-3); text-transform: uppercase; min-width: 76px; flex-shrink: 0; }
+    .vp-val { font-size: 13px; color: var(--t-1); font-weight: 600; }
+    .vp-empty { font-size: 13px; color: var(--t-4); font-style: italic; }
 
     .task-mode-tabs {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
@@ -3327,6 +3339,7 @@
     </div>
     <div class="fg">
       <label>Type de travail</label>
+      <input type="text" id="typeSearch" class="type-search" placeholder="Chercher un type… (terrasse, toiture…)" autocomplete="off" autocorrect="off" spellcheck="false" oninput="filterTypeGrid(this.value)">
       <div class="type-grid" id="typeGrid"></div>
     </div>
     <div class="fg">
@@ -3576,15 +3589,22 @@
       <button type="button" class="mic-btn" id="voiceStatus" onclick="toggleMic()" aria-label="Démarrer la dictée">🎤</button>
       <div class="mic-label" id="voiceLabel">Toucher pour parler</div>
     </div>
-    <div class="fg">
+    <div class="fg" id="voiceTextSection">
       <label>Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
     </div>
     <!-- Debug panel: visible only with ?debug=1 in URL -->
     <pre id="micDebugPanel" style="display:none;font-size:9px;line-height:1.3;color:#0f0;background:#111;padding:6px;border-radius:6px;margin-top:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
+    <!-- Voice preview — shown after analysis, before confirm -->
+    <div id="voicePreviewSection" style="display:none">
+      <p style="font-size:11px;font-weight:700;color:var(--t-3);text-transform:uppercase;margin:12px 0 6px;letter-spacing:.04em">Aperçu — vérifiez avant de créer</p>
+      <div class="voice-preview" id="voicePreviewTable"></div>
+    </div>
     <div class="mf">
-      <button class="btn-cancel" onclick="closeModal('voiceOverlay')">Annuler</button>
-      <button class="btn-primary" onclick="analyzeAndCreate()">Analyser →</button>
+      <button class="btn-cancel" id="voiceBtnCancel" onclick="closeModal('voiceOverlay')">Annuler</button>
+      <button class="btn-secondary" id="voiceBtnBack" onclick="voicePreviewBack()" style="display:none">← Modifier</button>
+      <button class="btn-primary" id="voiceBtnAnalyze" onclick="analyzeVoicePreview()">Analyser →</button>
+      <button class="btn-primary" id="voiceBtnConfirm" onclick="confirmVoiceCreate()" style="display:none">Créer →</button>
     </div>
   </div>
 </div>
@@ -6370,6 +6390,7 @@ function optimizeWeek() {
 ════════════════════════════════════════════════════════════════ */
 var _micActive = false;
 var _micRec    = null;
+var _voiceParsedResult = null;
 var _micStopping = false;
 var _micStarting = false;       // debounce: prevent double-start
 var _micStartedAt = 0;
@@ -6416,6 +6437,14 @@ function micCheckHTTPS() {
 }
 
 function openVoice() {
+  _voiceParsedResult = null;
+  var ps = document.getElementById('voicePreviewSection');
+  if (ps) ps.style.display = 'none';
+  var ts = document.getElementById('voiceTextSection');
+  if (ts) ts.style.display = '';
+  var bA = document.getElementById('voiceBtnAnalyze'); if (bA) bA.style.display = '';
+  var bB = document.getElementById('voiceBtnBack');    if (bB) bB.style.display = 'none';
+  var bC = document.getElementById('voiceBtnConfirm'); if (bC) bC.style.display = 'none';
   var ta = document.getElementById('voiceText');
   if (ta) ta.value = '';
   _micActive = false;
@@ -6875,14 +6904,90 @@ function _taskMicAttempt(textEl) {
   }
 }
 
-function analyzeAndCreate() {
+function analyzeVoicePreview() {
   var textEl = document.getElementById('voiceText');
   var text = textEl ? textEl.value.trim() : '';
   if (!text) { toast('⚠ Aucun texte à analyser'); return; }
-  var parsed = parseVoiceInput(text);
   if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+  _voiceParsedResult = parseVoiceInput(text);
+  var previewSection = document.getElementById('voicePreviewSection');
+  var previewTable   = document.getElementById('voicePreviewTable');
+  if (previewSection && previewTable) {
+    previewTable.innerHTML = _buildVoicePreviewHTML(_voiceParsedResult);
+    previewSection.style.display = 'block';
+  }
+  var textSection = document.getElementById('voiceTextSection');
+  if (textSection) textSection.style.display = 'none';
+  document.getElementById('voiceBtnAnalyze').style.display = 'none';
+  document.getElementById('voiceBtnBack').style.display    = '';
+  document.getElementById('voiceBtnConfirm').style.display = '';
+}
+
+function voicePreviewBack() {
+  document.getElementById('voicePreviewSection').style.display = 'none';
+  var textSection = document.getElementById('voiceTextSection');
+  if (textSection) textSection.style.display = '';
+  document.getElementById('voiceBtnAnalyze').style.display = '';
+  document.getElementById('voiceBtnBack').style.display    = 'none';
+  document.getElementById('voiceBtnConfirm').style.display = 'none';
+  _voiceParsedResult = null;
+}
+
+function confirmVoiceCreate() {
+  if (!_voiceParsedResult) return;
+  var parsed = _voiceParsedResult;
+  _voiceParsedResult = null;
   closeModal('voiceOverlay');
+  // Reset preview UI for next time
+  var ps = document.getElementById('voicePreviewSection');
+  if (ps) ps.style.display = 'none';
+  var ts = document.getElementById('voiceTextSection');
+  if (ts) ts.style.display = '';
+  document.getElementById('voiceBtnAnalyze').style.display = '';
+  document.getElementById('voiceBtnBack').style.display    = 'none';
+  document.getElementById('voiceBtnConfirm').style.display = 'none';
   applyVoiceParsed(parsed);
+}
+
+function _buildVoicePreviewHTML(parsed) {
+  var jobs = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
+  var typeName = parsed.type ? ((jobs[parsed.type] && (jobs[parsed.type].name || jobs[parsed.type].short)) || parsed.type) : null;
+  var dateStr = '';
+  if (parsed.date) {
+    var d = new Date(parsed.date + 'T12:00:00');
+    var longDaysFr = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    var monthsFrSh = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    dateStr = longDaysFr[d.getDay()] + ' ' + d.getDate() + ' ' + monthsFrSh[d.getMonth()];
+  } else if (typeof parsed.dayIndex === 'number') {
+    var target = new Date(); target.setDate(target.getDate() + parsed.dayIndex);
+    var longDaysFr2 = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    dateStr = parsed.dayIndex === 0 ? "Aujourd'hui" : parsed.dayIndex === 1 ? 'Demain' : longDaysFr2[target.getDay()] + ' ' + target.getDate();
+  }
+  function row(label, val) {
+    return '<div class="vp-row"><span class="vp-lbl">' + label + '</span>' +
+      (val ? '<span class="vp-val">' + esc(String(val)) + '</span>' : '<span class="vp-empty">—</span>') +
+      '</div>';
+  }
+  var html = '';
+  html += row('Client',    parsed.client || '');
+  html += row('Type',      typeName || '');
+  html += row('Titre',     parsed.name || '');
+  html += row('Date',      dateStr);
+  if (parsed.time)     html += row('Heure',     parsed.time);
+  if (parsed.duration) html += row('Durée',     parsed.duration);
+  if (parsed.location) html += row('Lieu',      parsed.location);
+  if (parsed.phone)    html += row('Téléphone', parsed.phone);
+  if (parsed.email)    html += row('Email',     parsed.email);
+  if (parsed.amount)   html += row('Montant',   parsed.amount);
+  if (parsed.priority && parsed.priority !== 'medium') {
+    var prioLabel = {urgent:'Urgente', high:'Haute', low:'Basse'};
+    html += row('Priorité', prioLabel[parsed.priority] || parsed.priority);
+  }
+  return html;
+}
+
+function analyzeAndCreate() {
+  analyzeVoicePreview();
 }
 
 function applyTaskVoice() {
@@ -6922,9 +7027,13 @@ function parseSmartInput(originalText) {
   var ph = clip(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
   if (ph) result.phone = ph[1] + '-' + ph[2] + '-' + ph[3];
 
-  // Canadian format: 12 500 $, $12,500, 12500$, 1 200,00 $
-  var amt = clip(/(?:\$\s*\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d{1,2})?|\b\d{1,3}(?:[\s,]\d{3})+(?:[.,]\d{1,2})?\s*\$|\b\d+(?:[.,]\d{1,2})?\s*\$)/);
-  if (amt) result.amount = amt[0].trim();
+  // Canadian format: 12 500 $, $12,500, 12500$, 1 200,00 $ or "12 000 dollars/piastres"
+  var amt = clip(/(?:\$\s*\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d{1,2})?|\b\d{1,3}(?:[\s,]\d{3})+(?:[.,]\d{1,2})?\s*(?:\$|dollars?|piastres?)|\b\d+(?:[.,]\d{1,2})?\s*(?:\$|dollars?|piastres?))/i);
+  if (amt) {
+    var rawAmt = amt[0].trim();
+    rawAmt = rawAmt.replace(/\s*dollars?\s*$/i, ' $').replace(/\s*piastres?\s*$/i, ' $').replace(/\s+\$/, ' $').trim();
+    result.amount = rawAmt;
+  }
 
   // Civic + street keyword (e.g. "123 rue Principale")
   var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
@@ -7009,7 +7118,7 @@ function parseSmartInput(originalText) {
   }
 
   var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
-  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['’]?\s*)?/gi, ' ');
+  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
   var d1 = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
   if (d1) result.duration = d1[1].replace(',', '.') + 'h';
   if (!result.duration) {
@@ -7040,6 +7149,10 @@ function parseSmartInput(originalText) {
     work = work.replace(/\b(?:ext[eé]rieur|outdoor|outside|dehors)\b/gi, ' ');
   }
 
+  // Explicit "type : terrasse" or "type terrasse" — matches one word only
+  var explicitType = clip(/\btype\s*[:]\s*([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-]{0,20})\b/i);
+  var _explicitTypeName = explicitType ? explicitType[1].trim().toLowerCase() : null;
+
   var jobAliases = {
     beton:      ['béton','beton','dalle','coulage','asphalte','asphaltage','ciment','concrete'],
     terrasse:   ['terrasse','composite','deck','patio','balcon','galerie','porche'],
@@ -7060,37 +7173,79 @@ function parseSmartInput(originalText) {
   Object.keys(jobs).forEach(function(k) {
     if (!jobAliases[k]) jobAliases[k] = [(jobs[k].name || '').toLowerCase(), (jobs[k].short || '').toLowerCase()];
   });
-  var lowerWork = work.toLowerCase();
-  Object.keys(jobAliases).forEach(function(k) {
-    if (result.type) return;
-    var aliases = jobAliases[k];
-    for (var ai = 0; ai < aliases.length; ai++) {
-      if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
-    }
-  });
-  if (!result.type) result.type = Object.keys(jobs)[0] || null;
+  // Resolve explicit type prefix first
+  if (_explicitTypeName) {
+    Object.keys(jobAliases).forEach(function(k) {
+      if (result.type) return;
+      if (k === _explicitTypeName) { result.type = k; return; }
+      var aliases = jobAliases[k];
+      for (var ai = 0; ai < aliases.length; ai++) {
+        if (aliases[ai] && _explicitTypeName.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
+      }
+    });
+    if (!result.type) result.type = _explicitTypeName; // keep raw value if no match
+  }
+  if (!result.type) {
+    var lowerWork = work.toLowerCase();
+    Object.keys(jobAliases).forEach(function(k) {
+      if (result.type) return;
+      var aliases = jobAliases[k];
+      for (var ai = 0; ai < aliases.length; ai++) {
+        if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
+      }
+    });
+  }
+  // No default type fallback — leave null when nothing found
 
-  // Client detection — case-insensitive to handle mobile STT lowercase output
-  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ][a-zà-ÿ\-']{1,}(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ][a-zà-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/i;
+  // Client detection — handles: "chez X", "pour X", explicit prefix, start-of-text "Name, ..."
+  // 1. Explicit context words
+  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/i;
   var cm = work.match(contextRe);
   if (cm) {
     result.client = cm[1].trim().replace(/^(.)/, function(c) { return c.toUpperCase(); });
     work = work.replace(cm[0], ' ');
   } else {
-    // Fallback: two capitalized words side by side (STT may give Title Case on proper nouns)
-    var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\b/);
-    if (titleM) {
-      result.client = titleM[0].trim();
-      work = work.replace(titleM[0], ' ');
+    // 2. Start-of-text "Firstname Lastname," pattern (handles STT lowercase)
+    var startNameM = text.match(/^([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,20}(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,20}){1,2})\s*,/);
+    if (startNameM) {
+      var cand = startNameM[1].trim().toLowerCase();
+      var isJobWord = false;
+      Object.keys(jobAliases).forEach(function(k) {
+        if (isJobWord) return;
+        jobAliases[k].forEach(function(a) { if (a && cand.indexOf(a) !== -1) isJobWord = true; });
+      });
+      if (!isJobWord) {
+        result.client = cand.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+        work = work.replace(new RegExp(startNameM[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), ' ');
+      }
+    }
+    if (!result.client) {
+      // 3. Fallback: Title Case two-word pattern (desktop STT)
+      var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\b/);
+      if (titleM) {
+        result.client = titleM[0].trim();
+        work = work.replace(titleM[0], ' ');
+      }
     }
   }
 
+  // Strip the "type" keyword if still present (used as voice command, not part of title)
+  work = work.replace(/\btype\b/gi, " ");
   var leftover = work.replace(/\s+/g, ' ').trim();
   leftover = leftover.replace(/^[\s,\.\-]+|[\s,\.\-]+$/g, '');
-  leftover = leftover.replace(/^(?:à|de|et|du|le|la|les|au|aux|en|d['’])\s+/i, '');
-  leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d['’])$/i, '');
+  leftover = leftover.replace(/^(?:type|à|de|et|du|le|la|les|au|aux|en|d[''])\s+/i, '');
+  leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d[''])$/i, '');
   leftover = leftover.replace(/\s{2,}/g, ' ').trim();
-  if (!leftover || leftover.length < 2) leftover = (text.split(/[\.,;]/)[0] || text).trim();
+  // Fallback: prefer type name, then first comma-segment of original text
+  if (!leftover || leftover.length < 2) {
+    if (result.type) {
+      var _jb = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
+      leftover = (_jb[result.type] && (_jb[result.type].name || _jb[result.type].short)) || result.type;
+    } else {
+      var seg0 = (text.split(/[,;]/)[0] || text).trim();
+      leftover = (result.client && seg0.toLowerCase() === result.client.toLowerCase()) ? text : seg0;
+    }
+  }
   if (leftover) leftover = leftover.charAt(0).toUpperCase() + leftover.slice(1);
   result.name = leftover;
   return result;
@@ -7108,13 +7263,13 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tDuration').value = parsed.duration || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
-  // Pipe phone/email/amount into description if present
+  // Pipe phone/email/amount into description — no emojis, plain text
   var descEl = document.getElementById('tDesc');
   if (descEl) {
     var bits = [];
-    if (parsed.phone)  bits.push('📞 ' + parsed.phone);
-    if (parsed.email)  bits.push('✉ ' + parsed.email);
-    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (parsed.phone)  bits.push(parsed.phone);
+    if (parsed.email)  bits.push(parsed.email);
+    if (parsed.amount) bits.push(parsed.amount);
     if (bits.length) descEl.value = bits.join(' · ');
   }
   buildTypeGrid(parsed.type);
@@ -7681,7 +7836,28 @@ function confirmDelTask() {
   toast('Travaux supprimés');
 }
 
+function filterTypeGrid(q) {
+  q = (q || '').toLowerCase().trim();
+  var btns = document.querySelectorAll('#typeGrid .type-btn');
+  var visible = [];
+  btns.forEach(function(btn) {
+    var type  = (btn.dataset.type || '').toLowerCase();
+    var label = (btn.textContent || '').toLowerCase();
+    var show  = !q || type.indexOf(q) !== -1 || label.indexOf(q) !== -1;
+    btn.style.display = show ? '' : 'none';
+    if (show) visible.push(btn);
+  });
+  // Auto-select when only one result
+  if (q.length >= 3 && visible.length === 1) {
+    var g = document.getElementById('typeGrid');
+    if (g) g.querySelectorAll('.type-btn').forEach(function(x) { x.classList.remove('sel'); });
+    visible[0].classList.add('sel');
+  }
+}
+
 function buildTypeGrid(selectedType) {
+  var tsEl = document.getElementById('typeSearch');
+  if (tsEl) tsEl.value = '';
   var g = document.getElementById('typeGrid');
   if (!g) return;
   g.innerHTML = '';

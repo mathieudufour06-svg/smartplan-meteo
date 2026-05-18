@@ -2944,6 +2944,58 @@
       font-size: .85rem; font-weight: 600; cursor: pointer;
       color: var(--t-1);
     }
+
+    /* ── Vision AI key setup ── */
+    .ocr-ai-bar {
+      margin-top: var(--s5); border-top: 1px solid var(--line-2);
+      padding-top: var(--s4);
+    }
+    .ocr-ai-on-row {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ocr-ai-on {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: .8rem; font-weight: 600; color: #34c759;
+    }
+    .ocr-ai-on::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%; background: #34c759;
+      flex-shrink: 0;
+    }
+    .ocr-key-change-btn {
+      font-size: .75rem; color: var(--tint); background: none; border: none;
+      cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 2px;
+    }
+    .ocr-key-activate-box {
+      background: rgba(99,102,241,.06); border: 1.5px solid rgba(99,102,241,.22);
+      border-radius: var(--r-lg); padding: var(--s4);
+    }
+    .ocr-key-activate-title {
+      font-size: .84rem; font-weight: 700; color: var(--t-1); margin-bottom: 4px;
+    }
+    .ocr-key-activate-sub {
+      font-size: .76rem; color: var(--t-3); margin-bottom: var(--s4); line-height: 1.45;
+    }
+    .ocr-key-row { display: flex; gap: var(--s3); align-items: stretch; }
+    .ocr-key-input {
+      flex: 1; background: var(--surface-1); border: 1.5px solid var(--line-2);
+      border-radius: var(--r-md); padding: 9px var(--s3); font-size: .8rem;
+      color: var(--t-1); font-family: monospace; min-width: 0;
+    }
+    .ocr-key-input:focus { outline: none; border-color: var(--tint); }
+    .ocr-key-save-btn {
+      background: var(--tint); color: #fff; border: none; border-radius: var(--r-md);
+      padding: 9px 14px; font-size: .82rem; font-weight: 600; cursor: pointer;
+      white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    }
+    .ocr-key-link {
+      display: block; font-size: .73rem; color: var(--tint); text-align: center;
+      margin-top: var(--s3); text-decoration: none;
+    }
+    .ocr-key-disable-btn {
+      display: block; width: 100%; font-size: .74rem; color: var(--t-3);
+      background: none; border: none; cursor: pointer; margin-top: var(--s4);
+      text-align: center; padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -3643,6 +3695,9 @@
       <input type="file" id="ocrInputCamera" accept="image/*" capture="environment" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
       <input type="file" id="ocrInputGallery" accept="image/*" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
       <input type="file" id="ocrInputFiles" accept="image/*,application/pdf" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
+      <div class="ocr-ai-bar">
+        <div id="ocrAiStatus"><!-- filled by _ocrRefreshKeyUI() --></div>
+      </div>
     </div>
 
     <!-- Step 2: Scanning animation -->
@@ -5447,10 +5502,17 @@ function openImportOcr(mode, date) {
   if (confirmBtn) confirmBtn.textContent = isSchedule ? 'Planifier ce travail →' : 'Ajouter à la banque →';
 
   _ocrShowStep('source');
+  // Restore raw-text section visibility (may have been hidden in vision mode)
+  var rd = document.getElementById('ocrRawDetails');
+  if (rd) rd.style.display = '';
+  _ocrRefreshKeyUI();
   openModal('importOcrOverlay');
 }
 
 function ocrGoBackToSource() {
+  var rd = document.getElementById('ocrRawDetails');
+  if (rd) rd.style.display = '';
+  _ocrRefreshKeyUI();
   _ocrShowStep('source');
 }
 
@@ -5488,25 +5550,226 @@ function ocrSelectSource(src) {
   if (inp) { inp.value = ''; inp.click(); }
 }
 
+/* ─────────────────────────────────────────────────────────
+   Vision IA  —  Claude API direct browser call
+   ───────────────────────────────────────────────────────── */
+function _ocrGetKey() {
+  return localStorage.getItem('smartplan_claude_key') || null;
+}
+function _ocrSaveKey(key) {
+  var k = (key || '').trim();
+  if (k) localStorage.setItem('smartplan_claude_key', k);
+  else   localStorage.removeItem('smartplan_claude_key');
+  _ocrRefreshKeyUI();
+}
+function _ocrRefreshKeyUI() {
+  var el = document.getElementById('ocrAiStatus');
+  if (!el) return;
+  var key = _ocrGetKey();
+  if (key) {
+    el.innerHTML =
+      '<div class="ocr-ai-on-row">'
+      + '<span class="ocr-ai-on">Vision IA activée</span>'
+      + '<button class="ocr-key-change-btn" onclick="_ocrShowKeyForm(false)">Modifier</button>'
+      + '</div>';
+  } else {
+    el.innerHTML =
+      '<div class="ocr-key-activate-box">'
+      + '<div class="ocr-key-activate-title">✨ Activer l\'analyse Vision IA</div>'
+      + '<div class="ocr-key-activate-sub">Notes manuscrites, soumissions papier, PDF — Claude comprend le contexte comme dans le chat. Sans clé : OCR basique (texte imprimé uniquement).</div>'
+      + '<div class="ocr-key-row">'
+      + '<input class="ocr-key-input" id="ocrKeyInput" type="password" placeholder="sk-ant-api03-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+      + '<button class="ocr-key-save-btn" onclick="_ocrActivateKey()">Activer</button>'
+      + '</div>'
+      + '<a class="ocr-key-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Obtenir une clé API →</a>'
+      + '</div>';
+  }
+}
+function _ocrShowKeyForm(showDisable) {
+  var el = document.getElementById('ocrAiStatus');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="ocr-key-activate-box">'
+    + '<div class="ocr-key-activate-title">Clé API Claude</div>'
+    + '<div class="ocr-key-row">'
+    + '<input class="ocr-key-input" id="ocrKeyInput" type="password" placeholder="sk-ant-api03-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+    + '<button class="ocr-key-save-btn" onclick="_ocrActivateKey()">Sauvegarder</button>'
+    + '</div>'
+    + (showDisable ? '' : '<button class="ocr-key-disable-btn" onclick="_ocrSaveKey(\'\')">Désactiver Vision IA</button>')
+    + '</div>';
+}
+function _ocrActivateKey() {
+  var input = document.getElementById('ocrKeyInput');
+  var key = input ? input.value.trim() : '';
+  if (!key || !key.startsWith('sk-ant-')) {
+    toast('⚠ Clé invalide — elle doit commencer par sk-ant-');
+    return;
+  }
+  _ocrSaveKey(key);
+  toast('✓ Vision IA activée');
+}
+
+var _OCR_VISION_PROMPT =
+  'Tu es un expert en gestion de chantiers de construction québécois.\n\n'
+  + 'Analyse cette image (photo, soumission papier, notes manuscrites, PDF) et extrait TOUS les travaux visibles.\n\n'
+  + 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après.\n\n'
+  + '{\n  "jobs": [\n    {\n'
+  + '      "name": "titre court du travail (ex: Terrasse composite Tremblay)",\n'
+  + '      "client": "nom complet ou null",\n'
+  + '      "phone": "numéro normalisé ex: 514-555-1234 ou null",\n'
+  + '      "email": "courriel ou null",\n'
+  + '      "address": "adresse complète ou null",\n'
+  + '      "amount": "montant ex: 12 500 $ ou null",\n'
+  + '      "duration": "durée estimée ex: 2 jours ou null",\n'
+  + '      "type": "toiture|terrasse|excavation|beton|paysagisme|peinture|maconnerie|plomberie|electrique|renovation|entretien|commercial ou null",\n'
+  + '      "date": "date prévue lisible ex: 7 juin 2025 ou null",\n'
+  + '      "priority": "urgent|high|medium|low",\n'
+  + '      "notes": "autres informations utiles ou null"\n'
+  + '    }\n  ]\n}\n\n'
+  + 'Règles:\n'
+  + '- Crée plusieurs entrées si l\'image contient plusieurs travaux distincts\n'
+  + '- Déduis le type de travaux selon le contexte même si non explicite\n'
+  + '- priority: délai immédiat=urgent, demandé bientôt=high, standard=medium, flexible=low\n'
+  + '- Si champ absent ou illisible: utilise null (jamais de chaîne vide)\n'
+  + '- name doit être concis mais informatif';
+
+function _ocrFilesToBlocks(files) {
+  return files.reduce(function(chain, file) {
+    return chain.then(function(blocks) {
+      if (file.type === 'application/pdf') {
+        return _ocrPdfToDataURLs(file).then(function(pages) {
+          return pages.reduce(function(p2, page) {
+            return p2.then(function(b2) {
+              return _ocrProcessImage(page).then(function(img) {
+                b2.push({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: img.split(',')[1] } });
+                return b2;
+              });
+            });
+          }, Promise.resolve(blocks));
+        });
+      }
+      return new Promise(function(resolve, reject) {
+        var fr = new FileReader();
+        fr.onload = function(e) {
+          _ocrProcessImage(e.target.result).then(function(img) {
+            blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: img.split(',')[1] } });
+            resolve(blocks);
+          }).catch(function() { resolve(blocks); });
+        };
+        fr.onerror = function() { resolve(blocks); };
+        fr.readAsDataURL(file);
+      });
+    });
+  }, Promise.resolve([]));
+}
+
+function _ocrWithClaudeVision(files, apiKey) {
+  _ocrSetScanLabel('Préparation…', 'Chargement des images');
+  _ocrSetProgress(10);
+
+  _ocrFilesToBlocks(files).then(function(imgBlocks) {
+    if (!imgBlocks.length) { _ocrShowStep('empty'); return; }
+
+    _ocrSetScanLabel('Vision IA…', 'Claude comprend votre document');
+    _ocrSetProgress(40);
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: imgBlocks.concat([{ type: 'text', text: _OCR_VISION_PROMPT }]) }]
+      })
+    }).then(function(res) {
+      _ocrSetProgress(85);
+      if (!res.ok) {
+        return res.json().catch(function() { return {}; }).then(function(body) {
+          var msg = (body.error && body.error.message) ? body.error.message : 'Erreur ' + res.status;
+          if (res.status === 401) msg = 'Clé API invalide — modifiez-la ci-dessous';
+          if (res.status === 429) msg = 'Trop de requêtes — réessayez dans un instant';
+          throw new Error(msg);
+        });
+      }
+      return res.json();
+    }).then(function(data) {
+      var text = (data.content && data.content[0]) ? (data.content[0].text || '') : '';
+      var match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('Réponse inattendue — réessayez');
+
+      var parsed;
+      try { parsed = JSON.parse(match[0]); } catch(e) { throw new Error('JSON invalide reçu'); }
+      var jobs = Array.isArray(parsed.jobs) ? parsed.jobs : [];
+      if (!jobs.length) { _ocrShowStep('empty'); return; }
+
+      _ocrResults = jobs.map(function(j) {
+        return {
+          name:     (j.name     || '').trim(),
+          client:   j.client   || '',
+          phone:    j.phone    || '',
+          email:    j.email    || '',
+          amount:   j.amount   || '',
+          duration: j.duration || '',
+          type:     j.type     || '',
+          location: j.address  || '',
+          priority: /^(urgent|high|medium|low)$/.test(j.priority) ? j.priority : 'medium',
+          notes:    [j.notes, j.date ? '📅 ' + j.date : ''].filter(Boolean).join(' · ')
+        };
+      }).filter(function(j) { return j.name.length > 0; });
+
+      if (!_ocrResults.length) { _ocrShowStep('empty'); return; }
+
+      _ocrSetProgress(100);
+      // Hide raw-text section — not applicable in vision mode
+      var rd = document.getElementById('ocrRawDetails');
+      if (rd) rd.style.display = 'none';
+      _ocrRenderResults(_ocrResults);
+      _ocrShowStep('results');
+    }).catch(function(err) {
+      _ocrShowStep('source');
+      toast('⚠ Vision IA : ' + (err.message || 'erreur inconnue'));
+    });
+  }).catch(function() {
+    _ocrShowStep('source');
+    toast('⚠ Impossible de lire les images');
+  });
+}
+
 function ocrHandleFiles(files) {
   if (!files || !files.length) return;
   var arr = Array.prototype.slice.call(files);
+  var apiKey = _ocrGetKey();
+
   _ocrShowStep('scan');
-  _ocrSetScanLabel('Chargement du module IA…', 'Connexion internet requise');
   _ocrSetProgress(5);
 
+  if (apiKey) {
+    _ocrSetScanLabel('Vision IA…', 'Claude analyse votre document');
+    _ocrWithClaudeVision(arr, apiKey);
+    return;
+  }
+
+  // Fallback: Tesseract
+  _ocrSetScanLabel('Chargement du module OCR…', 'Connexion internet requise');
   var _loadTimeout = setTimeout(function() {
     _ocrShowStep('source');
     toast('⚠ Délai dépassé — vérifiez votre connexion');
   }, 30000);
-
   _loadTesseract().then(function(T) {
     clearTimeout(_loadTimeout);
+    // Restore raw-text section for Tesseract mode
+    var rd = document.getElementById('ocrRawDetails');
+    if (rd) rd.style.display = '';
     _ocrProcessFiles(arr, T);
   }).catch(function() {
     clearTimeout(_loadTimeout);
     _ocrShowStep('source');
-    toast('⚠ Module IA indisponible (connexion ?)');
+    toast('⚠ Module OCR indisponible (connexion ?)');
   });
 }
 

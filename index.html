@@ -4830,10 +4830,24 @@ function loadWorkBank() {
   try {
     var raw = localStorage.getItem('spm_workbank');
     _workBank = raw ? (JSON.parse(raw) || []) : [];
-  } catch(e) { _workBank = []; }
+    if (!Array.isArray(_workBank)) { console.error('[WB] loadWorkBank: parsed value is not an array, resetting'); _workBank = []; }
+    console.log('[WB] loadWorkBank — loaded', _workBank.length, 'items from localStorage');
+  } catch(e) {
+    console.error('[WB] loadWorkBank ERROR:', e);
+    _workBank = [];
+  }
 }
 function saveWorkBank() {
-  try { localStorage.setItem('spm_workbank', JSON.stringify(_workBank)); } catch(e) {}
+  _saveWorkBankSafe();
+}
+function _saveWorkBankSafe() {
+  try {
+    localStorage.setItem('spm_workbank', JSON.stringify(_workBank));
+    return true;
+  } catch(e) {
+    console.error('[WB] localStorage save FAILED:', e);
+    return false;
+  }
 }
 function _wbNewId() { return 'wb_' + Date.now() + '_' + Math.floor(Math.random() * 1000); }
 
@@ -4914,6 +4928,9 @@ function openWorkBankForm(id) {
   }
   if (voiceEl) voiceEl.value = '';
   if (fileEl)  fileEl.value  = '';
+  // Always reset save button state (prevents disabled state from prior save)
+  var saveBtn = document.querySelector('#workBankOverlay .btn-primary');
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer'; }
   _wbUpdateIndoorUI();
   _wbUpdatePhotoUI();
   openModal('workBankOverlay');
@@ -5094,40 +5111,37 @@ function saveWorkBankItem() {
     if (nameEl) { nameEl.focus(); nameEl.style.borderColor = 'var(--danger, #e53)'; setTimeout(function() { nameEl.style.borderColor = ''; }, 1800); }
     return;
   }
-  // Disable save button to prevent double-submit
-  var saveBtn = document.querySelector('#workBankOverlay .btn-primary');
-  var origLabel = saveBtn ? saveBtn.textContent : '';
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…'; }
   var rawPhone = (document.getElementById('wbPhone').value || '').trim();
   var rec = {
-    id: _wbEditingId || _wbNewId(),
-    name: name,
+    id:       _wbEditingId || _wbNewId(),
+    name:     name,
     client:   (document.getElementById('wbClient').value   || '').trim(),
     phone:    normalizePhone(rawPhone) || rawPhone,
     email:    (document.getElementById('wbEmail').value    || '').trim(),
     address:  ((document.getElementById('wbAddress') || {}).value || '').trim(),
-    type:     document.getElementById('wbType').value || '',
+    type:     (document.getElementById('wbType')  || {value:''}).value || '',
     duration: (document.getElementById('wbDuration').value || '').trim(),
-    priority: document.getElementById('wbPrio').value || 'medium',
+    priority: (document.getElementById('wbPrio')  || {value:'medium'}).value || 'medium',
     notes:    (document.getElementById('wbNotes').value    || '').trim(),
-    flexible: !!document.getElementById('wbFlexible').checked,
+    flexible: !!(document.getElementById('wbFlexible') || {}).checked,
     indoor:   _wbCurrentIndoor,
     photos:   _wbPhotos.slice()
   };
-  try {
-    if (_wbEditingId) {
-      var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
-      if (idx >= 0) _workBank[idx] = rec; else _workBank.push(rec);
-    } else {
-      _workBank.push(rec);
-    }
-    saveWorkBank();
-    closeModal('workBankOverlay');
-    renderBanqueTravaux();
-    toast(_wbEditingId ? '✓ Travail mis à jour' : '✓ Ajouté à la banque');
-  } catch(e) {
-    toast('⚠ Erreur lors de la sauvegarde');
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = origLabel; }
+  console.log('[WB] saveWorkBankItem — payload:', rec.id, rec.name, '| bank size before:', _workBank.length);
+  if (_wbEditingId) {
+    var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
+    if (idx >= 0) { _workBank[idx] = rec; } else { _workBank.push(rec); }
+  } else {
+    _workBank.push(rec);
+  }
+  var saved = _saveWorkBankSafe();
+  console.log('[WB] save result:', saved ? 'OK' : 'FAILED', '| bank size after:', _workBank.length);
+  closeModal('workBankOverlay');
+  renderBanqueTravaux();
+  if (saved) {
+    toast(_wbEditingId ? '✓ Travail mis à jour' : '✓ Ajouté à la banque (' + _workBank.length + ')');
+  } else {
+    toast('⚠ Sauvegardé en mémoire — stockage local indisponible (mode privé ?)');
   }
 }
 
@@ -5284,16 +5298,16 @@ function _updateBankCard() {
 }
 
 function renderBanqueTravaux() {
+  console.log('[WB] renderBanqueTravaux — _workBank.length:', _workBank.length);
   _updateBankCard();
-  // Dedicated bank view
-  var bankList = document.getElementById('bankList');
+  var bankList  = document.getElementById('bankList');
   var bankCount = document.getElementById('bankCount');
   if (bankList) {
-    if (bankCount) {
-      var n = _workBank.length;
-      bankCount.textContent = n + ' travail' + (n > 1 ? 's' : '');
-    }
+    var n = _workBank.length;
+    if (bankCount) bankCount.textContent = n + ' travail' + (n > 1 ? 's' : '');
     _wbFillContainer(bankList, { showAddBtn: false, bigEmpty: true });
+  } else {
+    console.warn('[WB] renderBanqueTravaux — bankList element not found in DOM');
   }
 }
 
@@ -6082,20 +6096,23 @@ function _ocrRenderResults(jobs) {
 }
 
 function _ocrReadCard(card) {
-  var name   = (card.querySelector('.ocr-card-name') || {}).value || '';
+  var nameInput = card.querySelector('.ocr-card-name');
+  var name = nameInput ? nameInput.value.trim() : '';
   var inputs = card.querySelectorAll('input:not(.ocr-card-name), select');
-  return {
-    name:     name.trim(),
-    client:   (inputs[0] ? inputs[0].value : '').trim(),
-    phone:    (inputs[1] ? inputs[1].value : '').trim(),
-    email:    (inputs[2] ? inputs[2].value : '').trim(),
-    amount:   (inputs[3] ? inputs[3].value : '').trim(),
-    duration: (inputs[4] ? inputs[4].value : '').trim(),
-    type:     (inputs[5] ? inputs[5].value : '').trim(),
-    address:  (inputs[6] ? inputs[6].value : '').trim(),
-    priority: (inputs[7] ? inputs[7].value : 'medium'),
-    notes:    (inputs[8] ? inputs[8].value : '').trim()
-  };
+  var client   = (inputs[0] ? inputs[0].value : '').trim();
+  var phone    = (inputs[1] ? inputs[1].value : '').trim();
+  var email    = (inputs[2] ? inputs[2].value : '').trim();
+  var amount   = (inputs[3] ? inputs[3].value : '').trim();
+  var duration = (inputs[4] ? inputs[4].value : '').trim();
+  var type     = (inputs[5] ? inputs[5].value : '').trim();
+  var address  = (inputs[6] ? inputs[6].value : '').trim();
+  var priority = (inputs[7] ? inputs[7].value : 'medium');
+  var notes    = (inputs[8] ? inputs[8].value : '').trim();
+  // Fallback name: use client or address if the name field is empty
+  if (!name) name = client || address || '';
+  return { name: name, client: client, phone: phone, email: email,
+           amount: amount, duration: duration, type: type,
+           address: address, priority: priority, notes: notes };
 }
 
 function ocrConfirmImport() {
@@ -6152,9 +6169,11 @@ function ocrConfirmImport() {
 
   /* ── Bank context (default): all selected cards → bank ── */
   var added = 0;
+  console.log('[OCR] ocrConfirmImport bank mode — checked cards:', cards.length);
   Array.prototype.forEach.call(cards, function(card) {
     var d = _ocrReadCard(card);
-    if (!d.name) return;
+    console.log('[OCR] card data:', JSON.stringify({name: d.name, client: d.client, type: d.type}));
+    if (!d.name) { console.warn('[OCR] skipped card — no name'); return; }
     var noteParts = [d.notes, d.amount || ''].filter(Boolean);
     _workBank.push({
       id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: d.email,
@@ -6163,13 +6182,17 @@ function ocrConfirmImport() {
     });
     added++;
   });
+  console.log('[OCR] added:', added, '| bank size now:', _workBank.length);
   if (added) {
-    saveWorkBank();
+    var saved = _saveWorkBankSafe();
+    console.log('[OCR] localStorage save:', saved ? 'OK' : 'FAILED');
     renderBanqueTravaux();
     closeModal('importOcrOverlay');
-    toast('✓ ' + added + ' travail' + (added > 1 ? 's ajoutés' : ' ajouté') + ' à la banque');
+    var msg = '✓ ' + added + ' travail' + (added > 1 ? 's ajoutés' : ' ajouté') + ' à la banque';
+    if (!saved) msg += ' (stockage local indisponible)';
+    toast(msg);
   } else {
-    toast('⚠ Aucun travail valide à ajouter');
+    toast('⚠ Aucun travail valide — vérifiez que les noms sont remplis');
   }
 }
 

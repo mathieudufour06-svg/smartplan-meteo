@@ -5036,13 +5036,13 @@ function applyParsedToWbForm(parsed) {
   if (parsed.type)     setVal('wbType', parsed.type);
   if (parsed.priority) setVal('wbPrio', parsed.priority);
   if (parsed.indoor === true || parsed.indoor === false) _wbCurrentIndoor = parsed.indoor;
-  // Carry remaining context (date, time, amount) into notes
+  // Carry remaining context (date, time, amount) into notes — plain text, no emojis
   var notesEl = document.getElementById('wbNotes');
   if (notesEl) {
     var bits = [];
-    if (parsed.date)   bits.push('📅 ' + _formatDateFr(parsed.date));
-    if (parsed.time)   bits.push('🕒 ' + parsed.time);
-    if (parsed.amount) bits.push('💲 ' + parsed.amount);
+    if (parsed.date)   bits.push(_formatDateFr(parsed.date));
+    if (parsed.time)   bits.push(parsed.time);
+    if (parsed.amount) bits.push(parsed.amount);
     if (bits.length) {
       var prev = (notesEl.value || '').trim();
       notesEl.value = bits.join(' · ') + (prev ? '\n' + prev : '');
@@ -5087,33 +5087,48 @@ function _formatDateFr(iso) {
 }
 
 function saveWorkBankItem() {
-  var name = (document.getElementById('wbName').value || '').trim();
-  if (!name) { toast('⚠ Titre requis'); return; }
+  var nameEl = document.getElementById('wbName');
+  var name = nameEl ? nameEl.value.trim() : '';
+  if (!name) {
+    toast('⚠ Titre requis');
+    if (nameEl) { nameEl.focus(); nameEl.style.borderColor = 'var(--danger, #e53)'; setTimeout(function() { nameEl.style.borderColor = ''; }, 1800); }
+    return;
+  }
+  // Disable save button to prevent double-submit
+  var saveBtn = document.querySelector('#workBankOverlay .btn-primary');
+  var origLabel = saveBtn ? saveBtn.textContent : '';
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…'; }
+  var rawPhone = (document.getElementById('wbPhone').value || '').trim();
   var rec = {
     id: _wbEditingId || _wbNewId(),
     name: name,
-    client: (document.getElementById('wbClient').value || '').trim(),
-    phone: normalizePhone((document.getElementById('wbPhone').value || '').trim()) || (document.getElementById('wbPhone').value || '').trim(),
-    email: (document.getElementById('wbEmail').value || '').trim(),
-    address: ((document.getElementById('wbAddress') || {}).value || '').trim(),
-    type: document.getElementById('wbType').value || '',
+    client:   (document.getElementById('wbClient').value   || '').trim(),
+    phone:    normalizePhone(rawPhone) || rawPhone,
+    email:    (document.getElementById('wbEmail').value    || '').trim(),
+    address:  ((document.getElementById('wbAddress') || {}).value || '').trim(),
+    type:     document.getElementById('wbType').value || '',
     duration: (document.getElementById('wbDuration').value || '').trim(),
     priority: document.getElementById('wbPrio').value || 'medium',
-    notes: (document.getElementById('wbNotes').value || '').trim(),
+    notes:    (document.getElementById('wbNotes').value    || '').trim(),
     flexible: !!document.getElementById('wbFlexible').checked,
-    indoor: _wbCurrentIndoor,
-    photos: _wbPhotos.slice()
+    indoor:   _wbCurrentIndoor,
+    photos:   _wbPhotos.slice()
   };
-  if (_wbEditingId) {
-    var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
-    if (idx >= 0) _workBank[idx] = rec; else _workBank.push(rec);
-  } else {
-    _workBank.push(rec);
+  try {
+    if (_wbEditingId) {
+      var idx = _workBank.findIndex(function(w) { return w.id === _wbEditingId; });
+      if (idx >= 0) _workBank[idx] = rec; else _workBank.push(rec);
+    } else {
+      _workBank.push(rec);
+    }
+    saveWorkBank();
+    closeModal('workBankOverlay');
+    renderBanqueTravaux();
+    toast(_wbEditingId ? '✓ Travail mis à jour' : '✓ Ajouté à la banque');
+  } catch(e) {
+    toast('⚠ Erreur lors de la sauvegarde');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = origLabel; }
   }
-  saveWorkBank();
-  closeModal('workBankOverlay');
-  renderBanqueTravaux();
-  toast(_wbEditingId ? '✓ Travail mis à jour' : '✓ Ajouté à la banque');
 }
 
 function deleteWorkBankItem() {
@@ -5141,11 +5156,11 @@ function useWorkBankItem(id) {
     if (nameEl)   nameEl.value   = item.name || '';
     if (clientEl) clientEl.value = item.client || '';
     if (durEl)    durEl.value    = item.duration || '';
-    // Carry phone/email into description if present
+    // Carry phone/email into description if present — plain text, no emojis
     var notes = item.notes || '';
     var contact = [];
-    if (item.phone) contact.push('📞 ' + item.phone);
-    if (item.email) contact.push('✉ ' + item.email);
+    if (item.phone) contact.push(item.phone);
+    if (item.email) contact.push(item.email);
     if (contact.length) notes = (contact.join(' · ') + (notes ? '\n' + notes : ''));
     if (descEl && notes) descEl.value = notes;
     if (prioEl && item.priority) prioEl.value = item.priority;
@@ -6107,11 +6122,11 @@ function ocrConfirmImport() {
       var descEl = document.getElementById('tDesc');
       var descParts = [
         first.notes,
-        first.phone  ? '📞 ' + first.phone  : '',
-        first.email  ? '✉ '  + first.email  : '',
-        first.amount ? '💰 ' + first.amount  : ''
+        first.phone  || '',
+        first.email  || '',
+        first.amount || ''
       ].filter(Boolean);
-      if (descEl && descParts.length) descEl.value = descParts.join('\n');
+      if (descEl && descParts.length) descEl.value = descParts.join(' · ');
     }, 60);
 
     // Bank any extra selected cards
@@ -6119,7 +6134,7 @@ function ocrConfirmImport() {
     Array.prototype.slice.call(cards, 1).forEach(function(card) {
       var d = _ocrReadCard(card);
       if (!d.name) return;
-      var noteParts = [d.notes, d.amount ? '💰 ' + d.amount : ''].filter(Boolean);
+      var noteParts = [d.notes, d.amount || ''].filter(Boolean);
       _workBank.push({
         id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: d.email,
         address: d.address, type: d.type, duration: d.duration,
@@ -6140,7 +6155,7 @@ function ocrConfirmImport() {
   Array.prototype.forEach.call(cards, function(card) {
     var d = _ocrReadCard(card);
     if (!d.name) return;
-    var noteParts = [d.notes, d.amount ? '💰 ' + d.amount : ''].filter(Boolean);
+    var noteParts = [d.notes, d.amount || ''].filter(Boolean);
     _workBank.push({
       id: _wbNewId(), name: d.name, client: d.client, phone: d.phone, email: d.email,
       address: d.address, type: d.type, duration: d.duration,
@@ -6447,6 +6462,14 @@ function openVoice() {
   var bC = document.getElementById('voiceBtnConfirm'); if (bC) bC.style.display = 'none';
   var ta = document.getElementById('voiceText');
   if (ta) ta.value = '';
+  // Adapt voice overlay to context (bank vs schedule)
+  var isBank = _sheetMode === 'bank';
+  var exEl = document.querySelector('#voiceOverlay .modal > p em');
+  if (exEl) exEl.textContent = isBank
+    ? '"Toiture Tremblay, 514-555-2222, 2 jours, urgent"'
+    : '"Asphaltage chez Tremblay samedi 8h priorité haute"';
+  var h3El = document.querySelector('#voiceOverlay .modal > h3');
+  if (h3El) h3El.textContent = isBank ? '🎙 Dicter un travail (banque)' : '🎙 Dicter des travaux';
   _micActive = false;
   _micStopping = false;
   _micStarting = false;
@@ -6946,7 +6969,13 @@ function confirmVoiceCreate() {
   document.getElementById('voiceBtnAnalyze').style.display = '';
   document.getElementById('voiceBtnBack').style.display    = 'none';
   document.getElementById('voiceBtnConfirm').style.display = 'none';
-  applyVoiceParsed(parsed);
+  // Route to the correct destination based on sheet context
+  if (_sheetMode === 'bank') {
+    openWorkBankForm(null);
+    setTimeout(function() { applyParsedToWbForm(parsed); }, 60);
+  } else {
+    applyVoiceParsed(parsed);
+  }
 }
 
 function _buildVoicePreviewHTML(parsed) {

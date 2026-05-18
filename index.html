@@ -2674,17 +2674,49 @@
 
     /* ── Bank toolbar layout ── */
     .bank-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s4) var(--s5); }
-    .bank-toolbar-btns { display: flex; gap: var(--s3); }
-    .bank-import-btn {
-      background: transparent;
-      border: 1.5px solid var(--tint);
-      color: var(--tint);
-      border-radius: var(--r-lg);
-      padding: 8px 14px;
-      font-size: .82rem; font-weight: 600;
-      cursor: pointer; transition: background var(--t-fast), color var(--t-fast);
+
+    /* ── Bank dashboard card (home preview) ── */
+    .bank-dash-card {
+      background: var(--surface-2); border: 1.5px solid var(--line-2);
+      border-radius: var(--r-xl); padding: var(--s4);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: border-color var(--t-fast), background var(--t-fast);
+      margin-bottom: var(--s3);
     }
-    .bank-import-btn:active { background: var(--tint); color: #fff; }
+    .bank-dash-card:active { background: var(--surface-3); border-color: var(--tint); }
+    .bank-dash-head {
+      display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4);
+    }
+    .bank-dash-icon {
+      width: 42px; height: 42px; min-width: 42px;
+      background: linear-gradient(135deg, rgba(118,150,255,0.22), rgba(118,150,255,0.08));
+      border: 1px solid rgba(118,150,255,0.28); border-radius: var(--r-lg);
+      display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+    }
+    .bank-dash-info { flex: 1; }
+    .bank-dash-eyebrow { font-size: .67rem; font-weight: 600; color: var(--t-3); text-transform: uppercase; letter-spacing: .06em; }
+    .bank-dash-count { font-size: .9rem; font-weight: 700; color: var(--t-1); margin-top: 2px; }
+    .bank-dash-arrow { font-size: 1.3rem; color: var(--t-3); }
+    .bank-dash-stats {
+      display: flex; align-items: center;
+      background: var(--surface-3); border-radius: var(--r-lg);
+      padding: var(--s3) 0; margin-bottom: var(--s4);
+    }
+    .bank-dash-stat { flex: 1; text-align: center; }
+    .bank-dash-stat-val { display: block; font-size: 1.2rem; font-weight: 800; color: var(--t-1); }
+    .bank-dash-stat-lbl { display: block; font-size: .65rem; color: var(--t-3); margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+    .bank-dash-divider { width: 1px; height: 32px; background: var(--line-2); flex-shrink: 0; }
+    .bank-dash-cta {
+      width: 100%; padding: 11px;
+      background: linear-gradient(120deg, var(--tint), #93afff);
+      color: #fff; border: none; border-radius: var(--r-lg);
+      font-size: .85rem; font-weight: 700; cursor: pointer;
+      transition: opacity var(--t-fast);
+    }
+    .bank-dash-cta:active { opacity: .82; }
+
+    /* ── Unified Add Sheet — option colors ── */
+    .sheet-opt-icon.blue { --so-c1: rgba(100,160,255,0.28); --so-c2: rgba(60,100,200,0.16); }
 
     /* ── OCR Import Overlay ── */
     #importOcrOverlay .modal {
@@ -2989,25 +3021,35 @@
 
       <!-- 3. BANQUE DE TRAVAUX -->
       <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Banque de travaux</h2>
-          <span class="section-count" id="btlCount"></span>
+        <div class="bank-dash-card" onclick="switchTab('bank')">
+          <div class="bank-dash-head">
+            <div class="bank-dash-icon">📋</div>
+            <div class="bank-dash-info">
+              <div class="bank-dash-eyebrow">Banque de travaux</div>
+              <div class="bank-dash-count" id="btlCount">0 travaux en banque</div>
+            </div>
+            <span class="bank-dash-arrow">›</span>
+          </div>
+          <div class="bank-dash-stats">
+            <div class="bank-dash-stat">
+              <span class="bank-dash-stat-val" id="bankStatTotal">0</span>
+              <span class="bank-dash-stat-lbl">total</span>
+            </div>
+            <div class="bank-dash-divider"></div>
+            <div class="bank-dash-stat">
+              <span class="bank-dash-stat-val" id="bankStatPrio">0</span>
+              <span class="bank-dash-stat-lbl">urgents</span>
+            </div>
+            <div class="bank-dash-divider"></div>
+            <div class="bank-dash-stat">
+              <span class="bank-dash-stat-val" id="bankStatRecent">—</span>
+              <span class="bank-dash-stat-lbl">récent</span>
+            </div>
+          </div>
+          <button class="bank-dash-cta" onclick="event.stopPropagation(); openNewJobSheet(null,'bank')">
+            + Nouveaux travaux
+          </button>
         </div>
-        <div class="quick">
-          <button class="quick-btn" data-tone="green" onclick="openVoice()">
-            <span class="quick-btn-icon">🎤</span>
-            <span class="quick-btn-label">Dictée</span>
-          </button>
-          <button class="quick-btn" data-tone="violet" onclick="openPhotoModal()">
-            <span class="quick-btn-icon">📷</span>
-            <span class="quick-btn-label">Photo</span>
-          </button>
-          <button class="quick-btn" data-tone="blue" onclick="openAddTask(null)">
-            <span class="quick-btn-icon">✏️</span>
-            <span class="quick-btn-label">Manuel</span>
-          </button>
-        </div>
-        <div class="btl-list" id="btlList"></div>
       </div>
 
     </section>
@@ -3067,10 +3109,7 @@
       </header>
       <div class="bank-toolbar">
         <span class="bank-count" id="bankCount">0 travail</span>
-        <div class="bank-toolbar-btns">
-          <button type="button" class="bank-import-btn" onclick="openImportOcr()">📷 Importer</button>
-          <button type="button" class="bank-new" onclick="openWorkBankForm(null)">+ Nouveau</button>
-        </div>
+        <button type="button" class="bank-new" onclick="openNewJobSheet(null,'bank')">+ Nouveaux travaux</button>
       </div>
       <div class="btl-list bank-list" id="bankList"></div>
     </section>
@@ -3113,7 +3152,7 @@
       <span class="nt-label">Calendrier</span>
     </button>
     <div class="nav-fab-wrap">
-      <button class="nav-fab" id="fabBtn" onclick="openNewJobSheet()" aria-label="Nouveau job">
+      <button class="nav-fab" id="fabBtn" onclick="openNewJobSheet(null,'schedule')" aria-label="Nouveau job">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 5v14M5 12h14"/>
         </svg>
@@ -3146,28 +3185,28 @@
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeNewJobSheet()"></div>
 <div class="sheet" id="newJobSheet" role="dialog" aria-modal="true">
   <div class="sheet-grip"></div>
-  <div class="sheet-title">Nouveau job</div>
-  <button class="sheet-opt" onclick="closeNewJobSheet(); openAddTask(null)">
-    <div class="sheet-opt-icon">✏️</div>
-    <div class="sheet-opt-body">
-      <div class="sheet-opt-title">Création manuelle</div>
-      <div class="sheet-opt-sub">Saisir tous les détails à la main</div>
-    </div>
-    <span class="sheet-opt-arrow">›</span>
-  </button>
-  <button class="sheet-opt" id="sheetOptVoice" onclick="closeNewJobSheet(); openVoice()">
+  <div class="sheet-title" id="sheetTitle">Ajouter des travaux</div>
+  <button class="sheet-opt" onclick="_sheetAction('voice')">
     <div class="sheet-opt-icon green">🎤</div>
     <div class="sheet-opt-body">
       <div class="sheet-opt-title">Dictée vocale</div>
-      <div class="sheet-opt-sub" id="sheetOptVoiceSub">« Asphaltage chez Tremblay samedi à 8h »</div>
+      <div class="sheet-opt-sub" id="sheetVoiceSub">« Asphaltage chez Tremblay samedi à 8h »</div>
     </div>
     <span class="sheet-opt-arrow">›</span>
   </button>
-  <button class="sheet-opt" onclick="closeNewJobSheet(); openPhotoModal()">
-    <div class="sheet-opt-icon purple">📷</div>
+  <button class="sheet-opt" onclick="_sheetAction('photo')">
+    <div class="sheet-opt-icon violet">📷</div>
     <div class="sheet-opt-body">
-      <div class="sheet-opt-title">Photo / Document</div>
-      <div class="sheet-opt-sub">Importer une photo de soumission ou note</div>
+      <div class="sheet-opt-title" id="sheetPhotoTitle">Photo / OCR</div>
+      <div class="sheet-opt-sub" id="sheetPhotoSub">Importer photo, PDF, soumission</div>
+    </div>
+    <span class="sheet-opt-arrow">›</span>
+  </button>
+  <button class="sheet-opt" onclick="_sheetAction('manual')">
+    <div class="sheet-opt-icon">✏️</div>
+    <div class="sheet-opt-body">
+      <div class="sheet-opt-title" id="sheetManualTitle">Création manuelle</div>
+      <div class="sheet-opt-sub" id="sheetManualSub">Saisir tous les détails à la main</div>
     </div>
     <span class="sheet-opt-arrow">›</span>
   </button>
@@ -4202,7 +4241,7 @@ function renderCalMonth() {
       return function() {
         _calActive = date;
         if (jobsCount === 0) {
-          openAddTask(isoDate(date));
+          openNewJobSheet(isoDate(date), 'schedule');
         } else {
           renderCalMonth();
           renderCalMonthPreview();
@@ -4229,7 +4268,7 @@ function renderCalMonthPreview() {
   preview.innerHTML = headerHtml;
 
   if (!dayJobs.length) {
-    preview.innerHTML += '<button class="cal-add-btn" onclick="openAddTask(\'' + iso + '\')">+ Ajouter des travaux ce jour-là</button>';
+    preview.innerHTML += '<button class="cal-add-btn" onclick="openNewJobSheet(\'' + iso + '\',\'schedule\')">+ Ajouter des travaux ce jour-là</button>';
     return;
   }
   var jobs = getMergedJobTypes();
@@ -4243,7 +4282,7 @@ function renderCalMonthPreview() {
   var addBtn = document.createElement('button');
   addBtn.className = 'cal-add-btn';
   addBtn.textContent = '+ Ajouter des travaux';
-  addBtn.onclick = function() { openAddTask(iso); };
+  addBtn.onclick = function() { openNewJobSheet(iso, 'schedule'); };
   preview.appendChild(addBtn);
 }
 
@@ -4374,7 +4413,7 @@ function renderCalDay() {
       + '<div class="empty-title">Aucun travaux ce jour</div>'
       + '<div class="empty-sub">Tapez ci-dessous pour en ajouter un.</div>'
       + '</div>'
-      + '<button class="cal-add-btn" onclick="openAddTask(\'' + iso + '\')">+ Ajouter des travaux</button>';
+      + '<button class="cal-add-btn" onclick="openNewJobSheet(\'' + iso + '\',\'schedule\')">+ Ajouter des travaux</button>';
     return;
   }
 
@@ -4399,7 +4438,7 @@ function renderCalDay() {
   var addBtn = document.createElement('button');
   addBtn.className = 'cal-add-btn';
   addBtn.textContent = '+ Ajouter des travaux';
-  addBtn.onclick = function() { openAddTask(iso); };
+  addBtn.onclick = function() { openNewJobSheet(iso, 'schedule'); };
   jobsList.appendChild(addBtn);
 }
 
@@ -5074,20 +5113,30 @@ function _wbFillContainer(list, opts) {
     var addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'wb-add';
-    addBtn.textContent = '+ Nouveau travail';
-    addBtn.onclick = function() { openWorkBankForm(null); };
+    addBtn.textContent = '+ Nouveaux travaux';
+    addBtn.onclick = function() { openNewJobSheet(null, 'bank'); };
     list.appendChild(addBtn);
   }
 }
 
+function _updateBankCard() {
+  var n = _workBank.length;
+  var prio = _workBank.filter(function(w) { return w.priority === 'urgent' || w.priority === 'high'; }).length;
+  var last = n ? _workBank[_workBank.length - 1].name : null;
+
+  var btlCount = document.getElementById('btlCount');
+  var statTotal = document.getElementById('bankStatTotal');
+  var statPrio  = document.getElementById('bankStatPrio');
+  var statRecent = document.getElementById('bankStatRecent');
+
+  if (btlCount) btlCount.textContent = n ? n + ' travail' + (n > 1 ? 's' : '') + ' en banque' : 'Banque vide — ajoutez votre premier travail';
+  if (statTotal) statTotal.textContent = n;
+  if (statPrio)  statPrio.textContent  = prio || '—';
+  if (statRecent) statRecent.textContent = last ? last.substring(0, 10) + (last.length > 10 ? '…' : '') : '—';
+}
+
 function renderBanqueTravaux() {
-  // Home section preview
-  var homeList = document.getElementById('btlList');
-  var homeCount = document.getElementById('btlCount');
-  if (homeList) {
-    if (homeCount) homeCount.textContent = _workBank.length ? _workBank.length + '' : '';
-    _wbFillContainer(homeList, { showAddBtn: true });
-  }
+  _updateBankCard();
   // Dedicated bank view
   var bankList = document.getElementById('bankList');
   var bankCount = document.getElementById('bankCount');
@@ -5140,7 +5189,7 @@ function renderTodayJobs() {
       + '<div class="empty-icon">🏗</div>'
       + '<div class="empty-title">Aucun travaux aujourd\'hui</div>'
       + '<div class="empty-sub">Planifiez vos travaux pour profiter des meilleures conditions météo.</div>'
-      + '<button type="button" class="today-add-btn" onclick="openAddTask(\'' + todayIso + '\')">'
+      + '<button type="button" class="today-add-btn" onclick="openNewJobSheet(\'' + todayIso + '\',\'schedule\')">'
       + '<span class="today-add-btn-icon">+</span>'
       + '<span>Ajouter des travaux</span>'
       + '</button>'
@@ -5690,7 +5739,7 @@ function openDayDetail(di) {
          +    '<div class="dd-empty-icon">📅</div>'
          +    '<div class="dd-empty-title">Aucun travaux ce jour-là</div>'
          +    '<div class="dd-empty-sub">Tapez ci-dessous pour en planifier un.</div>'
-         +    '<button type="button" class="dd-add-btn" onclick="closeModal(\'dayDetailOverlay\'); openAddTask(\'' + dayIso + '\')">+ Ajouter des travaux</button>'
+         +    '<button type="button" class="dd-add-btn" onclick="closeModal(\'dayDetailOverlay\'); openNewJobSheet(\'' + dayIso + '\',\'schedule\')">+ Ajouter des travaux</button>'
          +  '</section>';
   }
 
@@ -7413,13 +7462,48 @@ function closeModal(id) {
 })();
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
 
-function openNewJobSheet() {
+var _sheetDate = null;
+var _sheetMode = 'schedule'; // 'schedule' | 'bank'
+
+function openNewJobSheet(date, mode) {
+  _sheetDate = date || null;
+  _sheetMode = mode || 'schedule';
+
+  var isBank = _sheetMode === 'bank';
+  var title     = document.getElementById('sheetTitle');
+  var voiceSub  = document.getElementById('sheetVoiceSub');
+  var photoSub  = document.getElementById('sheetPhotoSub');
+  var photoTitle = document.getElementById('sheetPhotoTitle');
+  var manualTitle = document.getElementById('sheetManualTitle');
+  var manualSub = document.getElementById('sheetManualSub');
+
+  if (title)      title.textContent      = isBank ? 'Ajouter à la banque' : 'Ajouter des travaux';
+  if (voiceSub)   voiceSub.textContent   = isBank ? '« Toiture Tremblay urgente 2 jours »' : '« Asphaltage chez Tremblay samedi à 8h »';
+  if (photoTitle) photoTitle.textContent = isBank ? 'Photo / OCR multi-travaux' : 'Photo / Document';
+  if (photoSub)   photoSub.textContent   = isBank ? 'Détecter plusieurs travaux dans une photo' : 'Importer une photo de soumission ou note';
+  if (manualTitle) manualTitle.textContent = isBank ? 'Travail réutilisable' : 'Création manuelle';
+  if (manualSub)  manualSub.textContent  = isBank ? 'Créer un modèle réutilisable' : 'Saisir tous les détails à la main';
+
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById('newJobSheet').classList.add('open');
 }
+
 function closeNewJobSheet() {
   document.getElementById('sheetOverlay').classList.remove('open');
   document.getElementById('newJobSheet').classList.remove('open');
+}
+
+function _sheetAction(action) {
+  closeNewJobSheet();
+  if (action === 'voice') {
+    openVoice();
+  } else if (action === 'photo') {
+    if (_sheetMode === 'bank') openImportOcr();
+    else openPhotoModal();
+  } else if (action === 'manual') {
+    if (_sheetMode === 'bank') openWorkBankForm(null);
+    else openAddTask(_sheetDate);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════

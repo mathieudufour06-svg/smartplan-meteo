@@ -2671,6 +2671,210 @@
       from { background-position: 200% 0; }
       to   { background-position: -200% 0; }
     }
+
+    /* ── Bank toolbar layout ── */
+    .bank-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s4) var(--s5); }
+    .bank-toolbar-btns { display: flex; gap: var(--s3); }
+    .bank-import-btn {
+      background: transparent;
+      border: 1.5px solid var(--tint);
+      color: var(--tint);
+      border-radius: var(--r-lg);
+      padding: 8px 14px;
+      font-size: .82rem; font-weight: 600;
+      cursor: pointer; transition: background var(--t-fast), color var(--t-fast);
+    }
+    .bank-import-btn:active { background: var(--tint); color: #fff; }
+
+    /* ── OCR Import Overlay ── */
+    #importOcrOverlay .modal {
+      display: flex; flex-direction: column;
+    }
+    .ocr-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: var(--s4); border-bottom: 1px solid var(--line-2);
+      margin-bottom: var(--s5);
+    }
+    .ocr-header h2 { font-size: 1.05rem; font-weight: 700; margin: 0; }
+    .ocr-close {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--surface-3); border: none; cursor: pointer;
+      font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      color: var(--t-2);
+    }
+
+    /* Step: Source selection */
+    .ocr-step { display: none; flex: 1; flex-direction: column; }
+    .ocr-step.ocr-active { display: flex; }
+    .ocr-src-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--s4); margin-top: var(--s3);
+    }
+    .ocr-src-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; padding: var(--s5) var(--s3);
+      background: var(--surface-2); border: 1.5px solid var(--line-2);
+      border-radius: var(--r-xl); cursor: pointer;
+      transition: border-color var(--t-fast), background var(--t-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ocr-src-btn:active { border-color: var(--tint); background: var(--surface-3); }
+    .ocr-src-icon { font-size: 1.8rem; line-height: 1; }
+    .ocr-src-label { font-size: .75rem; font-weight: 600; color: var(--t-2); text-align: center; }
+    .ocr-src-sub { font-size: .65rem; color: var(--t-3); text-align: center; margin-top: -4px; }
+
+    /* Step: Scanning animation */
+    .ocr-scan-wrap {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: var(--s5);
+    }
+    .ocr-scan-box {
+      position: relative; width: 200px; height: 200px;
+      border-radius: var(--r-xl); overflow: hidden;
+      background: var(--surface-3);
+    }
+    .ocr-scan-corners::before, .ocr-scan-corners::after,
+    .ocr-scan-tl, .ocr-scan-tr, .ocr-scan-bl, .ocr-scan-br {
+      position: absolute; width: 20px; height: 20px;
+      border-color: var(--tint); border-style: solid;
+    }
+    .ocr-scan-tl { top: 8px; left: 8px; border-width: 2.5px 0 0 2.5px; border-radius: 4px 0 0 0; }
+    .ocr-scan-tr { top: 8px; right: 8px; border-width: 2.5px 2.5px 0 0; border-radius: 0 4px 0 0; }
+    .ocr-scan-bl { bottom: 8px; left: 8px; border-width: 0 0 2.5px 2.5px; border-radius: 0 0 0 4px; }
+    .ocr-scan-br { bottom: 8px; right: 8px; border-width: 0 2.5px 2.5px 0; border-radius: 0 0 4px 0; }
+    .ocr-scan-line {
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--tint), var(--tint-hi), var(--tint), transparent);
+      box-shadow: 0 0 10px var(--tint);
+      animation: ocrScan 1.6s ease-in-out infinite;
+    }
+    @keyframes ocrScan {
+      0%   { top: 10px; opacity: 0; }
+      15%  { opacity: 1; }
+      85%  { opacity: 1; }
+      100% { top: 190px; opacity: 0; }
+    }
+    .ocr-scan-label {
+      font-size: .9rem; font-weight: 600; color: var(--t-1);
+      text-align: center;
+    }
+    .ocr-scan-sub {
+      font-size: .78rem; color: var(--t-3); text-align: center;
+      max-width: 240px;
+    }
+    .ocr-progress-bar {
+      width: 200px; height: 4px; background: var(--surface-3);
+      border-radius: 2px; overflow: hidden;
+    }
+    .ocr-progress-fill {
+      height: 100%; background: var(--tint);
+      border-radius: 2px; width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* Step: Results */
+    .ocr-results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: var(--s4);
+    }
+    .ocr-results-title { font-size: .92rem; font-weight: 700; }
+    .ocr-results-count {
+      font-size: .75rem; font-weight: 600;
+      background: var(--tint); color: #fff;
+      padding: 3px 9px; border-radius: 20px;
+    }
+    .ocr-cards-list { display: flex; flex-direction: column; gap: var(--s4); overflow-y: auto; flex: 1; }
+    .ocr-card {
+      background: var(--surface-2); border: 1.5px solid var(--line-2);
+      border-radius: var(--r-xl); padding: var(--s4);
+      transition: border-color var(--t-fast);
+    }
+    .ocr-card.ocr-card-checked { border-color: var(--tint); }
+    .ocr-card-head {
+      display: flex; align-items: flex-start; gap: var(--s3);
+      margin-bottom: var(--s3);
+    }
+    .ocr-card-check {
+      width: 22px; height: 22px; min-width: 22px;
+      border-radius: 50%; border: 2px solid var(--line-3);
+      background: var(--surface-3); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: transparent; font-size: .7rem;
+      transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+      margin-top: 2px;
+    }
+    .ocr-card.ocr-card-checked .ocr-card-check {
+      background: var(--tint); border-color: var(--tint); color: #fff;
+    }
+    .ocr-card-name {
+      flex: 1; font-size: .9rem; font-weight: 700;
+      background: transparent; border: none; outline: none;
+      color: var(--t-1); padding: 0; width: 100%;
+      font-family: inherit;
+    }
+    .ocr-card-name::placeholder { color: var(--t-4); }
+    .ocr-card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .ocr-card-field {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .ocr-card-field label { font-size: .65rem; font-weight: 600; color: var(--t-3); text-transform: uppercase; letter-spacing: .04em; }
+    .ocr-card-field input, .ocr-card-field select {
+      background: var(--surface-3); border: 1px solid var(--line-2);
+      border-radius: var(--r-sm); padding: 5px 8px;
+      font-size: .8rem; color: var(--t-1); outline: none;
+      font-family: inherit; width: 100%; box-sizing: border-box;
+    }
+    .ocr-card-field input:focus, .ocr-card-field select:focus {
+      border-color: var(--tint);
+    }
+    .ocr-card-notes {
+      margin-top: 6px;
+    }
+    .ocr-card-notes input {
+      background: var(--surface-3); border: 1px solid var(--line-2);
+      border-radius: var(--r-sm); padding: 5px 8px;
+      font-size: .8rem; color: var(--t-1); outline: none;
+      font-family: inherit; width: 100%; box-sizing: border-box;
+    }
+    .ocr-card-notes input:focus { border-color: var(--tint); }
+    .ocr-cards-confirm {
+      margin-top: var(--s4); padding-top: var(--s4);
+      border-top: 1px solid var(--line-2);
+      display: flex; flex-direction: column; gap: var(--s3);
+    }
+    .ocr-confirm-btn {
+      background: var(--tint); color: #fff;
+      border: none; border-radius: var(--r-lg);
+      padding: 14px; font-size: .92rem; font-weight: 700;
+      cursor: pointer; width: 100%;
+      transition: opacity var(--t-fast);
+    }
+    .ocr-confirm-btn:active { opacity: .85; }
+    .ocr-add-more-btn {
+      background: var(--surface-2); color: var(--tint);
+      border: 1.5px solid var(--tint);
+      border-radius: var(--r-lg); padding: 11px;
+      font-size: .85rem; font-weight: 600;
+      cursor: pointer; width: 100%;
+      transition: background var(--t-fast);
+    }
+    .ocr-add-more-btn:active { background: var(--surface-3); }
+
+    /* Step: Empty / error */
+    .ocr-empty-wrap {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: var(--s4);
+      text-align: center; padding: var(--s6);
+    }
+    .ocr-empty-icon { font-size: 2.8rem; }
+    .ocr-empty-title { font-size: .95rem; font-weight: 700; }
+    .ocr-empty-sub { font-size: .82rem; color: var(--t-3); max-width: 260px; }
+    .ocr-empty-retry {
+      background: var(--surface-2); border: 1.5px solid var(--line-2);
+      border-radius: var(--r-lg); padding: 11px 20px;
+      font-size: .85rem; font-weight: 600; cursor: pointer;
+      color: var(--t-1);
+    }
   </style>
 </head>
 <body>
@@ -2863,7 +3067,10 @@
       </header>
       <div class="bank-toolbar">
         <span class="bank-count" id="bankCount">0 travail</span>
-        <button type="button" class="bank-new" onclick="openWorkBankForm(null)">+ Nouveau travail</button>
+        <div class="bank-toolbar-btns">
+          <button type="button" class="bank-import-btn" onclick="openImportOcr()">📷 Importer</button>
+          <button type="button" class="bank-new" onclick="openWorkBankForm(null)">+ Nouveau</button>
+        </div>
       </div>
       <div class="btl-list bank-list" id="bankList"></div>
     </section>
@@ -3326,6 +3533,81 @@
       <button type="button" class="btn-cancel" onclick="cancelJobForm()" id="jobCancelBtn">Fermer</button>
       <button type="button" class="btn-primary" onclick="saveCustomJob()" id="jobSaveBtn">Ajouter →</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ OCR IMPORT OVERLAY ══ -->
+<div class="overlay" id="importOcrOverlay" onclick="if(event.target===this)closeModal('importOcrOverlay')">
+  <div class="modal">
+    <div class="ocr-header">
+      <h2>📷 Importer des travaux</h2>
+      <button class="ocr-close" onclick="closeModal('importOcrOverlay')">✕</button>
+    </div>
+
+    <!-- Step 1: Source selection -->
+    <div class="ocr-step ocr-active" id="ocrStepSource">
+      <p style="font-size:.84rem;color:var(--t-3);margin:0 0 var(--s4)">SmartPlan analyse vos photos et détecte automatiquement les travaux.</p>
+      <div class="ocr-src-grid">
+        <button class="ocr-src-btn" onclick="ocrSelectSource('camera')">
+          <span class="ocr-src-icon">📸</span>
+          <span class="ocr-src-label">Caméra</span>
+          <span class="ocr-src-sub">Prendre<br>une photo</span>
+        </button>
+        <button class="ocr-src-btn" onclick="ocrSelectSource('gallery')">
+          <span class="ocr-src-icon">🖼</span>
+          <span class="ocr-src-label">Photos</span>
+          <span class="ocr-src-sub">Depuis la<br>galerie</span>
+        </button>
+        <button class="ocr-src-btn" onclick="ocrSelectSource('files')">
+          <span class="ocr-src-icon">📄</span>
+          <span class="ocr-src-label">Fichiers</span>
+          <span class="ocr-src-sub">PDF ou<br>screenshot</span>
+        </button>
+      </div>
+      <input type="file" id="ocrInputCamera" accept="image/*" capture="environment" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
+      <input type="file" id="ocrInputGallery" accept="image/*" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
+      <input type="file" id="ocrInputFiles" accept="image/*,application/pdf" multiple style="display:none" onchange="ocrHandleFiles(this.files)">
+    </div>
+
+    <!-- Step 2: Scanning animation -->
+    <div class="ocr-step" id="ocrStepScan">
+      <div class="ocr-scan-wrap">
+        <div class="ocr-scan-box">
+          <div class="ocr-scan-tl"></div>
+          <div class="ocr-scan-tr"></div>
+          <div class="ocr-scan-bl"></div>
+          <div class="ocr-scan-br"></div>
+          <div class="ocr-scan-line"></div>
+        </div>
+        <div class="ocr-scan-label" id="ocrScanLabel">Analyse en cours…</div>
+        <div class="ocr-scan-sub" id="ocrScanSub">SmartPlan lit vos documents</div>
+        <div class="ocr-progress-bar"><div class="ocr-progress-fill" id="ocrProgressFill"></div></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Results -->
+    <div class="ocr-step" id="ocrStepResults">
+      <div class="ocr-results-header">
+        <span class="ocr-results-title">Travaux détectés</span>
+        <span class="ocr-results-count" id="ocrResultsCount">0</span>
+      </div>
+      <div class="ocr-cards-list" id="ocrCardsList"></div>
+      <div class="ocr-cards-confirm">
+        <button class="ocr-confirm-btn" id="ocrConfirmBtn" onclick="ocrConfirmImport()">Ajouter à la banque →</button>
+        <button class="ocr-add-more-btn" onclick="ocrGoBackToSource()">+ Analyser d'autres photos</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Empty state -->
+    <div class="ocr-step" id="ocrStepEmpty">
+      <div class="ocr-empty-wrap">
+        <div class="ocr-empty-icon">🔍</div>
+        <div class="ocr-empty-title">Aucun travail détecté</div>
+        <div class="ocr-empty-sub">Essayez avec une photo plus nette ou un document texte lisible.</div>
+        <button class="ocr-empty-retry" onclick="ocrGoBackToSource()">Réessayer</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -5030,6 +5312,344 @@ function renderOptimization() {
     movable === 1 ? '1 travaux peut être déplacé' : movable + ' travaux peuvent être déplacés';
   document.getElementById('optiSub').textContent =
     'SmartPlan peut les replanifier vers des journées avec une meilleure météo cette semaine.';
+}
+
+/* ════════════════════════════════════════════════════════════════
+   OCR IMPORT — Photo / PDF → multi-job pipeline
+════════════════════════════════════════════════════════════════ */
+var _ocrResults = [];   // array of parsed job objects
+var _ocrPdfLoading = null;
+
+function openImportOcr() {
+  _ocrResults = [];
+  _ocrShowStep('source');
+  openModal('importOcrOverlay');
+}
+
+function ocrGoBackToSource() {
+  _ocrShowStep('source');
+}
+
+function _ocrShowStep(name) {
+  ['source','scan','results','empty'].forEach(function(s) {
+    var el = document.getElementById('ocrStep' + s.charAt(0).toUpperCase() + s.slice(1));
+    if (el) el.classList.toggle('ocr-active', s === name);
+  });
+}
+
+function ocrSelectSource(src) {
+  var inputId = src === 'camera' ? 'ocrInputCamera'
+              : src === 'gallery' ? 'ocrInputGallery'
+              : 'ocrInputFiles';
+  var inp = document.getElementById(inputId);
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+function ocrHandleFiles(files) {
+  if (!files || !files.length) return;
+  var arr = Array.prototype.slice.call(files);
+  _ocrShowStep('scan');
+  _ocrSetScanLabel('Chargement du module IA…', '');
+  _ocrSetProgress(5);
+  _loadTesseract().then(function(T) {
+    _ocrProcessFiles(arr, T);
+  }).catch(function() {
+    _ocrShowStep('source');
+    toast('⚠ Module IA indisponible (connexion ?)');
+  });
+}
+
+function _ocrSetScanLabel(label, sub) {
+  var l = document.getElementById('ocrScanLabel');
+  var s = document.getElementById('ocrScanSub');
+  if (l) l.textContent = label;
+  if (s) s.textContent = sub || '';
+}
+
+function _ocrSetProgress(pct) {
+  var f = document.getElementById('ocrProgressFill');
+  if (f) f.style.width = Math.min(100, pct) + '%';
+}
+
+function _ocrResizeImage(dataURL, maxDim, quality) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (w <= maxDim && h <= maxDim) { resolve(dataURL); return; }
+      var scale = maxDim / Math.max(w, h);
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality || 0.82));
+    };
+    img.onerror = function() { resolve(dataURL); };
+    img.src = dataURL;
+  });
+}
+
+function _loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (_ocrPdfLoading) return _ocrPdfLoading;
+  _ocrPdfLoading = new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3/build/pdf.min.js';
+    s.async = true;
+    s.onload = function() {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3/build/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = function() { _ocrPdfLoading = null; reject(new Error('pdfjs load failed')); };
+    document.head.appendChild(s);
+  });
+  return _ocrPdfLoading;
+}
+
+function _ocrPdfToDataURLs(file) {
+  return new Promise(function(resolve) {
+    _loadPdfJs().then(function(pdfjs) {
+      var fr = new FileReader();
+      fr.onload = function(e) {
+        pdfjs.getDocument({ data: e.target.result }).promise.then(function(pdf) {
+          var pages = [];
+          var total = Math.min(pdf.numPages, 6);
+          function renderPage(n) {
+            if (n > total) { resolve(pages); return; }
+            pdf.getPage(n).then(function(page) {
+              var vp = page.getViewport({ scale: 2 });
+              var canvas = document.createElement('canvas');
+              canvas.width = vp.width; canvas.height = vp.height;
+              var ctx = canvas.getContext('2d');
+              page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+                pages.push(canvas.toDataURL('image/jpeg', 0.85));
+                renderPage(n + 1);
+              }).catch(function() { renderPage(n + 1); });
+            }).catch(function() { renderPage(n + 1); });
+          }
+          renderPage(1);
+        }).catch(function() { resolve([]); });
+      };
+      fr.onerror = function() { resolve([]); };
+      fr.readAsArrayBuffer(file);
+    }).catch(function() { resolve([]); });
+  });
+}
+
+function _ocrProcessFiles(files, T) {
+  var allText = '';
+  var idx = 0;
+  var total = files.length;
+
+  function next() {
+    if (idx >= total) { finish(allText); return; }
+    var file = files[idx];
+    var pct = 10 + Math.round((idx / total) * 75);
+    _ocrSetProgress(pct);
+    _ocrSetScanLabel(
+      'Analyse ' + (idx + 1) + '/' + total + '…',
+      file.name || 'document'
+    );
+
+    if (file.type === 'application/pdf') {
+      _ocrPdfToDataURLs(file).then(function(pages) {
+        var pi = 0;
+        function nextPage() {
+          if (pi >= pages.length) { idx++; next(); return; }
+          _ocrResizeImage(pages[pi], 1600, 0.85).then(function(resized) {
+            T.recognize(resized, 'fra+eng').then(function(res) {
+              allText += '\n' + (res && res.data ? res.data.text : '');
+              pi++; nextPage();
+            }).catch(function() { pi++; nextPage(); });
+          });
+        }
+        nextPage();
+      });
+    } else {
+      var fr = new FileReader();
+      fr.onload = function(e) {
+        _ocrResizeImage(e.target.result, 1600, 0.85).then(function(resized) {
+          T.recognize(resized, 'fra+eng').then(function(res) {
+            allText += '\n' + (res && res.data ? res.data.text : '');
+            idx++; next();
+          }).catch(function() { idx++; next(); });
+        });
+      };
+      fr.onerror = function() { idx++; next(); };
+      fr.readAsDataURL(file);
+    }
+  }
+
+  function finish(text) {
+    _ocrSetProgress(100);
+    var clean = (text || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    if (!clean) {
+      _ocrShowStep('empty');
+      return;
+    }
+    var segments = _ocrSegmentJobs(clean);
+    _ocrResults = segments.map(_ocrParseSegment).filter(function(j) { return j.name; });
+    if (!_ocrResults.length) {
+      _ocrShowStep('empty');
+      return;
+    }
+    _ocrRenderResults(_ocrResults);
+    _ocrShowStep('results');
+  }
+
+  next();
+}
+
+/* Split raw OCR text into per-job segments */
+function _ocrSegmentJobs(text) {
+  // Strategy 1: numbered list (1. ... 2. ...)
+  var numbered = text.match(/(?:^|\n)\s*\d+[\.\)]\s+.+/g);
+  if (numbered && numbered.length >= 2) {
+    return numbered.map(function(s) { return s.replace(/^\s*\d+[\.\)]\s+/, '').trim(); });
+  }
+  // Strategy 2: bullet list (- ... or • ...)
+  var bullets = text.match(/(?:^|\n)\s*[-•–*]\s+.+/g);
+  if (bullets && bullets.length >= 2) {
+    return bullets.map(function(s) { return s.replace(/^\s*[-•–*]\s+/, '').trim(); });
+  }
+  // Strategy 3: double-newline paragraphs
+  var paras = text.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (paras.length >= 2) return paras;
+  // Strategy 4: single-line chunks
+  var lines = text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 6; });
+  if (lines.length >= 2) {
+    // Merge very short consecutive lines that look like continuation
+    var merged = [lines[0]];
+    for (var i = 1; i < lines.length; i++) {
+      var prev = merged[merged.length - 1];
+      // If current line starts with a capital and previous doesn't end sentence → new job
+      if (/^[A-ZÀ-Ö]/.test(lines[i]) && /[.!?:;]$/.test(prev)) {
+        merged.push(lines[i]);
+      } else {
+        merged[merged.length - 1] += ' ' + lines[i];
+      }
+    }
+    return merged.length >= 2 ? merged : [text];
+  }
+  return [text];
+}
+
+function _ocrParseSegment(seg) {
+  var parsed = parseSmartInput(seg);
+  if (!parsed.name) {
+    // Fallback: use first meaningful line as name
+    var firstLine = seg.split(/\n/)[0].replace(/^[-•–*\d.\)]\s*/, '').trim();
+    if (firstLine.length > 2) parsed.name = firstLine.substring(0, 60);
+  }
+  return parsed;
+}
+
+/* Build editable result cards */
+function _ocrBuildCard(job, idx) {
+  var card = document.createElement('div');
+  card.className = 'ocr-card ocr-card-checked';
+  card.dataset.idx = idx;
+
+  var prio = job.priority || 'medium';
+  var typeOpts = ['','Toiture','Fondation','Electrical','Plomberie','Peinture','Terrassement','Menuiserie','Maçonnerie','Autre']
+    .map(function(t) {
+      return '<option value="' + t + '"' + (job.type === t ? ' selected' : '') + '>' + (t || '— Type —') + '</option>';
+    }).join('');
+  var prioOpts = ['urgent','high','medium','low'].map(function(p) {
+    var labels = { urgent:'🔴 Urgente', high:'🟠 Haute', medium:'🟡 Moyenne', low:'🟢 Basse' };
+    return '<option value="' + p + '"' + (prio === p ? ' selected' : '') + '>' + labels[p] + '</option>';
+  }).join('');
+
+  card.innerHTML =
+    '<div class="ocr-card-head">'
+    + '<div class="ocr-card-check" onclick="_ocrToggleCard(this)">✓</div>'
+    + '<input class="ocr-card-name" type="text" placeholder="Nom du travail" value="' + _escAttr(job.name || '') + '" autocomplete="off" autocorrect="off" spellcheck="false">'
+    + '</div>'
+    + '<div class="ocr-card-fields">'
+    + '<div class="ocr-card-field"><label>Client</label><input type="text" placeholder="Nom du client" value="' + _escAttr(job.client || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Téléphone</label><input type="tel" placeholder="514-000-0000" value="' + _escAttr(job.phone || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Durée</label><input type="text" placeholder="ex: 2 jours" value="' + _escAttr(job.duration || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Type</label><select>' + typeOpts + '</select></div>'
+    + '<div class="ocr-card-field"><label>Adresse</label><input type="text" placeholder="Adresse" value="' + _escAttr(job.location || '') + '" autocomplete="off"></div>'
+    + '<div class="ocr-card-field"><label>Priorité</label><select>' + prioOpts + '</select></div>'
+    + '</div>'
+    + '<div class="ocr-card-notes"><input type="text" placeholder="Notes…" value="' + _escAttr(job.notes || '') + '" autocomplete="off"></div>';
+
+  return card;
+}
+
+function _escAttr(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function _ocrToggleCard(checkEl) {
+  var card = checkEl.closest('.ocr-card');
+  if (!card) return;
+  card.classList.toggle('ocr-card-checked');
+}
+
+function _ocrRenderResults(jobs) {
+  var list = document.getElementById('ocrCardsList');
+  var count = document.getElementById('ocrResultsCount');
+  if (!list) return;
+  list.innerHTML = '';
+  jobs.forEach(function(job, i) {
+    list.appendChild(_ocrBuildCard(job, i));
+  });
+  if (count) count.textContent = jobs.length;
+}
+
+function _ocrReadCard(card) {
+  var inputs = card.querySelectorAll('input, select');
+  var name     = (card.querySelector('.ocr-card-name') || {}).value || '';
+  var client   = inputs[1] ? inputs[1].value : '';
+  var phone    = inputs[2] ? inputs[2].value : '';
+  var duration = inputs[3] ? inputs[3].value : '';
+  var type     = inputs[4] ? inputs[4].value : '';
+  var address  = inputs[5] ? inputs[5].value : '';
+  var priority = inputs[6] ? inputs[6].value : 'medium';
+  var notes    = inputs[7] ? inputs[7].value : '';
+  return { name: name.trim(), client: client.trim(), phone: phone.trim(),
+           duration: duration.trim(), type: type.trim(), address: address.trim(),
+           priority: priority, notes: notes.trim() };
+}
+
+function ocrConfirmImport() {
+  var list = document.getElementById('ocrCardsList');
+  if (!list) return;
+  var cards = list.querySelectorAll('.ocr-card.ocr-card-checked');
+  if (!cards.length) { toast('⚠ Sélectionnez au moins un travail'); return; }
+  var added = 0;
+  cards.forEach(function(card) {
+    var data = _ocrReadCard(card);
+    if (!data.name) return;
+    _workBank.push({
+      id: _wbNewId(),
+      name: data.name,
+      client: data.client,
+      phone: data.phone,
+      email: '',
+      address: data.address,
+      type: data.type,
+      duration: data.duration,
+      priority: data.priority,
+      notes: data.notes,
+      flexible: false,
+      indoor: null,
+      photos: []
+    });
+    added++;
+  });
+  if (added) {
+    saveWorkBank();
+    renderBanqueTravaux();
+    closeModal('importOcrOverlay');
+    toast('✓ ' + added + ' travail' + (added > 1 ? 's ajoutés' : ' ajouté') + ' à la banque');
+  } else {
+    toast('⚠ Aucun travail valide à ajouter');
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════

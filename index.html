@@ -1059,11 +1059,43 @@
     .wt-day.wt-warn::before  { background: var(--orange); }
     .wt-day.wt-bad::before   { background: var(--red); }
     .wt-day.wt-today {
-      border-color: rgba(118,150,255,0.40);
-      background: rgba(118,150,255,0.07);
-      padding: 16px var(--s4);
+      border-color: rgba(118,150,255,0.45);
+      background: linear-gradient(135deg, rgba(118,150,255,0.13) 0%, rgba(118,150,255,0.05) 100%);
+      padding: 20px var(--s5);
     }
-    .wt-day.wt-today::before { background: var(--tint); width: 4px; }
+    .wt-day.wt-today::before { background: var(--tint); width: 5px; }
+    .wt-today-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .wt-today-label {
+      font-size: 22px; font-weight: 900;
+      color: var(--tint); letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .wt-today-date {
+      font-size: 13px; font-weight: 500;
+      color: var(--t-3); margin-top: 3px;
+      text-transform: capitalize;
+    }
+    .wt-today-wx {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wt-today-wx-icon { font-size: 36px; line-height: 1; }
+    .wt-today-wx-info { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .wt-today-wx-temp { font-size: 17px; font-weight: 800; color: var(--t-1); }
+    .wt-today-wx-label { font-size: 11px; font-weight: 500; color: var(--t-3); }
+    .wt-today-wx-sub { font-size: 11px; font-weight: 600; color: var(--orange); }
+    .wt-today-jobs { display: flex; flex-direction: column; gap: 6px; }
+    .wt-today-jobs .wt-job-pill {
+      font-size: 15px; font-weight: 700;
+      padding: 10px 14px;
+      background: rgba(118,150,255,0.12);
+      border: 1px solid rgba(118,150,255,0.20);
+    }
+    .wt-today-jobs .wt-no-jobs {
+      font-size: 13px; color: var(--t-4); font-style: italic;
+    }
     .wt-day-head {
       display: flex; align-items: center;
       justify-content: space-between;
@@ -5185,22 +5217,42 @@ function renderDayStrip() {
 
     var wxCls = st.level !== 'ok' ? ' wt-wx-' + st.level : '';
     var wxSubHtml = wxSub ? '<span class="wt-wx-sub">' + wxSub + '</span>' : '';
-    entry.innerHTML =
-        '<div class="wt-day-head">'
-      +   '<div class="wt-day-info">'
-      +     '<span class="wt-day-name">' + dayName + '</span>'
-      +     '<span class="wt-day-date">' + dateStr + '</span>'
-      +   '</div>'
-      +   '<div class="wt-wx' + wxCls + '">'
-      +     '<span class="wt-wx-icon">' + wxMeteoIcon + '</span>'
-      +     '<div class="wt-wx-info">'
-      +       '<span class="wt-wx-temp">' + wxTempStr + '</span>'
-      +       '<span class="wt-wx-label">' + wxMeteoLabel + '</span>'
-      +       wxSubHtml
-      +     '</div>'
-      +   '</div>'
-      + '</div>'
-      + '<div class="wt-jobs">' + jobsHtml + '</div>';
+
+    if (isToday) {
+      entry.innerHTML =
+          '<div class="wt-today-header">'
+        +   '<div>'
+        +     '<div class="wt-today-label">Aujourd\'hui</div>'
+        +     '<div class="wt-today-date">' + DAYS_L[d.date.getDay()] + ' ' + d.date.getDate() + ' ' + MONTHS_FULL[d.date.getMonth()] + '</div>'
+        +   '</div>'
+        +   '<div class="wt-today-wx">'
+        +     '<span class="wt-today-wx-icon">' + wxMeteoIcon + '</span>'
+        +     '<div class="wt-today-wx-info">'
+        +       '<span class="wt-today-wx-temp">' + wxTempStr + '</span>'
+        +       '<span class="wt-today-wx-label">' + wxMeteoLabel + '</span>'
+        +       (wxSub ? '<span class="wt-today-wx-sub">' + wxSub + '</span>' : '')
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="wt-today-jobs">' + jobsHtml + '</div>';
+    } else {
+      entry.innerHTML =
+          '<div class="wt-day-head">'
+        +   '<div class="wt-day-info">'
+        +     '<span class="wt-day-name">' + dayName + '</span>'
+        +     '<span class="wt-day-date">' + dateStr + '</span>'
+        +   '</div>'
+        +   '<div class="wt-wx' + wxCls + '">'
+        +     '<span class="wt-wx-icon">' + wxMeteoIcon + '</span>'
+        +     '<div class="wt-wx-info">'
+        +       '<span class="wt-wx-temp">' + wxTempStr + '</span>'
+        +       '<span class="wt-wx-label">' + wxMeteoLabel + '</span>'
+        +       wxSubHtml
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="wt-jobs">' + jobsHtml + '</div>';
+    }
 
     entry.onclick = (function(i) { return function() { openDayDetail(i); }; })(idx);
     strip.appendChild(entry);

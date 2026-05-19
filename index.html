@@ -3454,11 +3454,6 @@
       </div>
     </div>
     <div class="fg">
-      <label>Type de travail</label>
-      <input type="text" id="typeSearch" class="type-search" placeholder="Chercher un type… (terrasse, toiture…)" autocomplete="off" autocorrect="off" spellcheck="false" oninput="filterTypeGrid(this.value)">
-      <div class="type-grid" id="typeGrid"></div>
-    </div>
-    <div class="fg">
       <label>Durée</label>
       <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
@@ -8450,8 +8445,6 @@ function openAddTask(dayIdx) {
   document.getElementById('tMaxRain').value  = '';
   document.getElementById('tMaxWind').value  = '';
   buildTypeGrid();
-  var firstTypeBtn = document.querySelector('#typeGrid .type-btn');
-  if (firstTypeBtn) firstTypeBtn.classList.add('sel');
   var dateValue = '';
   if (typeof dayIdx === 'string' && dayIdx) dateValue = dayIdx;
   else if (typeof dayIdx === 'number' && ST.forecast && ST.forecast[dayIdx]) dateValue = isoDate(ST.forecast[dayIdx].date);
@@ -8573,9 +8566,7 @@ function saveTask() {
   var scheduledDate = document.getElementById('tDate').value || '';
   var dayIdx = scheduledDate ? findForecastIndexByDate(scheduledDate) : null;
   var prio     = document.getElementById('tPrio').value;
-  var sel      = document.querySelector('.type-btn.sel');
   if (!name) { toast('⚠ Nom des travaux requis'); return; }
-  if (!sel)  { toast('⚠ Sélectionnez un type de travail'); return; }
   var status = scheduledDate ? 'scheduled' : 'backlog';
   var source = _taskSource || 'manual';
   function _num(id) {
@@ -8598,7 +8589,7 @@ function saveTask() {
     description: description,
     gallery: _taskGallery.slice(0),
     time: time, scheduledTime: time, scheduledDate: scheduledDate,
-    type: sel.dataset.type, priority: prio, dayIndex: dayIdx, status: status, source: source,
+    type: (parseSmartInput(name).type || 'renovation'), priority: prio, dayIndex: dayIdx, status: status, source: source,
     weather: hasW ? weather : null,
   };
   if (_taskPhotoPreview !== null) patch.photoPreview = _taskPhotoPreview;
@@ -8649,7 +8640,6 @@ function saveTaskAsModel() {
   var nameEl = document.getElementById('tName');
   var name = nameEl ? nameEl.value.trim() : '';
   if (!name) { toast('⚠ Titre requis pour enregistrer un modèle'); if (nameEl) nameEl.focus(); return; }
-  var sel = document.querySelector('.type-btn.sel');
   var rec = {
     id:       _wbNewId(),
     name:     name,
@@ -8657,7 +8647,7 @@ function saveTaskAsModel() {
     phone:    '',
     email:    '',
     address:  (document.getElementById('tLocation').value || '').trim(),
-    type:     sel ? sel.dataset.type : '',
+    type:     parseSmartInput(name).type || 'renovation',
     duration: (document.getElementById('tDuration').value || '').trim(),
     priority: document.getElementById('tPrio').value || 'medium',
     notes:    ((document.getElementById('tDesc') || {}).value || '').trim(),

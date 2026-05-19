@@ -3905,7 +3905,8 @@ function getMergedJobTypes() {
 }
 
 function buildCustomRules(j) {
-  var rules = [
+  var isIndoor = j.rain != null && j.rain >= 100;
+  var rules = isIndoor ? [] : [
     { t: function(w) { return w.weathercode >= 95; }, l:'danger', m:'Orage — arrêt travaux' },
   ];
   if (j.rain != null) {
@@ -7258,13 +7259,22 @@ function parseSmartInput(originalText) {
   }
   if (!result.type) {
     var lowerWork = work.toLowerCase();
+    var _matchedAlias = null;
     Object.keys(jobAliases).forEach(function(k) {
       if (result.type) return;
       var aliases = jobAliases[k];
       for (var ai = 0; ai < aliases.length; ai++) {
-        if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
+        if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) {
+          result.type = k;
+          _matchedAlias = aliases[ai];
+          break;
+        }
       }
     });
+    // Strip the matched alias word from work so it doesn't contaminate client detection
+    if (_matchedAlias) {
+      work = work.replace(new RegExp('\\b' + _matchedAlias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+    }
   }
   // No default type fallback — leave null when nothing found
 
@@ -7295,7 +7305,7 @@ function parseSmartInput(originalText) {
     }
     if (!result.client) {
       // 3. Fallback: Title Case two-word pattern (desktop STT)
-      var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\b/);
+      var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}(?=[^A-Za-zÀ-ÖØ-öø-ÿ']|$)/);
       if (titleM) {
         result.client = titleM[0].trim();
         work = work.replace(titleM[0], ' ');

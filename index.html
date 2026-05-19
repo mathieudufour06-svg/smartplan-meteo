@@ -5100,7 +5100,7 @@ function renderDayStrip() {
   }
   var jobsDef = getMergedJobTypes();
   var todayIso = isoDate(new Date());
-  fc.forEach(function(d, idx) {
+  fc.slice(0, 7).forEach(function(d, idx) {
     var dIso = isoDate(d.date);
     var isToday = dIso === todayIso;
     var st = simpleStatus(d);

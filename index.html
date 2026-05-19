@@ -7092,8 +7092,14 @@ function parseSmartInput(originalText) {
   var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
   if (addr) result.location = addr[1].trim();
   if (!result.location) {
+    // "au/à + civic number + street name" without keyword (e.g. "au 250 Painchaut Montréal")
+    // Negative lookahead avoids matching "au 3 heures" (time/duration words)
+    var addrCivic = clip(/\b(?:au|à)\s+(\d{1,5}\s+(?!(?:h(?:eure)?s?|hrs?|min(?:ute)?s?|jours?)\b)[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}){0,4})\b/i);
+    if (addrCivic) result.location = addrCivic[1].trim();
+  }
+  if (!result.location) {
     // "à/au/dans [City/Neighbourhood]" without civic number
-    var addrCity = clip(/\b(?:à|au|dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-' ]{1,30})\b/i);
+    var addrCity = clip(/\b(?:dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-' ]{1,30})\b/i);
     if (addrCity) result.location = addrCity[1].trim();
   }
 
@@ -7158,6 +7164,12 @@ function parseSmartInput(originalText) {
     }
   }
 
+  var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
+  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
+  // "Nh de job/travail" → duration — MUST run before time regex to prevent "3 h" being parsed as 03:00
+  var dJob = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\s+de\s+(?:job|travail|boulot|ouvrage)\b/i);
+  if (dJob) result.duration = dJob[1].replace(',', '.') + 'h';
+
   var tm = clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
   if (tm) {
     var hh = parseInt(tm[1], 10), mm2 = tm[2] ? parseInt(tm[2], 10) : 0;
@@ -7170,9 +7182,7 @@ function parseSmartInput(originalText) {
     else if (/\bce\s+soir\b/i.test(work))                                      result.time = '18:00';
   }
 
-  var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
-  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
-  var d1 = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
+  var d1 = !result.duration && clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
   if (d1) result.duration = d1[1].replace(',', '.') + 'h';
   if (!result.duration) {
     var nKeys = Object.keys(frNums).join('|');
@@ -7212,7 +7222,7 @@ function parseSmartInput(originalText) {
     hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
     pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
     excavation: ['excavation','terrassement','fouille','tranchée','deblai','remblai','creusage'],
-    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','coupe','abattage','tonte','pelouse','landscape','haie','fleur'],
+    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','coupe','abattage','tonte','pelouse','landscape','haie','fleur','emondage','élagage','elagage','émondag','taille'],
     electrique: ['électrique','electrique','électricité','electricite','câblage','cablage','panneau','circuit','luminaire'],
     toiture:    ['toiture','toit','couverture','bardeau','membrane','gouttière','gutters','shingles'],
     peinture:   ['peinture','peindre','enduit','revêtement'],
@@ -7255,7 +7265,10 @@ function parseSmartInput(originalText) {
   var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/i;
   var cm = work.match(contextRe);
   if (cm) {
-    result.client = cm[1].trim().replace(/^(.)/, function(c) { return c.toUpperCase(); });
+    result.client = cm[1].trim()
+      .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')  // strip trailing prepositions
+      .trim()
+      .replace(/^(.)/, function(c) { return c.toUpperCase(); });
     work = work.replace(cm[0], ' ');
   } else {
     // 2. Start-of-text "Firstname Lastname," pattern (handles STT lowercase)
@@ -7284,6 +7297,8 @@ function parseSmartInput(originalText) {
 
   // Strip the "type" keyword if still present (used as voice command, not part of title)
   work = work.replace(/\btype\b/gi, " ");
+  // Strip duration qualifiers that may remain (e.g. "de job", "de travail")
+  work = work.replace(/\bde\s+(?:job|travail|boulot|ouvrage)\b/gi, ' ');
   var leftover = work.replace(/\s+/g, ' ').trim();
   leftover = leftover.replace(/^[\s,\.\-]+|[\s,\.\-]+$/g, '');
   leftover = leftover.replace(/^(?:type|à|de|et|du|le|la|les|au|aux|en|d[''])\s+/i, '');

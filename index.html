@@ -274,6 +274,17 @@
       gap: var(--s4);
     }
     .greet-text { flex: 1; min-width: 0; }
+    .greet-today-date {
+      font-size: 22px; font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--t-1);
+      margin-bottom: 6px;
+      text-transform: capitalize;
+    }
+    .greet-title-row {
+      display: flex; align-items: baseline; gap: 10px;
+      margin-bottom: 4px;
+    }
     .greet-eyebrow {
       display: block;
       font-size: 12px; font-weight: 700;
@@ -283,36 +294,33 @@
       margin-bottom: var(--s2);
     }
     .greet-title {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.035em;
       line-height: 1.05;
       color: var(--t-1);
-      margin-bottom: var(--s2);
+      margin: 0;
     }
     .greet-title .accent {
       background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-   }
-    .smartplan-label{
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:0.18em;
-  text-transform:uppercase;
-  color:#C9A96E;
-  margin-bottom:10px;
-  opacity:0.95;
-}
-
-.greet-description{
-  font-size:13px;
-  color:rgba(255,255,255,0.58);
-  margin-top:8px;
-  line-height:1.4;
-  max-width:220px;
-}
+    }
+    .smartplan-label {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #C9A96E;
+      opacity: 0.95;
+    }
+    .greet-description {
+      font-size: 13px;
+      color: rgba(255,255,255,0.58);
+      margin-top: 6px;
+      line-height: 1.4;
+      max-width: 220px;
+    }
     .greet-sub {
       font-size: 15px; font-weight: 500;
       color: var(--t-3);
@@ -3153,21 +3161,20 @@
       <div class="greeting">
         <div class="greet-text">
 
-  <div class="smartplan-label">
-    SmartPlan
+  <div class="greet-today-date" id="greetTodayDate">—</div>
+
+  <div class="greet-title-row">
+    <h1 class="greet-title">
+      Bonjour<span class="accent" id="greetName"></span>
+    </h1>
+    <div class="smartplan-label">SmartPlan</div>
   </div>
 
   <span class="greet-eyebrow" id="greetEyebrow"></span>
 
-  <h1 class="greet-title">
-    Bonjour<span class="accent" id="greetName"></span>
-  </h1>
-
   <div class="greet-description">
     Planification intelligente selon la météo
   </div>
-
-  <div class="greet-sub" id="greetSub">—</div>
 
 </div>
         <button type="button" class="wx-widget" id="miniWeather" onclick="openWeatherDetail()" aria-label="Voir la météo détaillée">
@@ -5058,7 +5065,8 @@ function renderGreeting() {
     titleEl.firstChild.nodeValue = greeting;
   }
   var dayLabel = DAYS_L[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS_FULL[now.getMonth()];
-  document.getElementById('greetSub').textContent = dayLabel;
+  var dateEl = document.getElementById('greetTodayDate');
+  if (dateEl) dateEl.textContent = dayLabel;
   // Eyebrow: short status based on weather
   var eb = document.getElementById('greetEyebrow');
   if (ST.forecast && ST.forecast[0]) {

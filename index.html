@@ -2609,8 +2609,9 @@
       vertical-align: middle;
     }
 
+    .dj-actions { display: flex; gap: 8px; }
     .dj-edit {
-      width: 100%; padding: 11px 14px;
+      flex: 1; padding: 11px 14px;
       background: var(--surface-2);
       border: 1px solid var(--line-1);
       border-radius: var(--r-md);
@@ -2619,6 +2620,16 @@
       transition: background var(--t-fast) var(--ease);
     }
     .dj-edit:active { background: var(--surface-3); }
+    .dj-to-bank {
+      flex-shrink: 0; padding: 11px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-md);
+      color: var(--t-3); font-size: 12px; font-weight: 600;
+      min-height: 44px; white-space: nowrap;
+      transition: background var(--t-fast) var(--ease);
+    }
+    .dj-to-bank:active { background: var(--surface-3); }
 
     /* Compact weather */
     .dd-w-pill { padding: 5px 11px; font-size: 11px; }
@@ -3451,6 +3462,7 @@
     <div class="mf">
       <button class="btn-cancel" onclick="closeModal('taskOverlay')">Annuler</button>
       <button class="btn-del" id="btnDel" style="display:none" onclick="showDelConfirm()">🗑</button>
+      <button class="btn-secondary" id="btnToBank" style="display:none" onclick="taskToBankFromEdit()" title="Retirer du calendrier et remettre en banque">↩ Banque</button>
       <button class="btn-secondary" id="btnSaveModel" onclick="saveTaskAsModel()" style="display:none">+ Modèle</button>
       <button class="btn-primary" id="btnSave" onclick="saveTask()">Ajouter →</button>
     </div>
@@ -4907,6 +4919,7 @@ var _workBank = [];
 var _wbEditingId = null;
 var _wbCurrentIndoor = null; // null = unset, true = indoor, false = outdoor
 var _wbPhotos = [];          // array of dataURLs (max WB_PHOTO_MAX)
+var _fromBankId = null;      // ID of the bank item being used to create a task (auto-removes from bank on save)
 var WB_PHOTO_MAX_DIM = 1024;
 var WB_PHOTO_JPEG_Q  = 0.72;
 var WB_PHOTO_MAX     = 4;
@@ -5245,6 +5258,7 @@ function useWorkBankItem(id) {
   var item = _workBank.find(function(w) { return w.id === id; });
   if (!item) return;
   openAddTask(null);
+  _fromBankId = id; // set after openAddTask (which resets it to null)
   // Pre-fill after openAddTask resets the form
   setTimeout(function() {
     var nameEl   = document.getElementById('tName');
@@ -6363,9 +6377,12 @@ function openDayDetail(di) {
   html += '</div></details>';
 
   document.getElementById('ddContent').innerHTML = html;
-  // Wire up edit buttons + photo open
+  // Wire up edit + "remise en banque" buttons
   document.querySelectorAll('#ddContent [data-edit-task]').forEach(function(b) {
     b.addEventListener('click', function() { closeModal('dayDetailOverlay'); openEditTask(b.dataset.editTask); });
+  });
+  document.querySelectorAll('#ddContent [data-task-to-bank]').forEach(function(b) {
+    b.addEventListener('click', function() { taskToBank(b.dataset.taskToBank); });
   });
   openModal('dayDetailOverlay');
   // Async: enrich each job card with weather at its own address
@@ -6478,8 +6495,11 @@ function _ddBuildJobDossier(t, day, jobsDef) {
        +    '<span>' + esc(res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller')) + '</span>'
        +  '</div>';
 
-  // Edit CTA
-  html += '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier ces travaux →</button>';
+  // Actions
+  html += '<div class="dj-actions">'
+       +    '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier →</button>'
+       +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">↩ Banque</button>'
+       +  '</div>';
 
   html += '</article>';
   return html;
@@ -7950,11 +7970,46 @@ function openAddTask(dayIdx) {
   setTaskMode('manual');
   document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
   document.getElementById('btnDel').style.display       = 'none';
+  document.getElementById('btnToBank').style.display    = 'none';
   document.getElementById('btnSaveModel').style.display = '';
   document.getElementById('btnSave').textContent        = 'Ajouter →';
   document.getElementById('delConfirm').style.display   = 'none';
+  _fromBankId = null;
   openModal('taskOverlay');
   setTimeout(function() { document.getElementById('tName').focus(); }, 120);
+}
+
+function taskToBank(id) {
+  var task = ST.tasks.find(function(t) { return t.id === id; });
+  if (!task) return;
+  var rec = {
+    id: _wbNewId(),
+    name:     task.name     || task.title || '',
+    client:   task.client   || '',
+    phone:    task.phone    || '',
+    email:    task.email    || '',
+    address:  task.location || '',
+    type:     task.type     || '',
+    duration: task.duration || '',
+    priority: task.priority || 'medium',
+    notes:    task.description || '',
+    flexible: false,
+    indoor:   null,
+    photos:   Array.isArray(task.gallery) ? task.gallery.slice() : []
+  };
+  _workBank.push(rec);
+  _saveWorkBankSafe();
+  ST.tasks = ST.tasks.filter(function(t) { return t.id !== id; });
+  saveST();
+  toast('✓ Travaux remis en banque');
+  closeModal('dayDetailOverlay');
+  renderActive();
+}
+
+function taskToBankFromEdit() {
+  if (!_editingId) return;
+  taskToBank(_editingId);
+  closeModal('taskOverlay');
 }
 
 function openEditTask(id, title) {
@@ -7991,6 +8046,7 @@ function openEditTask(id, title) {
     document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
   }
   document.getElementById('btnDel').style.display       = '';
+  document.getElementById('btnToBank').style.display    = '';
   document.getElementById('btnSaveModel').style.display = 'none';
   document.getElementById('btnSave').textContent        = 'Enregistrer';
   document.getElementById('delConfirm').style.display   = 'none';
@@ -8071,6 +8127,12 @@ function saveTask() {
     toast('✓ Travaux ajoutés');
   }
   saveST();
+  // If task came from bank, remove it from the bank
+  if (_fromBankId) {
+    _workBank = _workBank.filter(function(w) { return w.id !== _fromBankId; });
+    _saveWorkBankSafe();
+    _fromBankId = null;
+  }
   // Background geocode — store lat/lon on task for per-job local weather
   if (location && _savedTaskId) {
     (function(taskId, addr) {

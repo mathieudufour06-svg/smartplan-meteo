@@ -3008,6 +3008,51 @@
       background: none; border: none; cursor: pointer; margin-top: var(--s4);
       text-align: center; padding: 0;
     }
+
+    /* ── Weather periods bar ── */
+    .wx-periods-bar { display:flex; gap:6px; padding:10px 16px; overflow-x:auto; }
+    .wx-period { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 12px; border-radius:10px; background:var(--surface-2); border:2px solid transparent; cursor:pointer; min-width:70px; flex-shrink:0; transition:border-color 0.15s; }
+    .wx-period.active { border-color:var(--accent,#3b82f6); background:var(--surface-3,var(--surface-2)); }
+    .wp-icon { font-size:22px; }
+    .wp-label { font-size:10px; color:var(--t-3); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+    .wp-temp { font-size:15px; font-weight:700; color:var(--t-1); }
+    .wp-rain { font-size:11px; color:#60a5fa; font-weight:600; }
+    .wx-period-detail { display:flex; gap:16px; padding:8px 16px 4px; font-size:12px; color:var(--t-3); flex-wrap:wrap; }
+
+    /* ── Weather detail modal ── */
+    .wx-detail-card { padding:0; overflow:hidden; max-height:90vh; overflow-y:auto; }
+    .wx-detail-header { padding:16px 20px 8px; display:flex; flex-direction:column; gap:2px; position:relative; }
+    .wx-detail-header button { position:absolute; top:12px; right:16px; background:none; border:none; font-size:20px; color:var(--t-3); cursor:pointer; padding:4px; }
+    .wx-detail-city { font-size:18px; font-weight:700; color:var(--t-1); margin:0; }
+    .wx-detail-date-line { font-size:13px; color:var(--t-3); }
+    .wx-detail-now { display:flex; align-items:center; gap:16px; padding:12px 20px; border-bottom:1px solid var(--line-1); }
+    .wx-big-icon { font-size:56px; line-height:1; }
+    .wx-big-temp { font-size:52px; font-weight:700; color:var(--t-1); line-height:1; }
+    .wx-detail-meta { display:flex; flex-direction:column; gap:3px; color:var(--t-2); font-size:13px; }
+    .wx-4periods { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:12px 16px; border-bottom:1px solid var(--line-1); }
+    .wx-4p-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 6px; background:var(--surface-2); border-radius:10px; }
+    .wx-4p-label { font-size:10px; color:var(--t-3); font-weight:600; text-transform:uppercase; }
+    .wx-4p-icon  { font-size:24px; }
+    .wx-4p-temp  { font-size:14px; font-weight:700; color:var(--t-1); }
+    .wx-4p-rain  { font-size:11px; color:#60a5fa; font-weight:600; }
+    .wx-detail-extras { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:10px 16px; border-bottom:1px solid var(--line-1); }
+    .wx-extra-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 4px; background:var(--surface-2); border-radius:8px; }
+    .wx-extra-icon { font-size:18px; }
+    .wx-extra-item span:nth-child(2) { font-size:12px; font-weight:700; color:var(--t-1); }
+    .wx-extra-item span:nth-child(3) { font-size:10px; color:var(--t-3); }
+    .wx-14day-list { padding:10px 16px 20px; display:flex; flex-direction:column; gap:4px; }
+    .wx-14d-row { display:flex; align-items:center; padding:8px 10px; border-radius:8px; background:var(--surface-2); gap:8px; }
+    .wx-14d-row.today { background:var(--surface-3,var(--surface-2)); border:1px solid var(--accent,#3b82f6); }
+    .wx-14d-day  { width:70px; font-size:12px; font-weight:600; color:var(--t-2); }
+    .wx-14d-icon { font-size:20px; width:28px; text-align:center; }
+    .wx-14d-bar  { flex:1; }
+    .wx-14d-temps{ display:flex; gap:8px; margin-left:auto; font-size:13px; }
+    .wx-14d-max  { font-weight:700; color:var(--t-1); }
+    .wx-14d-min  { color:var(--t-3); }
+    .wx-14d-rain { font-size:11px; color:#60a5fa; font-weight:600; width:36px; text-align:right; }
+
+    /* ── Calendar 2-week label ── */
+    .cal-week-label { font-size:10px; font-weight:700; color:var(--t-4); text-transform:uppercase; letter-spacing:0.06em; padding:6px 0 2px; grid-column:1/-1; }
   </style>
 </head>
 <body>
@@ -4092,6 +4137,7 @@ function deleteCustomJob(key) {
 var ST = {
   loc:      { lat: 45.3584, lon: -73.2728, name: 'Saint-Jean-sur-Richelieu' },
   forecast: null,
+  hourly:   null,
   tasks:    [],
 };
 
@@ -4138,21 +4184,24 @@ async function fetchForecast(lat, lon, startDate) {
   var ctrl = new AbortController();
   var tid  = setTimeout(function() { ctrl.abort(); }, 9000);
   try {
-    var dateParam = '&forecast_days=7';
+    var dateParam = '&forecast_days=14';
     if (startDate) {
       var sd = new Date(startDate + 'T12:00:00');
-      var ed = new Date(sd); ed.setDate(sd.getDate() + 6);
+      var ed = new Date(sd); ed.setDate(sd.getDate() + 13);
       dateParam = '&start_date=' + startDate + '&end_date=' + isoDate(ed);
     }
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
+      + ',sunrise,sunset,uv_index_max'
+      + '&hourly=temperature_2m,apparent_temperature,weathercode,precipitation_probability,windspeed_10m,relativehumidity_2m,is_day'
+      + '&models=gem_seamless'
       + '&timezone=auto' + dateParam;
     var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var d    = await res.json();
-    return d.daily.time.map(function(dt, i) {
+    var days = d.daily.time.map(function(dt, i) {
       return {
         date:          new Date(dt + 'T12:00:00'),
         weathercode:   d.daily.weathercode[i] != null ? d.daily.weathercode[i] : 3,
@@ -4161,8 +4210,22 @@ async function fetchForecast(lat, lon, startDate) {
         precipitation: Math.round(d.daily.precipitation_sum[i]  != null ? d.daily.precipitation_sum[i] : 0),
         windspeed:     Math.round(d.daily.windspeed_10m_max[i]  != null ? d.daily.windspeed_10m_max[i] : 10),
         rain_prob:     Math.round(d.daily.precipitation_probability_max[i] != null ? d.daily.precipitation_probability_max[i] : 0),
+        sunrise:       d.daily.sunrise  ? d.daily.sunrise[i]   : null,
+        sunset:        d.daily.sunset   ? d.daily.sunset[i]    : null,
+        uv_index_max:  d.daily.uv_index_max ? d.daily.uv_index_max[i] : null,
       };
     });
+    var rawHourly = d.hourly ? {
+      time:                    d.hourly.time,
+      temperature_2m:          d.hourly.temperature_2m,
+      apparent_temperature:    d.hourly.apparent_temperature,
+      weathercode:             d.hourly.weathercode,
+      precipitation_probability: d.hourly.precipitation_probability,
+      windspeed_10m:           d.hourly.windspeed_10m,
+      relativehumidity_2m:     d.hourly.relativehumidity_2m,
+      is_day:                  d.hourly.is_day,
+    } : null;
+    return { days: days, hourly: rawHourly };
   } finally { clearTimeout(tid); }
 }
 
@@ -4176,10 +4239,77 @@ function mockForecast() {
     { weathercode:  2, temp_max:21, temp_min:11, precipitation:2,  windspeed:18, rain_prob:30 },
     { weathercode:  0, temp_max:25, temp_min:13, precipitation:0,  windspeed:9,  rain_prob:5  },
     { weathercode:  1, temp_max:23, temp_min:12, precipitation:0,  windspeed:10, rain_prob:8  },
+    { weathercode:  2, temp_max:20, temp_min:11, precipitation:1,  windspeed:15, rain_prob:20 },
+    { weathercode:  0, temp_max:23, temp_min:12, precipitation:0,  windspeed:10, rain_prob:5  },
+    { weathercode:  3, temp_max:18, temp_min:9,  precipitation:3,  windspeed:22, rain_prob:45 },
+    { weathercode: 61, temp_max:15, temp_min:8,  precipitation:8,  windspeed:28, rain_prob:75 },
+    { weathercode:  1, temp_max:22, temp_min:11, precipitation:0,  windspeed:12, rain_prob:10 },
+    { weathercode:  0, temp_max:24, temp_min:13, precipitation:0,  windspeed:9,  rain_prob:5  },
+    { weathercode:  2, temp_max:21, temp_min:12, precipitation:1,  windspeed:14, rain_prob:15 },
   ].map(function(s, i) {
     var d = new Date(now); d.setDate(now.getDate() + i);
     return Object.assign({}, s, { date: d });
   });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HOURLY PERIOD PARSER
+════════════════════════════════════════════════════════════════ */
+function parseHourlyPeriods(hourly, dateIso) {
+  if (!hourly || !hourly.time) return null;
+  var periods = { matin:{h:[]}, apremidi:{h:[]}, soir:{h:[]}, nuit:{h:[]} };
+  // Compute previous day ISO for nuit 0h-5h
+  var prevDate = new Date(dateIso + 'T00:00:00');
+  prevDate.setDate(prevDate.getDate() - 1);
+  var prevIso = isoDate(prevDate);
+
+  for (var i = 0; i < hourly.time.length; i++) {
+    var t = hourly.time[i];
+    var isToday   = t.startsWith(dateIso);
+    var isPrevDay = t.startsWith(prevIso);
+    if (!isToday && !isPrevDay) continue;
+    var hour = parseInt(t.slice(11, 13), 10);
+    var entry = {
+      temp:     Math.round(hourly.temperature_2m[i]),
+      feels:    Math.round(hourly.apparent_temperature[i]),
+      code:     hourly.weathercode[i],
+      rain_prob: hourly.precipitation_probability ? (hourly.precipitation_probability[i] || 0) : 0,
+      wind:     Math.round(hourly.windspeed_10m[i]),
+      humid:    hourly.relativehumidity_2m ? hourly.relativehumidity_2m[i] : null,
+      is_day:   hourly.is_day ? hourly.is_day[i] : 1,
+    };
+    if (isToday) {
+      if      (hour >= 6  && hour <= 11) periods.matin.h.push(entry);
+      else if (hour >= 12 && hour <= 17) periods.apremidi.h.push(entry);
+      else if (hour >= 18 && hour <= 21) periods.soir.h.push(entry);
+      else if (hour >= 22)               periods.nuit.h.push(entry);
+    } else {
+      // prev day hours 0-5 belong to nuit of dateIso
+      if (hour >= 0 && hour <= 5) periods.nuit.h.push(entry);
+    }
+  }
+  var PERIODS_META = [
+    { key:'matin',    label:'Matin',      hours:'6h–12h'  },
+    { key:'apremidi', label:'Après-midi', hours:'12h–18h' },
+    { key:'soir',     label:'Soir',       hours:'18h–22h' },
+    { key:'nuit',     label:'Nuit',       hours:'22h–6h'  },
+  ];
+  var result = {};
+  PERIODS_META.forEach(function(pm) {
+    var arr = periods[pm.key].h;
+    if (!arr.length) { result[pm.key] = null; return; }
+    var mid      = arr[Math.floor(arr.length / 2)];
+    var maxRain  = arr.reduce(function(m, e) { return Math.max(m, e.rain_prob); }, 0);
+    var codes    = arr.map(function(e) { return e.code; });
+    var worstCode = codes.reduce(function(a, b) { return b > a ? b : a; }, codes[0]);
+    result[pm.key] = {
+      label: pm.label, hours: pm.hours,
+      temp: mid.temp, feels: mid.feels, wind: mid.wind,
+      humid: mid.humid, is_day: mid.is_day,
+      code: worstCode, rain_prob: maxRain,
+    };
+  });
+  return result;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -8075,15 +8205,19 @@ async function setLoc(lat, lon, name) {
 async function loadWeather() {
   setDot('loading');
   ST.forecast = null;
+  ST.hourly   = null;
   renderActive();
   try {
     var dInput = document.getElementById('dateStart');
     var startDate = (dInput && dInput.value) ? dInput.value : null;
-    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
+    var result = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
+    ST.forecast = result.days;
+    ST.hourly   = result.hourly;
     setDot('ok');
   } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);
     ST.forecast = mockForecast();
+    ST.hourly   = null;
     setDot('offline');
     toast('⚠ Météo simulée — vérifiez la connexion');
   }

@@ -7010,7 +7010,7 @@ function _buildVoicePreviewHTML(parsed) {
     var d = new Date(parsed.date + 'T12:00:00');
     var longDaysFr = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     var monthsFrSh = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-    dateStr = longDaysFr[d.getDay()] + ' ' + d.getDate() + ' ' + monthsFrSh[d.getMonth()];
+    dateStr = longDaysFr[d.getDay()] + ' ' + d.getDate() + ' ' + monthsFrSh[d.getMonth()] + ' ' + d.getFullYear();
   } else if (typeof parsed.dayIndex === 'number') {
     var target = new Date(); target.setDate(target.getDate() + parsed.dayIndex);
     var longDaysFr2 = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
@@ -7095,11 +7095,17 @@ function parseSmartInput(originalText) {
     // "au/à + civic number + street name" without keyword (e.g. "au 250 Painchaut Montréal")
     // Negative lookahead avoids matching "au 3 heures" (time/duration words)
     var addrCivic = clip(/\b(?:au|à)\s+(\d{1,5}\s+(?!(?:h(?:eure)?s?|hrs?|min(?:ute)?s?|jours?)\b)[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}){0,4})\b/i);
-    if (addrCivic) result.location = addrCivic[1].trim();
+    if (addrCivic) {
+      result.location = addrCivic[1].trim();
+      // Also grab a trailing city: "au 612 LaSalle à Montréal"
+      // Note: \b fails before accented chars like 'à', so use (?:^|\s) instead
+      var cityAppend = clip(/(?:^|\s)(?:à|au)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,})\b/i);
+      if (cityAppend) result.location += ', ' + cityAppend[1].trim();
+    }
   }
   if (!result.location) {
-    // "à/au/dans [City/Neighbourhood]" without civic number
-    var addrCity = clip(/\b(?:dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-' ]{1,30})\b/i);
+    // "à/au/dans/secteur [City]" without civic number
+    var addrCity = clip(/(?:^|\s)(?:à|au|dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,})\b/i);
     if (addrCity) result.location = addrCity[1].trim();
   }
 
@@ -7158,11 +7164,13 @@ function parseSmartInput(originalText) {
         var diffD = (found - todayD.getDay() + 7) % 7;
         if (diffD === 0 && nextWord) diffD = 7;
         result.dayIndex = diffD;
-        work = work.replace(new RegExp('\\b(' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')(?:\\s+prochain[e]?)?\\b', 'gi'), ' ');
-        work = work.replace(/\b(?:next|prochain|prochaine)\b/gi, ' ');
       }
+      work = work.replace(new RegExp('\\b(' + dayNamesFr.join('|') + '|' + dayNamesEn.join('|') + ')(?:\\s+prochain[e]?)?\\b', 'gi'), ' ');
+      work = work.replace(/\b(?:next|prochain|prochaine)\b/gi, ' ');
     }
   }
+  // Strip day names unconditionally (handles "mardi 6 avril" where date absorbs "6 avril" but not "mardi")
+  work = work.replace(/\b(?:dimanche|lundi|mardi|mercredi|jeudi|vendredi|samedi|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, ' ');
 
   var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
   work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');

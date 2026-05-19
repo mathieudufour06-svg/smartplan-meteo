@@ -4698,17 +4698,17 @@ function renderCalMonth() {
     html += dotsHtml;
     cell.innerHTML = html;
 
-    cell.onclick = (function(date, jobsCount) {
+    cell.onclick = (function(date, fcIndex) {
       return function() {
         _calActive = date;
-        if (jobsCount === 0) {
-          openNewJobSheet(isoDate(date), 'schedule');
+        renderCalMonth();
+        if (fcIndex !== null) {
+          openDayDetail(fcIndex);
         } else {
-          renderCalMonth();
-          renderCalMonthPreview();
+          openNewJobSheet(isoDate(date), 'schedule');
         }
       };
-    })(cellDate, dayJobs.length);
+    })(cellDate, fcIdx !== null ? fcIdx : null);
     grid.appendChild(cell);
   }
   renderCalMonthPreview();
@@ -8802,6 +8802,7 @@ async function setLoc(lat, lon, name) {
 ════════════════════════════════════════════════════════════════ */
 async function loadWeather() {
   setDot('loading');
+  toast('⟳ Actualisation de la météo…');
   ST.forecast = null;
   ST.hourly   = null;
   ST.current  = null;
@@ -8818,6 +8819,7 @@ async function loadWeather() {
     ST.hourly   = results[0].hourly;
     ST.current  = results[1];
     setDot('ok');
+    toast('✓ Météo mise à jour');
   } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);
     ST.forecast = mockForecast();

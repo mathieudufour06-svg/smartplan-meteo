@@ -3440,7 +3440,7 @@
     <button type="button" class="modal-close" onclick="closeModal('taskOverlay')" aria-label="Fermer">✕</button>
     <h3 id="taskModalTitle">Nouveaux travaux</h3>
     <div class="fg">
-      <label>Nom des travaux</label>
+      <label>Type de travaux</label>
       <input type="text" id="tName" placeholder="ex : Terrasse Tremblay" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
     </div>
     <div class="fg-row">
@@ -3749,7 +3749,7 @@
       <img id="photoPreview" alt="Aperçu de la photo">
     </div>
     <div class="fg">
-      <label>Nom des travaux</label>
+      <label>Type de travaux</label>
       <input type="text" id="photoName" placeholder="Titre des travaux" maxlength="60">
     </div>
     <div class="fg">
@@ -6494,7 +6494,7 @@ function _ocrBuildCard(job, idx) {
   card.innerHTML =
     '<div class="ocr-card-head">'
     + '<div class="ocr-card-check" onclick="_ocrToggleCard(this)">✓</div>'
-    + '<input class="ocr-card-name" type="text" placeholder="Nom du travail" value="' + _escAttr(job.name || '') + '" autocomplete="off" autocorrect="off" spellcheck="false">'
+    + '<input class="ocr-card-name" type="text" placeholder="Type de travaux" value="' + _escAttr(job.name || '') + '" autocomplete="off" autocorrect="off" spellcheck="false">'
     + '</div>'
     + '<div class="ocr-card-fields">'
     + '<div class="ocr-card-field"><label>Client</label><input type="text" placeholder="Nom du client" value="' + _escAttr(job.client || '') + '" autocomplete="off"></div>'
@@ -6558,7 +6558,7 @@ function ocrConfirmImport() {
   /* ── Schedule context: first card → task form, extras → bank ── */
   if (_ocrMode === 'schedule') {
     var first = _ocrReadCard(cards[0]);
-    if (!first.name) { toast('⚠ Nom du travail requis'); return; }
+    if (!first.name) { toast('⚠ Type de travaux requis'); return; }
 
     closeModal('importOcrOverlay');
     openAddTask(_ocrScheduleDate);
@@ -8114,7 +8114,7 @@ function createPhotoDraft() {
   var duration = document.getElementById('photoDuration').value.trim();
   var type     = document.getElementById('photoType').value;
   var prio     = document.getElementById('photoPrio').value;
-  if (!name) { toast('⚠ Nom des travaux requis'); return; }
+  if (!name) { toast('⚠ Type de travaux requis'); return; }
   var newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID()
     : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
@@ -8566,7 +8566,7 @@ function saveTask() {
   var scheduledDate = document.getElementById('tDate').value || '';
   var dayIdx = scheduledDate ? findForecastIndexByDate(scheduledDate) : null;
   var prio     = document.getElementById('tPrio').value;
-  if (!name) { toast('⚠ Nom des travaux requis'); return; }
+  if (!name) { toast('⚠ Type de travaux requis'); return; }
   var status = scheduledDate ? 'scheduled' : 'backlog';
   var source = _taskSource || 'manual';
   function _num(id) {

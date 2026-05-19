@@ -3051,6 +3051,28 @@
       text-align: center; padding: 0;
     }
 
+    /* ── Travaux planifiés — dashboard météo ── */
+    .wtg { margin-bottom: 10px; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line-1); }
+    .wtg-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--surface-2); }
+    .wtg-icon  { font-size: 16px; }
+    .wtg-label { flex: 1; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--t-2); }
+    .wtg-count { font-size: 12px; font-weight: 700; background: var(--surface-3,var(--surface-1)); border-radius: 10px; padding: 1px 8px; color: var(--t-3); }
+    .wtg-ok   .wtg-head { border-bottom: 2px solid var(--green); }
+    .wtg-warn .wtg-head { border-bottom: 2px solid var(--orange); }
+    .wtg-bad  .wtg-head { border-bottom: 2px solid var(--red); }
+    .wtg-list { display: flex; flex-direction: column; gap: 1px; background: var(--line-1); }
+    .wtc { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--surface-1); border: none; cursor: pointer; text-align: left; width: 100%; }
+    .wtc:active { background: var(--surface-2); }
+    .wtc-left { flex-shrink: 0; }
+    .wtc-type-icon { font-size: 22px; }
+    .wtc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .wtc-row1 { display: flex; align-items: center; gap: 6px; }
+    .wtc-name { font-size: 14px; font-weight: 600; color: var(--t-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    .wtc-time { font-size: 11px; font-weight: 700; color: var(--tint); background: rgba(118,150,255,.12); border-radius: 5px; padding: 1px 6px; flex-shrink: 0; }
+    .wtc-date { font-size: 11px; color: var(--t-3); }
+    .wtc-wx   { font-size: 11px; color: var(--t-3); display: flex; gap: 4px; }
+    .wtc-arrow { color: var(--t-4); font-size: 18px; flex-shrink: 0; }
+
     /* ── Weather periods bar ── */
     .wx-periods-bar { display:flex; gap:6px; padding:10px 16px; overflow-x:auto; }
     .wx-period { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 12px; border-radius:10px; background:var(--surface-2); border:2px solid transparent; cursor:pointer; min-width:70px; flex-shrink:0; transition:border-color 0.15s; }
@@ -3189,13 +3211,13 @@
         <div class="week-timeline" id="dayStrip"></div>
       </div>
 
-      <!-- Vue travaux (3 stats — inline avec la semaine) -->
+      <!-- Travaux planifiés — dashboard météo intelligent -->
       <div class="section" id="vueChantierSection">
         <div class="section-head">
-          <h2 class="section-title">Vue travaux</h2>
-          <span class="section-count" id="vueChantierCount">7 j</span>
+          <h2 class="section-title">Travaux planifiés</h2>
+          <span class="section-count" id="vueChantierCount">—</span>
         </div>
-        <div class="vue-strip" id="vueChantierStrip"></div>
+        <div id="vueChantierStrip"></div>
       </div>
 
       <!-- Optimization (conditionnel) -->
@@ -3912,7 +3934,8 @@
 var DAYS_L = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 var DAYS_S = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 var MONTHS = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
-var MONTHS_FULL = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+var MONTHS_FULL  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+var MONTHS_SHORT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 
 var JOB_TYPES = {
   toiture:    { name:'Toiture',     short:'Toit',     icon:'🏠', color:'slate',  rain:1,  wind:40, temp:5   },
@@ -4279,7 +4302,12 @@ function loadST() {
   } catch(e) {}
 }
 function saveST() {
-  try { localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, locSet: ST.locSet, tasks: ST.tasks })); } catch(e) {}
+  try {
+    localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, locSet: ST.locSet, tasks: ST.tasks }));
+  } catch(e) {
+    console.error('[SPM] saveST failed:', e.message);
+    toast('⚠ Sauvegarde impossible — stockage plein?');
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -4764,10 +4792,11 @@ function renderCalWeek() {
       + (jobsCount > 0
           ? '<span class="wd-count">' + jobsCount + '</span>'
           : '<span class="wd-count zero">·</span>');
-    btn.onclick = (function(date) { return function() {
+    btn.onclick = (function(date, fcIndex) { return function() {
       _calActive = date;
       renderCalendar();
-    }; })(d);
+      if (fcIndex !== null) openDayDetail(fcIndex);
+    }; })(d, fcIdx !== null ? fcIdx : null);
     strip.appendChild(btn);
   });
 
@@ -5751,31 +5780,109 @@ function buildTodayCard(task, w, jobsDef) {
 }
 
 function renderVueChantier() {
-  var strip = document.getElementById('vueChantierStrip');
+  var strip   = document.getElementById('vueChantierStrip');
   var countEl = document.getElementById('vueChantierCount');
   if (!strip) return;
-  var fc = ST.forecast || [];
-  var goodDays = 0, warnDays = 0, badDays = 0;
-  fc.forEach(function(d) {
-    var s = simpleStatus(d);
-    if (s.level === 'ok')   goodDays++;
-    else if (s.level === 'warn') warnDays++;
-    else                         badDays++;
+
+  // Collect all scheduled tasks (next 14 days)
+  var fc      = ST.forecast || [];
+  var jobsDef = getMergedJobTypes();
+  var todayIso = isoDate(new Date());
+
+  // Build flat list of {task, day, dayLabel, level, wxMsg, wxIcon}
+  var allTasks = [];
+  ST.tasks.forEach(function(t) {
+    if (!t.scheduledDate) return;
+    var fcEntry = fc.find(function(d) { return isoDate(d.date) === t.scheduledDate; });
+    if (!fcEntry) return; // outside 14-day window
+    var res   = assess(t.type, fcEntry, t.weather);
+    var level = res.level; // 'ok' | 'risk' | 'danger'
+    var wxIcon = level === 'danger' ? '⛔' : (level === 'risk' ? '⚠️' : '✅');
+    var wxMsg  = res.msg || (level === 'ok' ? 'Conditions favorables' : 'Vigilance requise');
+    var dObj   = fcEntry.date;
+    var isToday = t.scheduledDate === todayIso;
+    var isTomorrow = (function() {
+      var d = new Date(); d.setDate(d.getDate() + 1);
+      return t.scheduledDate === isoDate(d);
+    })();
+    var dayLabel = isToday ? "Aujourd'hui"
+                 : isTomorrow ? 'Demain'
+                 : DAYS_L[dObj.getDay()] + ' ' + dObj.getDate() + ' ' + MONTHS_SHORT[dObj.getMonth()];
+    allTasks.push({ task: t, fcEntry: fcEntry, dayLabel: dayLabel, level: level, wxIcon: wxIcon, wxMsg: wxMsg });
   });
-  if (countEl) countEl.textContent = fc.length ? fc.length + ' j' : '—';
-  strip.innerHTML =
-      '<div class="vue-cell ok">'
-    +   '<div class="vue-cell-num"><span class="vue-cell-icon">✅</span>' + goodDays + '</div>'
-    +   '<div class="vue-cell-lbl">Favorables</div>'
-    + '</div>'
-    + '<div class="vue-cell warn">'
-    +   '<div class="vue-cell-num"><span class="vue-cell-icon">⚠️</span>' + warnDays + '</div>'
-    +   '<div class="vue-cell-lbl">À risque</div>'
-    + '</div>'
-    + '<div class="vue-cell bad">'
-    +   '<div class="vue-cell-num"><span class="vue-cell-icon">⛔</span>' + badDays + '</div>'
-    +   '<div class="vue-cell-lbl">Défavorables</div>'
-    + '</div>';
+
+  // Sort: by date asc, then by time
+  allTasks.sort(function(a, b) {
+    if (a.task.scheduledDate !== b.task.scheduledDate) return a.task.scheduledDate < b.task.scheduledDate ? -1 : 1;
+    if (a.task.time && b.task.time) return a.task.time.localeCompare(b.task.time);
+    if (a.task.time) return -1; if (b.task.time) return 1;
+    return 0;
+  });
+
+  // Update count
+  if (countEl) countEl.textContent = allTasks.length ? allTasks.length + ' travaux' : '—';
+
+  if (!allTasks.length) {
+    strip.innerHTML =
+      '<div class="empty-card" style="margin-top:8px">'
+      + '<div class="empty-icon">📅</div>'
+      + '<div class="empty-title">Aucun travail planifié</div>'
+      + '<div class="empty-sub">Ajoutez des travaux depuis la banque ou le calendrier.</div>'
+      + '</div>';
+    return;
+  }
+
+  // Group by level
+  var groups = [
+    { key: 'danger', label: 'Défavorable',    icon: '⛔', cls: 'bad',  tasks: [] },
+    { key: 'risk',   label: 'À risque',        icon: '⚠️', cls: 'warn', tasks: [] },
+    { key: 'ok',     label: 'Favorable',       icon: '✅', cls: 'ok',   tasks: [] },
+  ];
+  allTasks.forEach(function(item) {
+    var g = groups.find(function(g) { return g.key === item.level; });
+    if (g) g.tasks.push(item);
+  });
+
+  var html = '';
+  groups.forEach(function(g) {
+    if (!g.tasks.length) return;
+    html += '<div class="wtg wtg-' + g.cls + '">'
+          +   '<div class="wtg-head">'
+          +     '<span class="wtg-icon">' + g.icon + '</span>'
+          +     '<span class="wtg-label">' + g.label + '</span>'
+          +     '<span class="wtg-count">' + g.tasks.length + '</span>'
+          +   '</div>'
+          +   '<div class="wtg-list">';
+    g.tasks.forEach(function(item) {
+      var t  = item.task;
+      var jd = jobsDef[t.type] || { icon: '🔧', name: t.type };
+      var timeStr  = t.time ? '<span class="wtc-time">' + esc(t.time) + '</span>' : '';
+      var metaParts = [];
+      if (t.client)   metaParts.push(esc(t.client));
+      if (t.location) metaParts.push(esc(t.location));
+      html += '<button type="button" class="wtc" onclick="openEditTask(\'' + esc(t.id) + '\')">'
+            +   '<div class="wtc-left">'
+            +     '<span class="wtc-type-icon">' + jd.icon + '</span>'
+            +   '</div>'
+            +   '<div class="wtc-body">'
+            +     '<div class="wtc-row1">'
+            +       '<span class="wtc-name">' + esc(t.name) + '</span>'
+            +       timeStr
+            +     '</div>'
+            +     '<div class="wtc-date">' + esc(item.dayLabel)
+            +       (metaParts.length ? ' · ' + metaParts[0] : '')
+            +     '</div>'
+            +     '<div class="wtc-wx">'
+            +       '<span>' + item.wxIcon + '</span>'
+            +       '<span>' + esc(item.wxMsg) + '</span>'
+            +     '</div>'
+            +   '</div>'
+            +   '<span class="wtc-arrow">›</span>'
+            + '</button>';
+    });
+    html += '</div></div>';
+  });
+  strip.innerHTML = html;
 }
 
 function renderAlerts() {

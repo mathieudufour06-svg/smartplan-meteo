@@ -466,6 +466,11 @@
       letter-spacing: -0.03em;
       color: var(--t-1);
     }
+    .section-head-below {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line-1);
+    }
     .section-count {
       font-size: 13px; font-weight: 600; color: var(--t-3);
     }
@@ -3279,11 +3284,11 @@
 
       <!-- 2. JOBS DE LA SEMAINE -->
       <div class="section">
-        <div class="section-head">
+        <div class="week-timeline" id="dayStrip"></div>
+        <div class="section-head section-head-below">
           <h2 class="section-title">Ma semaine</h2>
           <button class="section-link" onclick="switchTab('calendar')">Calendrier →</button>
         </div>
-        <div class="week-timeline" id="dayStrip"></div>
       </div>
 
       <!-- Travaux planifiés — dashboard météo intelligent -->

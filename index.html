@@ -6590,7 +6590,7 @@ function openDayDetail(di) {
       if (!p) return;
       var activeCls = pi === 0 ? ' active' : '';
       html += '<div class="wx-period' + activeCls + '" onclick="selectWxPeriod(this,\'' + pk + '\',' + di + ')">'
-           +    '<span class="wp-icon">' + wIcon(p.code, p.is_day) + '</span>'
+           +    '<span class="wp-icon">' + wIconNight(p.code, p.is_day) + '</span>'
            +    '<span class="wp-label">' + p.label + '</span>'
            +    '<span class="wp-temp">' + p.temp + '°</span>'
            +    '<span class="wp-rain">' + p.rain_prob + '%</span>'
@@ -6610,23 +6610,6 @@ function openDayDetail(di) {
   }
   html += '</section>';
 
-  // 3) RISQUE PAR MÉTIER — collapsed by default if jobs exist
-  var riskOpen = tasks.length ? '' : ' open';
-  html += '<details class="dd-section dd-risk"' + riskOpen + '>'
-       +    '<summary><span class="dd-sec-eyebrow">Risque par métier</span><span class="dd-chev">▾</span></summary>'
-       +    '<div class="dd-risk-list">';
-  Object.keys(jobsDef).forEach(function(key) {
-    var jd  = jobsDef[key];
-    var res = assess(key, day);
-    var lvl = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
-    var ic  = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
-    html += '<div class="dd-risk-row">'
-         +    '<span class="dd-risk-ico">' + jd.icon + '</span>'
-         +    '<span class="dd-risk-name">' + esc(jd.name || jd.short) + '</span>'
-         +    '<span class="dd-risk-lvl ' + lvl + '">' + ic + '</span>'
-         +  '</div>';
-  });
-  html += '</div></details>';
 
   document.getElementById('ddContent').innerHTML = html;
   // Wire up edit + "remise en banque" buttons
@@ -6722,30 +6705,17 @@ function openWeatherDetail() {
   document.getElementById('wxDetailDate').textContent =
     "Aujourd'hui, " + DAYS_LONG[d.getDay()].toLowerCase() + ' ' + d.getDate() + ' ' + MONTHS_FULL[d.getMonth()];
 
-  // Current conditions
-  document.getElementById('wxDetailIcon').textContent = wIcon(day.weathercode);
-  document.getElementById('wxDetailTemp').textContent = day.temp_max + '°';
-  document.getElementById('wxDetailLabel').textContent = wLabel(day.weathercode);
-  document.getElementById('wxDetailMax').textContent = day.temp_max + '°';
-  document.getElementById('wxDetailMin').textContent = day.temp_min + '°';
-
-  // Feels-like from hourly if available, else use temp_max
-  var feelsStr = '—°';
-  if (ST.hourly && ST.hourly.time) {
-    var nowHour = new Date().getHours();
-    // Find the closest hour index for today
-    var targetTime = todayIso + 'T' + (nowHour < 10 ? '0' : '') + nowHour + ':00';
-    var hi = ST.hourly.time.indexOf(targetTime);
-    if (hi === -1) {
-      // Try searching near today
-      for (var i = 0; i < ST.hourly.time.length; i++) {
-        if (ST.hourly.time[i].startsWith(todayIso)) { hi = i; break; }
-      }
-    }
-    if (hi >= 0 && ST.hourly.apparent_temperature) {
-      feelsStr = Math.round(ST.hourly.apparent_temperature[hi]) + '°';
-    }
-  }
+  // Current conditions — use ST.current (temps réel best_match) si disponible
+  var cur = (isoDate(new Date()) === todayIso && ST.current) ? ST.current : null;
+  var dispCode = cur ? cur.weathercode : day.weathercode;
+  var dispTemp = cur ? cur.temp        : day.temp_max;
+  var dispDay  = cur ? cur.is_day      : 1;
+  document.getElementById('wxDetailIcon').textContent  = wIconNight(dispCode, dispDay);
+  document.getElementById('wxDetailTemp').textContent  = dispTemp + '°';
+  document.getElementById('wxDetailLabel').textContent = wLabelNight(dispCode, dispDay);
+  document.getElementById('wxDetailMax').textContent   = day.temp_max + '°';
+  document.getElementById('wxDetailMin').textContent   = day.temp_min + '°';
+  var feelsStr = cur ? cur.feels_like + '°' : '—°';
   document.getElementById('wxDetailFeels').textContent = feelsStr;
 
   // 4 periods
@@ -6758,7 +6728,7 @@ function openWeatherDetail() {
       if (!p) return '<div class="wx-4p-item"><span class="wx-4p-label">' + pk + '</span><span class="wx-4p-icon">—</span><span class="wx-4p-temp">—°</span><span class="wx-4p-rain">—</span></div>';
       return '<div class="wx-4p-item">'
            + '<span class="wx-4p-label">' + p.label + '</span>'
-           + '<span class="wx-4p-icon">' + wIcon(p.code, p.is_day) + '</span>'
+           + '<span class="wx-4p-icon">' + wIconNight(p.code, p.is_day) + '</span>'
            + '<span class="wx-4p-temp">' + p.temp + '°</span>'
            + '<span class="wx-4p-rain">' + p.rain_prob + '%</span>'
            + '</div>';

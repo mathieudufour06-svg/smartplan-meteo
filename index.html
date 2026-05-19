@@ -4184,9 +4184,9 @@ async function fetchForecast(lat, lon, startDate) {
       var ed = new Date(sd); ed.setDate(sd.getDate() + 6);
       dateParam = '&start_date=' + startDate + '&end_date=' + isoDate(ed);
     }
+    // gem_seamless = modèle GEM de Météo Canada — prévisions journalières seulement
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
-      + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m'
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
       + '&models=gem_seamless'
@@ -4194,17 +4194,7 @@ async function fetchForecast(lat, lon, startDate) {
     var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var d    = await res.json();
-    var current = null;
-    if (d.current && d.current.temperature_2m != null) {
-      current = {
-        temp:        Math.round(d.current.temperature_2m),
-        feels_like:  Math.round(d.current.apparent_temperature != null ? d.current.apparent_temperature : d.current.temperature_2m),
-        weathercode: d.current.weathercode != null ? d.current.weathercode : 3,
-        precipitation: d.current.precipitation != null ? d.current.precipitation : 0,
-        windspeed:   Math.round(d.current.windspeed_10m != null ? d.current.windspeed_10m : 0),
-      };
-    }
-    var days = d.daily.time.map(function(dt, i) {
+    return d.daily.time.map(function(dt, i) {
       return {
         date:          new Date(dt + 'T12:00:00'),
         weathercode:   d.daily.weathercode[i] != null ? d.daily.weathercode[i] : 3,
@@ -4215,8 +4205,32 @@ async function fetchForecast(lat, lon, startDate) {
         rain_prob:     Math.round(d.daily.precipitation_probability_max[i] != null ? d.daily.precipitation_probability_max[i] : 0),
       };
     });
-    return { days: days, current: current };
   } finally { clearTimeout(tid); }
+}
+
+// Conditions en temps réel — modèle best_match (données quasi-obs, màj toutes les heures)
+async function fetchCurrentConditions(lat, lon) {
+  var ctrl = new AbortController();
+  var tid  = setTimeout(function() { ctrl.abort(); }, 7000);
+  try {
+    var url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=' + lat + '&longitude=' + lon
+      + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m'
+      + '&timezone=auto';
+    var res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var d = await res.json();
+    if (d.current && d.current.temperature_2m != null) {
+      return {
+        temp:          Math.round(d.current.temperature_2m),
+        feels_like:    Math.round(d.current.apparent_temperature != null ? d.current.apparent_temperature : d.current.temperature_2m),
+        weathercode:   d.current.weathercode != null ? d.current.weathercode : 3,
+        precipitation: d.current.precipitation != null ? d.current.precipitation : 0,
+        windspeed:     Math.round(d.current.windspeed_10m != null ? d.current.windspeed_10m : 0),
+      };
+    }
+  } catch(e) {} finally { clearTimeout(tid); }
+  return null;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -4247,8 +4261,7 @@ async function fetchWeatherForLoc(lat, lon) {
   var key = lat.toFixed(3) + ',' + lon.toFixed(3);
   if (_locWxCache[key]) return _locWxCache[key];
   try {
-    var result = await fetchForecast(lat, lon, null);
-    var days = result.days || result; // backward compat
+    var days = await fetchForecast(lat, lon, null);
     _locWxCache[key] = days;
     return days;
   } catch(e) { return null; }
@@ -8320,9 +8333,13 @@ async function loadWeather() {
   try {
     var dInput = document.getElementById('dateStart');
     var startDate = (dInput && dInput.value) ? dInput.value : null;
-    var result = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
-    ST.forecast = result.days;
-    ST.current  = result.current;
+    // Appels parallèles : prévisions GEM + conditions temps réel best_match
+    var results = await Promise.all([
+      fetchForecast(ST.loc.lat, ST.loc.lon, startDate),
+      fetchCurrentConditions(ST.loc.lat, ST.loc.lon)
+    ]);
+    ST.forecast = results[0];
+    ST.current  = results[1];
     setDot('ok');
   } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);

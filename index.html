@@ -3100,7 +3100,7 @@
   <div class="greet-sub" id="greetSub">—</div>
 
 </div>
-        <button type="button" class="wx-widget" id="miniWeather" onclick="openTodayDetail()" aria-label="Voir la météo détaillée">
+        <button type="button" class="wx-widget" id="miniWeather" onclick="openWeatherDetail()" aria-label="Voir la météo détaillée">
           <div class="wx-head">
             <span class="wx-icon-big" id="wxIcon">⏳</span>
             <span class="wx-orb" id="wxOrb" data-level="idle"></span>
@@ -3816,6 +3816,35 @@
   </div>
 </div>
 
+<!-- WEATHER DETAIL MODAL — Météo Média style -->
+<div class="overlay" id="wxDetailOverlay" onclick="overlayClick(event,'wxDetailOverlay')">
+  <div class="modal overlay-card wx-detail-card" role="dialog" aria-modal="true">
+    <div class="wx-detail-header">
+      <button onclick="closeModal('wxDetailOverlay')" aria-label="Fermer">✕</button>
+      <h2 class="wx-detail-city" id="wxDetailCity">Saint-Jean-sur-Richelieu</h2>
+      <div class="wx-detail-date-line" id="wxDetailDate">Aujourd'hui</div>
+    </div>
+    <div class="wx-detail-now">
+      <span class="wx-big-icon" id="wxDetailIcon">⛅</span>
+      <span class="wx-big-temp" id="wxDetailTemp">—°</span>
+      <div class="wx-detail-meta">
+        <span id="wxDetailLabel">—</span>
+        <span>T. ress. <span id="wxDetailFeels">—°</span></span>
+        <span>Max <span id="wxDetailMax">—°</span> / Min <span id="wxDetailMin">—°</span></span>
+      </div>
+    </div>
+    <div class="wx-4periods" id="wxDetail4Periods"></div>
+    <div class="wx-detail-extras" id="wxDetailExtras">
+      <div class="wx-extra-item"><span class="wx-extra-icon">🌬️</span><span id="wxExtWind">—</span><span>Vent</span></div>
+      <div class="wx-extra-item"><span class="wx-extra-icon">💧</span><span id="wxExtHumid">—</span><span>Humidité</span></div>
+      <div class="wx-extra-item"><span class="wx-extra-icon">🌅</span><span id="wxExtSunrise">—</span><span>Lever</span></div>
+      <div class="wx-extra-item"><span class="wx-extra-icon">🌇</span><span id="wxExtSunset">—</span><span>Coucher</span></div>
+      <div class="wx-extra-item"><span class="wx-extra-icon">☀️</span><span id="wxExtUV">—</span><span>UV</span></div>
+    </div>
+    <div class="wx-14day-list" id="wx14DayList"></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -4428,7 +4457,7 @@ function renderCalendar() {
     activeEl.textContent = '';
     renderCalMonth();
   } else if (_calMode === 'week') {
-    var end = new Date(_calWeekCursor); end.setDate(end.getDate() + 6);
+    var end = new Date(_calWeekCursor); end.setDate(end.getDate() + 13);
     var sameMonth = _calWeekCursor.getMonth() === end.getMonth();
     titleEl.textContent = _calWeekCursor.getDate() + (sameMonth ? '' : ' ' + MONTHS[_calWeekCursor.getMonth()])
       + ' – ' + end.getDate() + ' ' + MONTHS[end.getMonth()];
@@ -4561,12 +4590,25 @@ function renderCalWeek() {
   var activeIso = isoDate(_calActive);
 
   var weekDates = [];
-  for (var i = 0; i < 7; i++) {
+  for (var i = 0; i < 14; i++) {
     var d = new Date(_calWeekCursor); d.setDate(d.getDate() + i);
     weekDates.push(d);
   }
 
-  weekDates.forEach(function(d) {
+  // Week 1 label
+  var lbl1 = document.createElement('div');
+  lbl1.className = 'cal-week-label';
+  lbl1.textContent = 'Cette semaine';
+  strip.appendChild(lbl1);
+
+  weekDates.forEach(function(d, wi) {
+    // Insert week 2 label before day 7
+    if (wi === 7) {
+      var lbl2 = document.createElement('div');
+      lbl2.className = 'cal-week-label';
+      lbl2.textContent = 'Semaine prochaine';
+      strip.appendChild(lbl2);
+    }
     var iso = isoDate(d);
     var jobsCount = ST.tasks.filter(function(t) { return t.scheduledDate === iso; }).length;
     var fcIdx = findForecastIndexByDate(iso);
@@ -4591,12 +4633,12 @@ function renderCalWeek() {
     strip.appendChild(btn);
   });
 
-  // Build groups for the week
+  // Build groups for the 2-week range
   var groups = {};
   ST.tasks.forEach(function(t) {
     if (!t.scheduledDate) return;
     var td = new Date(t.scheduledDate + 'T00:00:00');
-    var weekEnd = new Date(_calWeekCursor); weekEnd.setDate(weekEnd.getDate() + 6); weekEnd.setHours(23,59,59,999);
+    var weekEnd = new Date(_calWeekCursor); weekEnd.setDate(weekEnd.getDate() + 13); weekEnd.setHours(23,59,59,999);
     if (td >= _calWeekCursor && td <= weekEnd) {
       if (!groups[t.scheduledDate]) groups[t.scheduledDate] = [];
       groups[t.scheduledDate].push(t);
@@ -4608,7 +4650,7 @@ function renderCalWeek() {
     box.innerHTML =
       '<div class="empty-card">'
       + '<div class="empty-icon">📭</div>'
-      + '<div class="empty-title">Aucun travaux cette semaine</div>'
+      + '<div class="empty-title">Aucun travaux ces deux prochaines semaines</div>'
       + '<div class="empty-sub">Tapez le + en bas pour planifier.</div>'
       + '</div>';
     return;
@@ -6388,8 +6430,37 @@ function openDayDetail(di) {
        +        '<span class="dd-w-stat"><span class="dd-w-stat-i">☔</span>' + day.rain_prob + '%</span>'
        +        '<span class="dd-w-stat"><span class="dd-w-stat-i">💧</span>' + day.precipitation + ' mm</span>'
        +      '</div>'
-       +    '</div>'
-       +  '</section>';
+       +    '</div>';
+
+  // 2b) HOURLY PERIODS BAR
+  var periods = parseHourlyPeriods(ST.hourly, dayIso);
+  if (periods) {
+    var periodKeys = ['matin','apremidi','soir','nuit'];
+    html += '<div class="wx-periods-bar" id="ddPeriodsBar">';
+    periodKeys.forEach(function(pk, pi) {
+      var p = periods[pk];
+      if (!p) return;
+      var activeCls = pi === 0 ? ' active' : '';
+      html += '<div class="wx-period' + activeCls + '" onclick="selectWxPeriod(this,\'' + pk + '\',' + di + ')">'
+           +    '<span class="wp-icon">' + wIcon(p.code, p.is_day) + '</span>'
+           +    '<span class="wp-label">' + p.label + '</span>'
+           +    '<span class="wp-temp">' + p.temp + '°</span>'
+           +    '<span class="wp-rain">' + p.rain_prob + '%</span>'
+           +  '</div>';
+    });
+    html += '</div>';
+    // Initial detail row for first period
+    var firstKey = periodKeys.find(function(pk) { return !!periods[pk]; });
+    if (firstKey) {
+      var fp = periods[firstKey];
+      html += '<div class="wx-period-detail" id="ddPeriodDetail">'
+           +    '<span>T. ressentie ' + fp.feels + '°</span>'
+           +    '<span>Vent ' + fp.wind + ' km/h</span>'
+           +    (fp.humid != null ? '<span>Humidité ' + fp.humid + '%</span>' : '')
+           +  '</div>';
+    }
+  }
+  html += '</section>';
 
   // 3) RISQUE PAR MÉTIER — collapsed by default if jobs exist
   var riskOpen = tasks.length ? '' : ' open';
@@ -6415,6 +6486,148 @@ function openDayDetail(di) {
     b.addEventListener('click', function() { closeModal('dayDetailOverlay'); openEditTask(b.dataset.editTask); });
   });
   openModal('dayDetailOverlay');
+}
+
+/* Select a weather period in the day detail overlay */
+function selectWxPeriod(el, periodKey, di) {
+  // Update active state
+  var bar = document.getElementById('ddPeriodsBar');
+  if (bar) {
+    bar.querySelectorAll('.wx-period').forEach(function(p) { p.classList.remove('active'); });
+    el.classList.add('active');
+  }
+  // Update detail row
+  var day = ST.forecast && ST.forecast[di];
+  if (!day) return;
+  var dayIso = isoDate(day.date);
+  var periods = parseHourlyPeriods(ST.hourly, dayIso);
+  if (!periods || !periods[periodKey]) return;
+  var p = periods[periodKey];
+  var detailEl = document.getElementById('ddPeriodDetail');
+  if (detailEl) {
+    detailEl.innerHTML =
+        '<span>T. ressentie ' + p.feels + '°</span>'
+      + '<span>Vent ' + p.wind + ' km/h</span>'
+      + (p.humid != null ? '<span>Humidité ' + p.humid + '%</span>' : '');
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   WEATHER DETAIL MODAL (Météo Média style)
+════════════════════════════════════════════════════════════════ */
+function openWeatherDetail() {
+  if (!ST.forecast || !ST.forecast[0]) {
+    // Fallback: open day detail
+    openDayDetail(0);
+    return;
+  }
+  var day = ST.forecast[0];
+  var todayIso = isoDate(day.date);
+  var DAYS_LONG = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+
+  // Header
+  document.getElementById('wxDetailCity').textContent = ST.loc.name || 'Ma position';
+  var d = day.date;
+  document.getElementById('wxDetailDate').textContent =
+    "Aujourd'hui, " + DAYS_LONG[d.getDay()].toLowerCase() + ' ' + d.getDate() + ' ' + MONTHS_FULL[d.getMonth()];
+
+  // Current conditions
+  document.getElementById('wxDetailIcon').textContent = wIcon(day.weathercode);
+  document.getElementById('wxDetailTemp').textContent = day.temp_max + '°';
+  document.getElementById('wxDetailLabel').textContent = wLabel(day.weathercode);
+  document.getElementById('wxDetailMax').textContent = day.temp_max + '°';
+  document.getElementById('wxDetailMin').textContent = day.temp_min + '°';
+
+  // Feels-like from hourly if available, else use temp_max
+  var feelsStr = '—°';
+  if (ST.hourly && ST.hourly.time) {
+    var nowHour = new Date().getHours();
+    // Find the closest hour index for today
+    var targetTime = todayIso + 'T' + (nowHour < 10 ? '0' : '') + nowHour + ':00';
+    var hi = ST.hourly.time.indexOf(targetTime);
+    if (hi === -1) {
+      // Try searching near today
+      for (var i = 0; i < ST.hourly.time.length; i++) {
+        if (ST.hourly.time[i].startsWith(todayIso)) { hi = i; break; }
+      }
+    }
+    if (hi >= 0 && ST.hourly.apparent_temperature) {
+      feelsStr = Math.round(ST.hourly.apparent_temperature[hi]) + '°';
+    }
+  }
+  document.getElementById('wxDetailFeels').textContent = feelsStr;
+
+  // 4 periods
+  var periods4 = parseHourlyPeriods(ST.hourly, todayIso);
+  var p4El = document.getElementById('wxDetail4Periods');
+  if (p4El) {
+    var p4Keys = ['matin','apremidi','soir','nuit'];
+    p4El.innerHTML = p4Keys.map(function(pk) {
+      var p = periods4 && periods4[pk];
+      if (!p) return '<div class="wx-4p-item"><span class="wx-4p-label">' + pk + '</span><span class="wx-4p-icon">—</span><span class="wx-4p-temp">—°</span><span class="wx-4p-rain">—</span></div>';
+      return '<div class="wx-4p-item">'
+           + '<span class="wx-4p-label">' + p.label + '</span>'
+           + '<span class="wx-4p-icon">' + wIcon(p.code, p.is_day) + '</span>'
+           + '<span class="wx-4p-temp">' + p.temp + '°</span>'
+           + '<span class="wx-4p-rain">' + p.rain_prob + '%</span>'
+           + '</div>';
+    }).join('');
+  }
+
+  // Extra details
+  document.getElementById('wxExtWind').textContent = day.windspeed + ' km/h';
+  // Humidity from hourly
+  var humidStr = '—';
+  if (ST.hourly && ST.hourly.relativehumidity_2m) {
+    // Find midday hour
+    var mhi = -1;
+    var targetMid = todayIso + 'T12:00';
+    mhi = ST.hourly.time.indexOf(targetMid);
+    if (mhi === -1) {
+      for (var i2 = 0; i2 < ST.hourly.time.length; i2++) {
+        if (ST.hourly.time[i2].startsWith(todayIso)) { mhi = i2; break; }
+      }
+    }
+    if (mhi >= 0) humidStr = ST.hourly.relativehumidity_2m[mhi] + '%';
+  }
+  document.getElementById('wxExtHumid').textContent = humidStr;
+
+  // Sunrise/sunset
+  var srStr = '—', ssStr = '—';
+  if (day.sunrise) {
+    var srParts = day.sunrise.split('T');
+    srStr = srParts[1] ? srParts[1].slice(0,5) : day.sunrise.slice(-5);
+  }
+  if (day.sunset) {
+    var ssParts = day.sunset.split('T');
+    ssStr = ssParts[1] ? ssParts[1].slice(0,5) : day.sunset.slice(-5);
+  }
+  document.getElementById('wxExtSunrise').textContent = srStr;
+  document.getElementById('wxExtSunset').textContent = ssStr;
+  document.getElementById('wxExtUV').textContent = day.uv_index_max != null ? day.uv_index_max : '—';
+
+  // 14-day list
+  var listEl = document.getElementById('wx14DayList');
+  if (listEl && ST.forecast) {
+    var todayStr = isoDate(new Date());
+    listEl.innerHTML = ST.forecast.map(function(fc, idx) {
+      var fcIso = isoDate(fc.date);
+      var isToday = fcIso === todayStr;
+      var rowCls = isToday ? ' today' : '';
+      var dayLabel = isToday ? "Aujourd'hui"
+        : (idx === 1 ? 'Demain'
+        : DAYS_LONG[fc.date.getDay()] + ' ' + fc.date.getDate());
+      return '<div class="wx-14d-row' + rowCls + '">'
+           + '<span class="wx-14d-day">' + dayLabel + '</span>'
+           + '<span class="wx-14d-icon">' + wIcon(fc.weathercode) + '</span>'
+           + '<span class="wx-14d-bar"></span>'
+           + '<div class="wx-14d-temps"><span class="wx-14d-max">' + fc.temp_max + '°</span><span class="wx-14d-min">' + fc.temp_min + '°</span></div>'
+           + '<span class="wx-14d-rain">' + fc.rain_prob + '%</span>'
+           + '</div>';
+    }).join('');
+  }
+
+  openModal('wxDetailOverlay');
 }
 
 function _ddBuildJobDossier(t, day, jobsDef) {
@@ -8423,7 +8636,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      ['taskOverlay','locOverlay','dayDetailOverlay','optimizeOverlay','voiceOverlay','photoOverlay','jobsOverlay']
+      ['taskOverlay','locOverlay','dayDetailOverlay','optimizeOverlay','voiceOverlay','photoOverlay','jobsOverlay','wxDetailOverlay']
         .forEach(function(id) { closeModal(id); });
       closeNewJobSheet();
     }

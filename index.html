@@ -2594,6 +2594,16 @@
     .dj-w-chip.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--orange); }
     .dj-w-chip.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
     .dj-w-chip-i { font-size: 11px; }
+    .dj-wx-loc-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-left: 8px;
+      font-size: 11px; font-weight: 600; color: var(--t-3);
+      background: var(--surface-3, var(--surface-2));
+      border: 1px solid var(--line-1);
+      border-radius: 6px;
+      padding: 1px 7px;
+      vertical-align: middle;
+    }
 
     .dj-edit {
       width: 100%; padding: 11px 14px;
@@ -4101,6 +4111,7 @@ function deleteCustomJob(key) {
 ════════════════════════════════════════════════════════════════ */
 var ST = {
   loc:      { lat: 45.3584, lon: -73.2728, name: 'Saint-Jean-sur-Richelieu' },
+  locSet:   false,
   forecast: null,
   tasks:    [],
 };
@@ -4123,6 +4134,7 @@ function loadST() {
     if (!raw) return;
     var p = JSON.parse(raw);
     if (p.loc && typeof p.loc.lat === 'number') ST.loc = p.loc;
+    if (p.locSet) ST.locSet = true;
     if (Array.isArray(p.tasks)) {
       ST.tasks = p.tasks.map(function(task) {
         if (!task.status) {
@@ -4138,7 +4150,7 @@ function loadST() {
   } catch(e) {}
 }
 function saveST() {
-  try { localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, tasks: ST.tasks })); } catch(e) {}
+  try { localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, locSet: ST.locSet, tasks: ST.tasks })); } catch(e) {}
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -4175,6 +4187,40 @@ async function fetchForecast(lat, lon, startDate) {
       };
     });
   } finally { clearTimeout(tid); }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GEOCODING — Nominatim (OpenStreetMap, free, no API key)
+════════════════════════════════════════════════════════════════ */
+var _geocodeCache = {};
+async function geocodeAddress(address) {
+  if (!address) return null;
+  var key = address.trim().toLowerCase();
+  if (_geocodeCache[key]) return _geocodeCache[key];
+  try {
+    var url = 'https://nominatim.openstreetmap.org/search'
+      + '?q=' + encodeURIComponent(address + ', Québec, Canada')
+      + '&format=json&limit=1&countrycodes=ca&addressdetails=0';
+    var res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
+    var data = await res.json();
+    if (data && data[0]) {
+      var r = { lat: +data[0].lat, lon: +data[0].lon };
+      _geocodeCache[key] = r;
+      return r;
+    }
+  } catch(e) {}
+  return null;
+}
+
+var _locWxCache = {};
+async function fetchWeatherForLoc(lat, lon) {
+  var key = lat.toFixed(3) + ',' + lon.toFixed(3);
+  if (_locWxCache[key]) return _locWxCache[key];
+  try {
+    var fc = await fetchForecast(lat, lon, null);
+    _locWxCache[key] = fc;
+    return fc;
+  } catch(e) { return null; }
 }
 
 function mockForecast() {
@@ -6296,6 +6342,46 @@ function openDayDetail(di) {
     b.addEventListener('click', function() { closeModal('dayDetailOverlay'); openEditTask(b.dataset.editTask); });
   });
   openModal('dayDetailOverlay');
+  // Async: enrich each job card with weather at its own address
+  _enrichJobsWithLocalWeather(tasks, dayIso);
+}
+
+async function _enrichJobsWithLocalWeather(tasks, dayIso) {
+  for (var i = 0; i < tasks.length; i++) {
+    var t = tasks[i];
+    if (!t.location) continue;
+    // Geocode if we don't have coords yet
+    var geo = (t.geoLat && t.geoLon) ? { lat: t.geoLat, lon: t.geoLon } : await geocodeAddress(t.location);
+    if (!geo) continue;
+    // Persist coords on task
+    if (!t.geoLat) {
+      t.geoLat = geo.lat; t.geoLon = geo.lon;
+      saveST();
+    }
+    // Fetch local forecast (cached)
+    var fc = await fetchWeatherForLoc(geo.lat, geo.lon);
+    if (!fc) continue;
+    var w = fc.find(function(f) { return isoDate(f.date) === dayIso; });
+    if (!w) continue;
+    // Update weather badge next to address
+    var wxSpan = document.getElementById('dj-wx-' + t.id);
+    if (wxSpan) {
+      wxSpan.innerHTML = '<span class="dj-wx-loc-badge">'
+        + wIcon(w.weathercode) + ' ' + w.temp_max + '°/' + w.temp_min + '°'
+        + ' · ☔' + w.rain_prob + '%'
+        + ' · 💨' + w.windspeed + ' km/h'
+        + '</span>';
+    }
+    // Re-assess risk using local weather and update chip
+    var chip = document.getElementById('dj-chip-' + t.id);
+    if (chip) {
+      var res = assess(t.type, w, t.weather);
+      var lvl = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
+      var ico = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
+      chip.className = 'dj-w-chip ' + lvl;
+      chip.innerHTML = '<span class="dj-w-chip-i">' + ico + '</span><span>' + esc(res.msg) + '</span>';
+    }
+  }
 }
 
 function _ddBuildJobDossier(t, day, jobsDef) {
@@ -6336,7 +6422,7 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   if (t.client)   clientItems.push('<li><span class="dj-i">👤</span>' + esc(t.client) + '</li>');
   if (phone)      clientItems.push('<li><span class="dj-i">📞</span><a class="dj-link" href="tel:' + esc(phone.replace(/\D+/g,'')) + '">' + esc(phone) + '</a></li>');
   if (email)      clientItems.push('<li><span class="dj-i">✉</span><a class="dj-link" href="mailto:' + esc(email) + '">' + esc(email) + '</a></li>');
-  if (t.location) clientItems.push('<li><span class="dj-i">📍</span>' + esc(t.location) + '</li>');
+  if (t.location) clientItems.push('<li><span class="dj-i">📍</span>' + esc(t.location) + '<span id="dj-wx-' + esc(t.id) + '"></span></li>');
   if (clientItems.length) {
     html += '<section class="dj-sec"><h5 class="dj-sec-t">Client</h5><ul class="dj-list">' + clientItems.join('') + '</ul></section>';
   }
@@ -6360,8 +6446,8 @@ function _ddBuildJobDossier(t, day, jobsDef) {
     html += '</div></section>';
   }
 
-  // Compact weather chip for the job
-  html += '<div class="dj-w-chip ' + resLevel + '">'
+  // Compact weather chip for the job (id allows async update with local weather)
+  html += '<div id="dj-chip-' + esc(t.id) + '" class="dj-w-chip ' + resLevel + '">'
        +    '<span class="dj-w-chip-i">' + resIcon + '</span>'
        +    '<span>' + esc(res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller')) + '</span>'
        +  '</div>';
@@ -7941,21 +8027,34 @@ function saveTask() {
     weather: hasW ? weather : null,
   };
   if (_taskPhotoPreview !== null) patch.photoPreview = _taskPhotoPreview;
+  var _savedTaskId;
   if (_editingId) {
     var idx = ST.tasks.findIndex(function(t) { return t.id === _editingId; });
     if (idx !== -1) {
       if (_taskPhotoPreview === null && ST.tasks[idx].photoPreview) patch.photoPreview = ST.tasks[idx].photoPreview;
       ST.tasks[idx] = Object.assign({}, ST.tasks[idx], patch);
     }
+    _savedTaskId = _editingId;
     toast('✓ Travaux modifiés');
   } else {
     var newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
       ? crypto.randomUUID()
       : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
     ST.tasks.push(Object.assign({ id: newId }, patch));
+    _savedTaskId = newId;
     toast('✓ Travaux ajoutés');
   }
   saveST();
+  // Background geocode — store lat/lon on task for per-job local weather
+  if (location && _savedTaskId) {
+    (function(taskId, addr) {
+      geocodeAddress(addr).then(function(geo) {
+        if (!geo) return;
+        var task = ST.tasks.find(function(t) { return t.id === taskId; });
+        if (task && !task.geoLat) { task.geoLat = geo.lat; task.geoLon = geo.lon; saveST(); }
+      });
+    })(_savedTaskId, location);
+  }
   closeModal('taskOverlay');
   renderActive();
 }
@@ -8115,6 +8214,7 @@ async function geolocate() {
 
 async function setLoc(lat, lon, name) {
   ST.loc = { lat: lat, lon: lon, name: name };
+  ST.locSet = true;
   document.getElementById('locName').textContent = name;
   saveST();
   closeModal('locOverlay');
@@ -8320,6 +8420,26 @@ function isoDate(d) {
 ════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
+  // Auto-géolocalisation au premier lancement (silencieuse)
+  if (!ST.locSet && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async function(pos) {
+        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+        var name = 'Ma position';
+        try {
+          var url = 'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json';
+          var d = await (await fetch(url, { headers: { 'Accept-Language': 'fr' } })).json();
+          name = (d.address && (d.address.city || d.address.town || d.address.village)) || name;
+        } catch(e) {}
+        ST.loc = { lat: lat, lon: lon, name: name };
+        ST.locSet = true;
+        document.getElementById('locName').textContent = name;
+        saveST();
+        loadWeather();
+      },
+      function() {} // GPS refusé — fallback silencieux sur la ville par défaut
+    );
+  }
   loadCustomJobs();
   // Seed RISK_RULES for default JOB_TYPES not already covered by custom jobs
   Object.keys(JOB_TYPES).forEach(function(k) {

@@ -518,6 +518,10 @@
     .wx-status.ok   { color: var(--green); }
     .wx-status.warn { color: var(--orange); }
     .wx-status.bad  { color: #ff6677; }
+    .wx-range {
+      font-size: 9px; color: var(--t-4); letter-spacing: 0.01em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
 
     .wx-orb {
       width: 20px; height: 20px;
@@ -3073,6 +3077,7 @@
           <div class="wx-main">
             <span class="wx-temp" id="mwxTemp">—°</span>
             <span class="wx-status" id="mwxStatus">Météo</span>
+            <span class="wx-range" id="mwxRange"></span>
           </div>
           <div class="wx-sep"></div>
           <div class="wx-grid">
@@ -4112,6 +4117,7 @@ function deleteCustomJob(key) {
 var ST = {
   loc:      { lat: 45.3584, lon: -73.2728, name: 'Saint-Jean-sur-Richelieu' },
   locSet:   false,
+  current:  null,
   forecast: null,
   tasks:    [],
 };
@@ -4168,6 +4174,7 @@ async function fetchForecast(lat, lon, startDate) {
     }
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
+      + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m'
       + '&daily=weathercode,temperature_2m_max,temperature_2m_min'
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
       + '&models=gem_seamless'
@@ -4175,7 +4182,17 @@ async function fetchForecast(lat, lon, startDate) {
     var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var d    = await res.json();
-    return d.daily.time.map(function(dt, i) {
+    var current = null;
+    if (d.current && d.current.temperature_2m != null) {
+      current = {
+        temp:        Math.round(d.current.temperature_2m),
+        feels_like:  Math.round(d.current.apparent_temperature != null ? d.current.apparent_temperature : d.current.temperature_2m),
+        weathercode: d.current.weathercode != null ? d.current.weathercode : 3,
+        precipitation: d.current.precipitation != null ? d.current.precipitation : 0,
+        windspeed:   Math.round(d.current.windspeed_10m != null ? d.current.windspeed_10m : 0),
+      };
+    }
+    var days = d.daily.time.map(function(dt, i) {
       return {
         date:          new Date(dt + 'T12:00:00'),
         weathercode:   d.daily.weathercode[i] != null ? d.daily.weathercode[i] : 3,
@@ -4186,6 +4203,7 @@ async function fetchForecast(lat, lon, startDate) {
         rain_prob:     Math.round(d.daily.precipitation_probability_max[i] != null ? d.daily.precipitation_probability_max[i] : 0),
       };
     });
+    return { days: days, current: current };
   } finally { clearTimeout(tid); }
 }
 
@@ -4217,9 +4235,10 @@ async function fetchWeatherForLoc(lat, lon) {
   var key = lat.toFixed(3) + ',' + lon.toFixed(3);
   if (_locWxCache[key]) return _locWxCache[key];
   try {
-    var fc = await fetchForecast(lat, lon, null);
-    _locWxCache[key] = fc;
-    return fc;
+    var result = await fetchForecast(lat, lon, null);
+    var days = result.days || result; // backward compat
+    _locWxCache[key] = days;
+    return days;
   } catch(e) { return null; }
 }
 
@@ -4705,7 +4724,7 @@ function renderHome() {
 function renderMiniWeather() {
   var tempEl   = document.getElementById('mwxTemp');
   var statusEl = document.getElementById('mwxStatus');
-  var detailEl = document.getElementById('mwxDetail');
+  var rangeEl  = document.getElementById('mwxRange');
   var windEl   = document.getElementById('mwxWind');
   var rainEl   = document.getElementById('mwxRain');
   var rainMmEl = document.getElementById('mwxRainMm');
@@ -4715,8 +4734,8 @@ function renderMiniWeather() {
 
   var w = ST.forecast && ST.forecast[0];
   if (!w) {
-    tempEl.textContent   = '—°';
-    if (detailEl) detailEl.textContent = '';
+    tempEl.textContent = '—°';
+    if (rangeEl)  rangeEl.textContent  = '';
     if (windEl)   windEl.textContent   = '—';
     if (rainEl)   rainEl.textContent   = '—';
     if (rainMmEl) rainMmEl.textContent = '';
@@ -4727,32 +4746,39 @@ function renderMiniWeather() {
     return;
   }
 
-  tempEl.textContent = w.temp_max + '°';
-  if (detailEl) detailEl.textContent = w.temp_min + '° / ' + w.temp_max + '°';
-  if (windEl)   windEl.textContent   = w.windspeed + 'km/h';
+  // Use live current conditions if forecast[0] is today
+  var now = new Date();
+  var isToday = isoDate(w.date) === isoDate(now);
+  var cur = (isToday && ST.current) ? ST.current : null;
+
+  var displayTemp = cur ? cur.temp : w.temp_max;
+  var displayCode = cur ? cur.weathercode : w.weathercode;
+  var displayWind = cur ? cur.windspeed : w.windspeed;
+
+  tempEl.textContent = displayTemp + '°';
+
+  // Range line: "T. ress. X° · Max X° / Min X°"
+  if (rangeEl) {
+    var rangeParts = ['Max ' + w.temp_max + '° / Min ' + w.temp_min + '°'];
+    if (cur && cur.feels_like !== cur.temp) rangeParts.unshift('T. ress. ' + cur.feels_like + '°');
+    rangeEl.textContent = rangeParts.join(' · ');
+  }
+
+  if (windEl)   windEl.textContent   = displayWind + 'km/h';
   if (rainEl)   rainEl.textContent   = (w.rain_prob != null ? w.rain_prob : 0) + '%';
   if (rainMmEl) rainMmEl.textContent = (w.precipitation != null ? w.precipitation : 0) + 'mm';
+  if (iconEl)   iconEl.textContent   = wIcon(displayCode);
 
+  // Status label: sky condition when current available, planning label otherwise
   var st = simpleStatus(w);
-  var label;
-  if (st.level === 'ok') {
-    label = 'Favorable';
-  } else if (st.level === 'warn') {
-    if (w.precipitation > 0)   label = 'Risque pluie';
-    else if (w.windspeed > 25) label = 'Vent léger';
-    else if (w.temp_min < 5)   label = 'Températures fraîches';
-    else                        label = 'À surveiller';
-  } else {
-    if (w.weathercode >= 95)      label = 'Orages';
-    else if (w.precipitation > 5) label = 'Forte pluie';
-    else if (w.windspeed > 40)    label = 'Grand vent';
-    else if (w.temp_min < 0)      label = 'Gel prévu';
-    else                           label = 'Conditions risquées';
-  }
+  var label = cur ? wLabel(displayCode) : (
+    st.level === 'ok'   ? 'Favorable' :
+    st.level === 'warn' ? (w.precipitation > 0 ? 'Risque pluie' : w.windspeed > 25 ? 'Vent léger' : w.temp_min < 5 ? 'Températures fraîches' : 'À surveiller') :
+    w.weathercode >= 95 ? 'Orages' : w.precipitation > 5 ? 'Forte pluie' : w.windspeed > 40 ? 'Grand vent' : w.temp_min < 0 ? 'Gel prévu' : 'Conditions risquées'
+  );
   statusEl.textContent = label;
   statusEl.className   = 'wx-status ' + st.level;
   if (orbEl) orbEl.setAttribute('data-level', st.level);
-  if (iconEl) iconEl.textContent = wIcon(w.weathercode);
 }
 
 function renderGreeting() {
@@ -8227,15 +8253,19 @@ async function setLoc(lat, lon, name) {
 async function loadWeather() {
   setDot('loading');
   ST.forecast = null;
+  ST.current  = null;
   renderActive();
   try {
     var dInput = document.getElementById('dateStart');
     var startDate = (dInput && dInput.value) ? dInput.value : null;
-    ST.forecast = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
+    var result = await fetchForecast(ST.loc.lat, ST.loc.lon, startDate);
+    ST.forecast = result.days;
+    ST.current  = result.current;
     setDot('ok');
   } catch(err) {
     console.warn('Open-Meteo fallback:', err.message);
     ST.forecast = mockForecast();
+    ST.current  = null;
     setDot('offline');
     toast('⚠ Météo simulée — vérifiez la connexion');
   }

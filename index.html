@@ -3863,6 +3863,22 @@ function wLabel(code) {
   if (code <= 82)  return 'Averses';
   return 'Orage';
 }
+// Variantes nuit — utiliser is_day=0 pour adapter icônes et libellés
+function wIconNight(code, isDay) {
+  if (isDay === 0) {
+    if (code === 0) return '🌙';
+    if (code === 1) return '🌙';
+    if (code === 2) return '🌑';  // lune derrière nuages
+  }
+  return wIcon(code);
+}
+function wLabelNight(code, isDay) {
+  if (isDay === 0) {
+    if (code === 0) return 'Ciel dégagé';
+    if (code === 1) return 'Peu nuageux';
+  }
+  return wLabel(code);
+}
 
 /* ════════════════════════════════════════════════════════════════
    SCORE /100
@@ -4215,7 +4231,7 @@ async function fetchCurrentConditions(lat, lon) {
   try {
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
-      + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m'
+      + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m,is_day'
       + '&timezone=auto';
     var res = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -4227,6 +4243,7 @@ async function fetchCurrentConditions(lat, lon) {
         weathercode:   d.current.weathercode != null ? d.current.weathercode : 3,
         precipitation: d.current.precipitation != null ? d.current.precipitation : 0,
         windspeed:     Math.round(d.current.windspeed_10m != null ? d.current.windspeed_10m : 0),
+        is_day:        d.current.is_day != null ? d.current.is_day : 1,
       };
     }
   } catch(e) {} finally { clearTimeout(tid); }
@@ -4778,6 +4795,7 @@ function renderMiniWeather() {
 
   var displayTemp = cur ? cur.temp : w.temp_max;
   var displayCode = cur ? cur.weathercode : w.weathercode;
+  var isDay       = cur ? cur.is_day : 1;
   var displayWind = cur ? cur.windspeed : w.windspeed;
 
   tempEl.textContent = displayTemp + '°';
@@ -4792,11 +4810,11 @@ function renderMiniWeather() {
   if (windEl)   windEl.textContent   = displayWind + 'km/h';
   if (rainEl)   rainEl.textContent   = (w.rain_prob != null ? w.rain_prob : 0) + '%';
   if (rainMmEl) rainMmEl.textContent = (w.precipitation != null ? w.precipitation : 0) + 'mm';
-  if (iconEl)   iconEl.textContent   = wIcon(displayCode);
+  if (iconEl)   iconEl.textContent   = wIconNight(displayCode, isDay);
 
   // Status label: sky condition when current available, planning label otherwise
   var st = simpleStatus(w);
-  var label = cur ? wLabel(displayCode) : (
+  var label = cur ? wLabelNight(displayCode, isDay) : (
     st.level === 'ok'   ? 'Favorable' :
     st.level === 'warn' ? (w.precipitation > 0 ? 'Risque pluie' : w.windspeed > 25 ? 'Vent léger' : w.temp_min < 5 ? 'Températures fraîches' : 'À surveiller') :
     w.weathercode >= 95 ? 'Orages' : w.precipitation > 5 ? 'Forte pluie' : w.windspeed > 40 ? 'Grand vent' : w.temp_min < 0 ? 'Gel prévu' : 'Conditions risquées'

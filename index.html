@@ -2609,6 +2609,23 @@
       vertical-align: middle;
     }
 
+    .loc-ac-wrap { position: relative; }
+    .loc-ac-wrap input { width: 100%; box-sizing: border-box; }
+    .loc-ac-list {
+      position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 1100;
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-sm); box-shadow: var(--sh-2);
+      max-height: 220px; overflow-y: auto;
+    }
+    .loc-ac-item {
+      padding: 10px 13px; font-size: 13px; color: var(--t-1); cursor: pointer;
+      border-bottom: 1px solid var(--line-1);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .loc-ac-item:last-child { border-bottom: none; }
+    .loc-ac-item:active, .loc-ac-item.hover { background: var(--surface-3); }
+    .loc-ac-sub { font-size: 11px; color: var(--t-3); }
+    .loc-ac-empty { padding: 10px 13px; font-size: 12px; color: var(--t-4); }
     .dj-actions { display: flex; gap: 8px; }
     .dj-edit {
       flex: 1; padding: 11px 14px;
@@ -3374,7 +3391,9 @@
     </div>
     <div class="fg">
       <label>Lieu / Adresse</label>
-      <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="loc-ac-wrap">
+        <input type="text" id="tLocation" placeholder="Ville, adresse, secteur" maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
     </div>
     <div class="fg">
       <label>Client <span class="fg-opt">(optionnel)</span></label>
@@ -8105,7 +8124,11 @@ function findForecastIndexByDate(dateIso) {
 function saveTask() {
   var name     = document.getElementById('tName').value.trim();
   var client   = document.getElementById('tClient').value.trim();
-  var location = document.getElementById('tLocation').value.trim();
+  var locEl    = document.getElementById('tLocation');
+  var location = locEl ? locEl.value.trim() : '';
+  // Coordonnées pré-sélectionnées via l'autocomplétion (évite un appel Nominatim en plus)
+  var _acLat   = locEl && locEl.dataset.acLat ? +locEl.dataset.acLat : null;
+  var _acLon   = locEl && locEl.dataset.acLon ? +locEl.dataset.acLon : null;
   var duration = document.getElementById('tDuration').value.trim();
   var time     = document.getElementById('tTime').value || '';
   var scheduledDate = document.getElementById('tDate').value || '';
@@ -8164,15 +8187,20 @@ function saveTask() {
     _saveWorkBankSafe();
     _fromBankId = null;
   }
-  // Background geocode — store lat/lon on task for per-job local weather
+  // Géocodage — utilise les coordonnées de l'autocomplétion si dispo, sinon Nominatim en arrière-plan
   if (location && _savedTaskId) {
-    (function(taskId, addr) {
-      geocodeAddress(addr).then(function(geo) {
-        if (!geo) return;
-        var task = ST.tasks.find(function(t) { return t.id === taskId; });
-        if (task && !task.geoLat) { task.geoLat = geo.lat; task.geoLon = geo.lon; saveST(); }
-      });
-    })(_savedTaskId, location);
+    if (_acLat && _acLon) {
+      var task = ST.tasks.find(function(t) { return t.id === _savedTaskId; });
+      if (task) { task.geoLat = _acLat; task.geoLon = _acLon; saveST(); }
+    } else {
+      (function(taskId, addr) {
+        geocodeAddress(addr).then(function(geo) {
+          if (!geo) return;
+          var task = ST.tasks.find(function(t) { return t.id === taskId; });
+          if (task && !task.geoLat) { task.geoLat = geo.lat; task.geoLon = geo.lon; saveST(); }
+        });
+      })(_savedTaskId, location);
+    }
   }
   closeModal('taskOverlay');
   renderActive();
@@ -8545,6 +8573,122 @@ function isoDate(d) {
 /* ════════════════════════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════
+   AUTOCOMPLETE ADRESSE — champ tLocation
+════════════════════════════════════════════════════════════════ */
+(function() {
+  var _timer = null;
+  var _list  = null;
+
+  function _getList(wrap) {
+    if (!_list) {
+      _list = document.createElement('div');
+      _list.className = 'loc-ac-list';
+      _list.style.display = 'none';
+      wrap.appendChild(_list);
+    }
+    return _list;
+  }
+
+  function _hide() { if (_list) _list.style.display = 'none'; }
+
+  function _render(results, input) {
+    var list = _list;
+    if (!list) return;
+    list.innerHTML = '';
+    if (!results || !results.length) {
+      list.style.display = 'none';
+      return;
+    }
+    results.forEach(function(r) {
+      var parts = r.display_name.split(',');
+      var main  = parts.slice(0, 2).join(',').trim();
+      var sub   = parts.slice(2, 5).join(',').trim();
+      var item  = document.createElement('div');
+      item.className = 'loc-ac-item';
+      item.innerHTML = '<span>' + esc(main) + '</span>'
+                     + (sub ? '<span class="loc-ac-sub">' + esc(sub) + '</span>' : '');
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        input.value = main;
+        input.dataset.acLat = r.lat;
+        input.dataset.acLon = r.lon;
+        _hide();
+      });
+      list.appendChild(item);
+    });
+    list.style.display = 'block';
+  }
+
+  async function _fetch(query, input) {
+    try {
+      var url = 'https://nominatim.openstreetmap.org/search'
+        + '?q=' + encodeURIComponent(query)
+        + '&format=json&limit=6&countrycodes=ca&addressdetails=0&accept-language=fr'
+        + '&User-Agent=SmartPlanMeteo/1.0';
+      // Biais géographique vers la position courante de l'utilisateur
+      if (ST.loc) {
+        url += '&viewbox=' + (ST.loc.lon - 1.5).toFixed(3) + ',' + (ST.loc.lat - 1).toFixed(3)
+             + ',' + (ST.loc.lon + 1.5).toFixed(3) + ',' + (ST.loc.lat + 1).toFixed(3)
+             + '&bounded=0';
+      }
+      var res  = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+      var data = await res.json();
+      _render(data, input);
+    } catch(e) { _hide(); }
+  }
+
+  function initLocAutocomplete() {
+    var input = document.getElementById('tLocation');
+    if (!input) return;
+    var wrap  = input.parentElement; // .loc-ac-wrap
+    _getList(wrap);
+
+    input.addEventListener('input', function() {
+      // Effacer les coordonnées pré-géocodées si l'utilisateur retape
+      input.dataset.acLat = '';
+      input.dataset.acLon = '';
+      clearTimeout(_timer);
+      var val = input.value.trim();
+      if (val.length < 3) { _hide(); return; }
+      _timer = setTimeout(function() { _fetch(val, input); }, 350);
+    });
+
+    input.addEventListener('blur', function() {
+      setTimeout(_hide, 180);
+    });
+
+    input.addEventListener('keydown', function(e) {
+      if (!_list || _list.style.display === 'none') return;
+      var items = _list.querySelectorAll('.loc-ac-item');
+      var cur   = _list.querySelector('.loc-ac-item.hover');
+      var idx   = -1;
+      items.forEach(function(el, i) { if (el === cur) idx = i; });
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (cur) cur.classList.remove('hover');
+        var next = items[idx + 1] || items[0];
+        if (next) next.classList.add('hover');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (cur) cur.classList.remove('hover');
+        var prev = items[idx - 1] || items[items.length - 1];
+        if (prev) prev.classList.add('hover');
+      } else if (e.key === 'Enter' && cur) {
+        e.preventDefault();
+        cur.dispatchEvent(new MouseEvent('mousedown'));
+      } else if (e.key === 'Escape') {
+        _hide();
+      }
+    });
+  }
+
+  // Initialiser après le DOM, ré-initialiser si l'overlay est réouvert
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initLocAutocomplete, 200);
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
   // Auto-géolocalisation au premier lancement (silencieuse)

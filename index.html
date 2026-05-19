@@ -3599,7 +3599,10 @@
       <div id="sttCorrectionsPanel" style="display:none;margin-top:8px">
         <label style="font-size:11px;color:var(--t-3);display:block;margin-bottom:4px">Une correction par ligne — <strong>mauvais → correct</strong></label>
         <textarea id="sttCorrectionsText" rows="4" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);padding:6px 8px;resize:vertical" placeholder="Latour-Eiffel → Latourrel&#10;La Tour Eiffel → Latourrel"></textarea>
-        <button type="button" class="btn-secondary" style="width:100%;margin-top:6px" onclick="saveSttCorrections()">Enregistrer les corrections</button>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button type="button" onclick="insertSttArrow()" style="flex-shrink:0;padding:8px 14px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);font-size:16px;color:var(--t-1);cursor:pointer" title="Insérer →">→</button>
+          <button type="button" class="btn-secondary" style="flex:1" onclick="saveSttCorrections()">Enregistrer</button>
+        </div>
       </div>
     </div>
     <!-- Debug panel: visible only with ?debug=1 in URL -->
@@ -6986,14 +6989,22 @@ function toggleSttCorrections() {
   }
   panel.style.display = open ? 'none' : '';
 }
+function insertSttArrow() {
+  var ta = document.getElementById('sttCorrectionsText');
+  if (!ta) return;
+  var s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + ' → ' + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + 3;
+  ta.focus();
+}
 function saveSttCorrections() {
   var ta = document.getElementById('sttCorrectionsText');
   _sttFixes = [];
   (ta ? ta.value : '').split('\n').forEach(function(line) {
-    var idx = line.indexOf('→');
-    if (idx < 1) return;
-    var from = line.slice(0, idx).trim(), to = line.slice(idx + 1).trim();
-    if (from) _sttFixes.push({ from: from, to: to });
+    // Accept → (arrow), -> (dash-arrow) or > as separator
+    var m = line.match(/^(.+?)\s*(?:→|->|>)\s*(.*)$/);
+    if (!m || !m[1].trim()) return;
+    _sttFixes.push({ from: m[1].trim(), to: m[2].trim() });
   });
   try { localStorage.setItem('spm_stt_fixes', JSON.stringify(_sttFixes)); } catch(e) {}
   toast('✓ ' + _sttFixes.length + ' correction(s) enregistrée(s)');

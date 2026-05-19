@@ -198,14 +198,14 @@
       max-width: var(--app-max);
       margin: 0 auto;
       min-height: 100vh; min-height: 100dvh;
-      padding-top: calc(var(--safe-top) + var(--header-h));
+      padding-top: var(--s3);
       padding-bottom: calc(var(--safe-bot) + var(--bottomnav-h) + var(--s7));
       isolation: isolate;
       z-index: 1;
     }
 
     .status-header {
-      position: fixed; top: 0; left: 0; right: 0;
+      position: relative; top: auto; left: auto; right: auto;
       z-index: 80;
       max-width: var(--app-max);
       margin: 0 auto;

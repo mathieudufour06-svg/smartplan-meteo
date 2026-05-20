@@ -363,6 +363,9 @@
     .home-hero-wx-label.warn   { color: var(--orange); }
     .home-hero-wx-label.danger { color: var(--red); }
     .home-hero-wx-range { font-size: 10.5px; color: var(--t-4); text-align: center; }
+    .home-hero-wx-wind  { font-size: 10.5px; color: var(--t-4); text-align: center; margin-top: 3px; display: flex; align-items: center; gap: 3px; justify-content: center; }
+    .home-hero-wx-wind.strong { color: var(--orange); }
+    .home-hero-wx-wind.danger { color: var(--red); }
     .smartplan-label {
       font-size: 11px; font-weight: 700;
       letter-spacing: 0.18em; text-transform: uppercase;
@@ -3267,6 +3270,7 @@
           <span class="home-hero-wx-temp" id="mwxTemp">—°</span>
           <span class="home-hero-wx-label" id="mwxStatus">—</span>
           <span class="home-hero-wx-range" id="mwxRange"></span>
+          <span class="home-hero-wx-wind" id="mwxWind"></span>
           <span id="wxOrb" data-level="idle" style="display:none"></span>
         </div>
       </button>
@@ -5256,6 +5260,18 @@ function renderMiniWeather() {
   );
   if (statusEl) { statusEl.textContent = label; statusEl.className = 'home-hero-wx-label ' + st.level; }
   if (orbEl) orbEl.setAttribute('data-level', st.level);
+
+  var windEl = document.getElementById('mwxWind');
+  if (windEl) {
+    var windNow  = cur ? cur.windspeed : null;
+    var windMax  = w.windspeed || 0;
+    var windCls  = windMax >= 60 ? 'danger' : windMax >= 30 ? 'strong' : '';
+    var windTxt  = windNow != null
+      ? '💨 ' + windNow + ' km/h  ↑' + windMax + ' km/h'
+      : '💨 ' + windMax + ' km/h max';
+    windEl.textContent = windTxt;
+    windEl.className   = 'home-hero-wx-wind' + (windCls ? ' ' + windCls : '');
+  }
 }
 
 function renderGreeting() {

@@ -238,6 +238,7 @@
     }
     .notif-toggle-row input[type=checkbox] { width:20px; height:20px; cursor:pointer; }
     .notif-times { display:flex; flex-direction:column; gap:10px; padding: 10px 0; }
+    .notif-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--t-4); margin-bottom:6px; }
     .notif-note { font-size:11.5px; color:var(--t-4); margin-top:14px; line-height:1.5; }
     .notif-ios-guide {
       background: rgba(118,150,255,0.10);
@@ -9279,12 +9280,13 @@ function loadNotifPrefs() {
     var raw = localStorage.getItem('spm_notif_prefs');
     var p = raw ? JSON.parse(raw) : {};
     return {
-      enabled:     p.enabled !== false,
-      morningTime: p.morningTime || '07:00',
-      eveningTime: p.eveningTime || '20:00'
+      enabled:      p.enabled !== false,
+      morningTime:  p.morningTime || '07:00',
+      eveningTime:  p.eveningTime || '20:00',
+      alerteMeteo:  p.alerteMeteo !== false  // alerte anticipée activée par défaut
     };
   } catch(e) {
-    return { enabled: true, morningTime: '07:00', eveningTime: '20:00' };
+    return { enabled: true, morningTime: '07:00', eveningTime: '20:00', alerteMeteo: true };
   }
 }
 
@@ -9361,6 +9363,68 @@ function checkNotificationsOnOpen() {
 
   if (Math.abs(nowMin - morningMin) <= win) sendLocalNotif(todayIso, 'matin');
   if (Math.abs(nowMin - eveningMin) <= win) sendLocalNotif(tomorrowIso, 'veille');
+
+  // Alertes météo anticipées (J+2 à J+7)
+  if (prefs.alerteMeteo) checkAnticipatedAlerts();
+}
+
+function checkAnticipatedAlerts() {
+  if (!ST.forecast || !ST.tasks.length) return;
+  var now = new Date();
+  var todaySentKey = 'spm_alerte_check_' + isoDate(now);
+  if (localStorage.getItem(todaySentKey)) return; // une seule vérification par jour
+
+  var alerts = [];
+  ST.forecast.forEach(function(d, idx) {
+    if (idx < 2) return; // J et J+1 déjà couverts par les notifs normales
+    if (idx > 7) return; // max 7 jours
+    var dIso = isoDate(d.date);
+    var dayTasks = ST.tasks.filter(function(t) {
+      return t.scheduledDate === dIso && t.status !== 'backlog';
+    });
+    if (!dayTasks.length) return;
+
+    dayTasks.forEach(function(t) {
+      var res = assess(t.type, d, t.weather);
+      if (res.level === 'danger' || res.level === 'risk') {
+        var dateObj = new Date(dIso + 'T12:00:00');
+        var dayStr  = DAYS_L[dateObj.getDay()] + ' ' + dateObj.getDate() + ' ' + MONTHS_FULL[dateObj.getMonth()];
+        var icon    = res.level === 'danger' ? '⛔' : '⚠️';
+        alerts.push({
+          task:    t,
+          day:     dayStr,
+          daysOut: idx,
+          level:   res.level,
+          wx:      d,
+          icon:    icon,
+          msg:     res.message || wLabel(d.weathercode)
+        });
+      }
+    });
+  });
+
+  if (!alerts.length) {
+    localStorage.setItem(todaySentKey, '1');
+    return;
+  }
+
+  // Grouper par niveau — d'abord les danger, puis les risk
+  alerts.sort(function(a, b) {
+    if (a.level === b.level) return a.daysOut - b.daysOut;
+    return a.level === 'danger' ? -1 : 1;
+  });
+
+  var top = alerts.slice(0, 3);
+  var title = (alerts[0].level === 'danger' ? '⛔' : '⚠️') + ' SmartPlan · Alerte météo travaux';
+  var body  = top.map(function(a) {
+    return a.icon + ' ' + a.task.name + ' · ' + a.day + ' — ' + wIcon(a.wx.weathercode) + ' ' + a.msg;
+  }).join('\n');
+  if (alerts.length > 3) body += '\n+ ' + (alerts.length - 3) + ' autre(s) travaux à risque';
+
+  try {
+    new Notification(title, { body: body, tag: 'spm-alerte-' + isoDate(now) });
+    localStorage.setItem(todaySentKey, '1');
+  } catch(e) {}
 }
 
 function sendLocalNotif(dateIso, type) {
@@ -9424,17 +9488,24 @@ function openNotifSettings() {
     permBtn = '<button class="btn-primary" onclick="requestNotifPermission().then(renderNotifModal)" style="width:100%;margin-bottom:8px">Autoriser les notifications</button>';
   }
 
+  var dis = prefs.enabled ? '' : 'opacity:.4;pointer-events:none';
   var html = '<h3>🔔 Notifications</h3>'
     + permBtn
     + '<label class="notif-toggle-row">'
     +   '<span>Activer les notifications</span>'
     +   '<input type="checkbox" id="notifEnabled"' + (prefs.enabled ? ' checked' : '') + ' onchange="toggleNotifEnabled(this.checked)">'
     + '</label>'
-    + '<div class="notif-times" id="notifTimes" style="' + (prefs.enabled ? '' : 'opacity:.4;pointer-events:none') + '">'
+    + '<div id="notifTimes" style="' + dis + '">'
+    +   '<div class="notif-section-title">Rappels quotidiens</div>'
     +   '<div class="fg"><label>Matin (jour J)</label>'
     +   '<input type="time" id="notifMorning" value="' + prefs.morningTime + '" onchange="saveNotifTime()"></div>'
     +   '<div class="fg"><label>Veille au soir (jour J-1)</label>'
     +   '<input type="time" id="notifEvening" value="' + prefs.eveningTime + '" onchange="saveNotifTime()"></div>'
+    +   '<div class="notif-section-title" style="margin-top:14px">Alertes anticipées</div>'
+    +   '<label class="notif-toggle-row" style="border-top:none;padding-top:6px">'
+    +     '<span style="font-size:13px;font-weight:500">⛔ Alerte si mauvais temps dans les 7 prochains jours sur un travail planifié</span>'
+    +     '<input type="checkbox" id="notifAlerte"' + (prefs.alerteMeteo ? ' checked' : '') + ' onchange="saveNotifAlerte(this.checked)">'
+    +   '</label>'
     + '</div>'
     + '<p class="notif-note">📱 Sur iPhone : l\'app doit être ajoutée à l\'écran d\'accueil pour recevoir les notifications en arrière-plan.</p>';
 
@@ -9466,6 +9537,14 @@ function saveNotifTime() {
   saveNotifPrefs(prefs);
   syncAllToSW();
   toast('✓ Horaires enregistrés');
+}
+
+function saveNotifAlerte(val) {
+  var prefs = loadNotifPrefs();
+  prefs.alerteMeteo = val;
+  saveNotifPrefs(prefs);
+  syncAllToSW();
+  toast(val ? '✓ Alertes anticipées activées' : 'Alertes anticipées désactivées');
 }
 
 </script>

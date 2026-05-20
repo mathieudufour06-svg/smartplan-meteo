@@ -239,6 +239,16 @@
     .notif-toggle-row input[type=checkbox] { width:20px; height:20px; cursor:pointer; }
     .notif-times { display:flex; flex-direction:column; gap:10px; padding: 10px 0; }
     .notif-note { font-size:11.5px; color:var(--t-4); margin-top:14px; line-height:1.5; }
+    .notif-ios-guide {
+      background: rgba(118,150,255,0.10);
+      border: 1px solid rgba(118,150,255,0.25);
+      border-radius: var(--r-md);
+      padding: 14px;
+      font-size: 13.5px;
+      color: var(--t-2);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
     .sh-tagline {
       font-size: 10px; font-weight: 500;
       color: var(--t-4);
@@ -9427,10 +9437,29 @@ function parseNotifTime(str) {
 /* ── Modal paramètres notifications ── */
 function openNotifSettings() {
   var prefs = loadNotifPrefs();
-  var hasPerm = ('Notification' in window) && Notification.permission === 'granted';
-  var permBtn = hasPerm
-    ? '<span class="notif-perm-ok">✓ Autorisées</span>'
-    : '<button class="btn-primary" onclick="requestNotifPermission().then(renderNotifModal)" style="width:100%;margin-bottom:8px">Autoriser les notifications</button>';
+  var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  var isStandalone = window.navigator.standalone === true;
+  var hasNotifAPI = 'Notification' in window;
+  var hasPerm = hasNotifAPI && Notification.permission === 'granted';
+
+  var permBtn;
+  if (hasPerm) {
+    permBtn = '<span class="notif-perm-ok">✓ Notifications autorisées</span>';
+  } else if (isIOS && !isStandalone) {
+    permBtn = '<div class="notif-ios-guide">'
+      + '<p style="font-weight:700;margin:0 0 8px">📲 Étape requise sur iPhone</p>'
+      + '<p style="margin:0 0 6px">Pour activer les notifications, tu dois d\'abord <strong>installer l\'app sur ton écran d\'accueil</strong> :</p>'
+      + '<ol style="margin:0;padding-left:18px;line-height:1.8">'
+      + '<li>Appuie sur <strong>⬆ Partager</strong> en bas de Safari</li>'
+      + '<li>Choisis <strong>« Sur l\'écran d\'accueil »</strong></li>'
+      + '<li>Ouvre l\'app depuis l\'icône et reviens ici</li>'
+      + '</ol>'
+      + '</div>';
+  } else if (!hasNotifAPI) {
+    permBtn = '<div class="notif-ios-guide"><p>⚠ Ton navigateur ne supporte pas les notifications web. Essaie d\'ajouter l\'app à l\'écran d\'accueil.</p></div>';
+  } else {
+    permBtn = '<button class="btn-primary" onclick="requestNotifPermission().then(renderNotifModal)" style="width:100%;margin-bottom:8px">Autoriser les notifications</button>';
+  }
 
   var html = '<div class="notif-modal">'
     + '<h3>🔔 Notifications</h3>'

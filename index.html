@@ -3881,6 +3881,14 @@
 </div>
 
 <!-- JOBS MODAL -->
+<!-- ══ NOTIFICATIONS OVERLAY ══ -->
+<div class="overlay" id="notifOverlay" onclick="overlayClick(event,'notifOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('notifOverlay')" aria-label="Fermer">✕</button>
+    <div id="notifModalContent"></div>
+  </div>
+</div>
+
 <div class="overlay" id="jobsOverlay" onclick="overlayClick(event,'jobsOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
     <button type="button" class="modal-close" onclick="closeModal('jobsOverlay')" aria-label="Fermer">✕</button>
@@ -9461,8 +9469,7 @@ function openNotifSettings() {
     permBtn = '<button class="btn-primary" onclick="requestNotifPermission().then(renderNotifModal)" style="width:100%;margin-bottom:8px">Autoriser les notifications</button>';
   }
 
-  var html = '<div class="notif-modal">'
-    + '<h3>🔔 Notifications</h3>'
+  var html = '<h3>🔔 Notifications</h3>'
     + permBtn
     + '<label class="notif-toggle-row">'
     +   '<span>Activer les notifications</span>'
@@ -9474,19 +9481,10 @@ function openNotifSettings() {
     +   '<div class="fg"><label>Veille au soir (jour J-1)</label>'
     +   '<input type="time" id="notifEvening" value="' + prefs.eveningTime + '" onchange="saveNotifTime()"></div>'
     + '</div>'
-    + '<p class="notif-note">📱 Sur iPhone : l\'app doit être ajoutée à l\'écran d\'accueil pour recevoir les notifications en arrière-plan.</p>'
-    + '</div>';
+    + '<p class="notif-note">📱 Sur iPhone : l\'app doit être ajoutée à l\'écran d\'accueil pour recevoir les notifications en arrière-plan.</p>';
 
-  var wrap = document.createElement('div');
-  wrap.className = 'overlay';
-  wrap.id = 'notifOverlay';
-  wrap.onclick = function(e) { if (e.target === wrap) closeModal('notifOverlay'); };
-  var modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = '<button type="button" class="modal-close" onclick="closeModal(\'notifOverlay\')">✕</button>' + html;
-  wrap.appendChild(modal);
-  document.body.appendChild(wrap);
-  requestAnimationFrame(function() { wrap.classList.add('open'); });
+  document.getElementById('notifModalContent').innerHTML = html;
+  openModal('notifOverlay');
 }
 
 function renderNotifModal() {

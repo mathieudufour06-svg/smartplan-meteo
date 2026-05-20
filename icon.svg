@@ -5,98 +5,125 @@
       <stop offset="100%" stop-color="#0a0f1a"/>
     </linearGradient>
     <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1a2d4a"/>
+      <stop offset="0%" stop-color="#1c3050"/>
       <stop offset="100%" stop-color="#0d1a2e"/>
-    </linearGradient>
-    <linearGradient id="hat" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffb800"/>
-      <stop offset="100%" stop-color="#e07b00"/>
-    </linearGradient>
-    <linearGradient id="hatShine" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffd84d"/>
-      <stop offset="60%" stop-color="#ffb800"/>
-    </linearGradient>
-    <linearGradient id="cloud" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8ab0d8"/>
-      <stop offset="100%" stop-color="#5a80aa"/>
     </linearGradient>
     <linearGradient id="sun" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffe566"/>
-      <stop offset="100%" stop-color="#ffa500"/>
+      <stop offset="100%" stop-color="#ff9500"/>
     </linearGradient>
-    <linearGradient id="rain1" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#7ab8ff" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#4a8fd4" stop-opacity="0.4"/>
+    <linearGradient id="cloud" x1="0%" y1="30%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7aabdc"/>
+      <stop offset="100%" stop-color="#3d6e9e"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.5"/>
-    </filter>
-    <filter id="sunGlow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
+    <linearGradient id="wood" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d4852a"/>
+      <stop offset="100%" stop-color="#a85e10"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5c3d1a"/>
+      <stop offset="100%" stop-color="#3a2208"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.6"/>
     </filter>
   </defs>
 
-  <!-- Background rounded rect -->
+  <!-- Background -->
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
 
-  <!-- Sky area top -->
-  <rect x="0" y="0" width="512" height="280" rx="0" fill="url(#sky)" opacity="0.6" clip-path="inset(0 0 0 0 round 112px 112px 0 0)"/>
+  <!-- Sky -->
+  <rect x="0" y="0" width="512" height="400" rx="0" fill="url(#sky)" clip-path="inset(0 0 112px 0 round 112px 112px 0 0)"/>
 
-  <!-- Sun (top left, partially behind cloud) -->
-  <circle cx="148" cy="148" r="58" fill="url(#sun)" filter="url(#sunGlow)" opacity="0.95"/>
-  <g stroke="#ffe566" stroke-width="8" stroke-linecap="round" opacity="0.6">
-    <line x1="148" y1="72"  x2="148" y2="58"/>
-    <line x1="148" y1="224" x2="148" y2="238"/>
-    <line x1="72"  y1="148" x2="58"  y2="148"/>
-    <line x1="224" y1="148" x2="238" y2="148"/>
-    <line x1="96"  y1="96"  x2="86"  y2="86"/>
-    <line x1="200" y1="200" x2="210" y2="210"/>
-    <line x1="200" y1="96"  x2="210" y2="86"/>
-    <line x1="96"  y1="200" x2="86"  y2="210"/>
+  <!-- Sun glow halo -->
+  <circle cx="390" cy="122" r="72" fill="#ff9500" opacity="0.15" filter="url(#glow)"/>
+  <!-- Sun -->
+  <circle cx="390" cy="122" r="46" fill="url(#sun)" filter="url(#glow)"/>
+  <!-- Sun rays -->
+  <g stroke="#ffe566" stroke-width="7" stroke-linecap="round" opacity="0.55">
+    <line x1="390" y1="58"  x2="390" y2="44"/>
+    <line x1="390" y1="186" x2="390" y2="200"/>
+    <line x1="326" y1="122" x2="312" y2="122"/>
+    <line x1="454" y1="122" x2="468" y2="122"/>
+    <line x1="345" y1="77"  x2="335" y2="67"/>
+    <line x1="435" y1="167" x2="445" y2="177"/>
+    <line x1="435" y1="77"  x2="445" y2="67"/>
+    <line x1="345" y1="167" x2="335" y2="177"/>
   </g>
 
-  <!-- Storm cloud (center-right, covering part of sun) -->
-  <g filter="url(#shadow)">
-    <circle cx="310" cy="175" r="62"  fill="url(#cloud)"/>
-    <circle cx="368" cy="188" r="50"  fill="url(#cloud)"/>
-    <circle cx="252" cy="192" r="46"  fill="url(#cloud)"/>
-    <rect   x="252"  y="188" width="166" height="58" rx="0" fill="url(#cloud)"/>
-    <!-- Darker bottom of cloud -->
-    <rect   x="252"  y="218" width="166" height="28" rx="0" fill="#3a5f80" opacity="0.5"/>
+  <!-- Storm cloud (moving in from left) -->
+  <g filter="url(#shadow)" opacity="0.93">
+    <circle cx="172" cy="168" r="66" fill="url(#cloud)"/>
+    <circle cx="238" cy="152" r="52" fill="url(#cloud)"/>
+    <circle cx="118" cy="182" r="44" fill="url(#cloud)"/>
+    <rect   x="118"  y="178" width="172" height="56" rx="0" fill="url(#cloud)"/>
+    <rect   x="118"  y="208" width="172" height="26" rx="0" fill="#2a5070" opacity="0.55"/>
   </g>
-  <!-- Cloud shine -->
-  <ellipse cx="318" cy="162" rx="38" ry="16" fill="white" opacity="0.15"/>
+  <!-- Cloud highlight -->
+  <ellipse cx="180" cy="152" rx="42" ry="16" fill="white" opacity="0.13"/>
 
-  <!-- Rain drops from cloud -->
-  <g fill="url(#rain1)">
-    <rect x="276" y="258" width="6" height="22" rx="3"/>
-    <rect x="306" y="268" width="6" height="22" rx="3"/>
-    <rect x="336" y="256" width="6" height="22" rx="3"/>
-    <rect x="366" y="264" width="6" height="22" rx="3"/>
-    <rect x="291" y="282" width="5" height="16" rx="2.5"/>
-    <rect x="321" y="290" width="5" height="16" rx="2.5"/>
-    <rect x="351" y="280" width="5" height="16" rx="2.5"/>
-  </g>
-
-  <!-- Hard hat — the hero element -->
-  <g filter="url(#shadow)">
-    <!-- Brim (flat base) -->
-    <rect x="104" y="342" width="304" height="24" rx="10" fill="url(#hat)"/>
-    <!-- Dome -->
-    <path d="M 148 342 Q 148 248 256 240 Q 364 248 364 342 Z" fill="url(#hatShine)"/>
-    <!-- Brim shadow under dome -->
-    <rect x="104" y="342" width="304" height="10" rx="5" fill="#c06000" opacity="0.4"/>
-    <!-- Center ridge stripe -->
-    <path d="M 248 242 Q 252 240 256 240 Q 260 240 264 242 L 268 342 L 244 342 Z" fill="white" opacity="0.12"/>
-    <!-- Inner band -->
-    <rect x="148" y="354" width="216" height="16" rx="8" fill="#c06000" opacity="0.45"/>
-    <!-- Vent slots -->
-    <rect x="226" y="268" width="12" height="30" rx="4" fill="#c06000" opacity="0.35"/>
-    <rect x="274" y="268" width="12" height="30" rx="4" fill="#c06000" opacity="0.35"/>
+  <!-- Rain -->
+  <g fill="#7ab8ff" opacity="0.75">
+    <rect x="136" y="242" width="6" height="24" rx="3"/>
+    <rect x="162" y="254" width="6" height="24" rx="3"/>
+    <rect x="188" y="244" width="6" height="24" rx="3"/>
+    <rect x="214" y="252" width="6" height="24" rx="3"/>
+    <rect x="149" y="272" width="5" height="18" rx="2.5"/>
+    <rect x="175" y="278" width="5" height="18" rx="2.5"/>
+    <rect x="201" y="270" width="5" height="18" rx="2.5"/>
   </g>
 
-  <!-- SmartPlan label at bottom -->
-  <rect x="80" y="396" width="352" height="52" rx="14" fill="#ffffff" fill-opacity="0.05"/>
-  <text x="256" y="430" font-family="'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="900" fill="#ffb800" text-anchor="middle" letter-spacing="2.5">SMARTPLAN</text>
+  <!-- Ground / foundation -->
+  <rect x="60" y="420" width="392" height="36" rx="8" fill="url(#ground)"/>
+  <rect x="60" y="416" width="392" height="10" rx="4" fill="#7a5228" opacity="0.6"/>
+
+  <!-- House frame (charpente) — structural lumber look -->
+  <g fill="url(#wood)" filter="url(#shadow)">
+    <!-- Left wall stud vertical -->
+    <rect x="112" y="310" width="18" height="114" rx="4"/>
+    <!-- Right wall stud vertical -->
+    <rect x="382" y="310" width="18" height="114" rx="4"/>
+    <!-- Center stud -->
+    <rect x="247" y="330" width="18" height="94" rx="4"/>
+
+    <!-- Bottom plate (sill) -->
+    <rect x="108" y="416" width="296" height="14" rx="4"/>
+
+    <!-- Top plate (top of wall) -->
+    <rect x="108" y="306" width="296" height="14" rx="4"/>
+
+    <!-- Left rafter -->
+    <rect x="256" y="175"
+          width="18" height="168" rx="5"
+          transform="rotate(-38, 265, 175)"/>
+    <!-- Right rafter -->
+    <rect x="256" y="175"
+          width="18" height="168" rx="5"
+          transform="rotate(38, 247, 175)"/>
+
+    <!-- Ridge board (peak) -->
+    <rect x="247" y="168" width="18" height="30" rx="5"/>
+
+    <!-- Collar tie (cross brace on rafters) -->
+    <rect x="170" y="265" width="172" height="14" rx="4"/>
+
+    <!-- Left diagonal brace -->
+    <rect x="112" y="310"
+          width="14" height="100" rx="4"
+          transform="rotate(-30, 119, 358)"/>
+    <!-- Right diagonal brace -->
+    <rect x="382" y="310"
+          width="14" height="100" rx="4"
+          transform="rotate(30, 389, 358)"/>
+  </g>
+
+  <!-- Brand -->
+  <rect x="72" y="456" width="368" height="38" rx="10" fill="#ffffff" fill-opacity="0.05"/>
+  <text x="256" y="483" font-family="'Helvetica Neue', Arial, sans-serif"
+        font-size="24" font-weight="900" fill="#ffb800"
+        text-anchor="middle" letter-spacing="2.5">SMARTPLAN</text>
 </svg>

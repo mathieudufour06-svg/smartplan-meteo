@@ -310,64 +310,59 @@
     /* ════════════════════════════════════════════════════════════════
        HOME — GREETING
     ════════════════════════════════════════════════════════════════ */
-    .greeting {
-      padding: var(--s4) 0 var(--s6);
-      display: flex; align-items: flex-start;
-      gap: var(--s4);
+    /* Hero card compacte */
+    .home-hero {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; text-align: left;
+      background: var(--surface-1);
+      border: 1px solid var(--line-1);
+      border-radius: var(--r-xl);
+      padding: 18px 20px;
+      margin-bottom: var(--s5);
+      gap: 12px;
+      cursor: pointer;
+      transition: background var(--t-fast) var(--ease);
     }
-    .greet-text { flex: 1; min-width: 0; }
-    .greet-today-date {
-      font-size: 30px; font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--t-1);
-      margin-bottom: 4px;
-      text-transform: capitalize;
-      line-height: 1.1;
+    .home-hero:active { background: var(--surface-2); }
+    .home-hero-left { flex: 1; min-width: 0; }
+    .home-hero-greeting {
+      font-size: 13px; font-weight: 600;
+      color: var(--t-3); letter-spacing: -0.01em;
+      margin-bottom: 2px; text-transform: capitalize;
     }
-    .greet-title-row {
-      display: flex; align-items: baseline; gap: 10px;
-      margin-bottom: 4px;
+    .home-hero-title {
+      font-size: 34px; font-weight: 900;
+      letter-spacing: -0.04em; line-height: 1.0;
+      color: var(--t-1); margin: 0 0 6px;
     }
-    .greet-eyebrow {
-      display: block;
-      font-size: 12px; font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--t-3);
-      margin-bottom: var(--s2);
-    }
-    .greet-title {
-      font-size: 40px;
-      font-weight: 900;
-      letter-spacing: -0.04em;
-      line-height: 1.0;
-      color: var(--t-1);
-      margin: 0;
-    }
-    .greet-title .accent {
+    .home-hero-title .accent {
       background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
+      -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+    .home-hero-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.03em; color: var(--t-3);
+    }
+    .home-hero-status.ok     { color: var(--green); }
+    .home-hero-status.warn   { color: var(--orange); }
+    .home-hero-status.danger { color: var(--red); }
+    .home-hero-right {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; flex-shrink: 0;
+    }
+    .home-hero-wx-icon  { font-size: 36px; line-height: 1; }
+    .home-hero-wx-temp  { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: var(--t-1); line-height: 1; }
+    .home-hero-wx-label { font-size: 11px; font-weight: 600; color: var(--t-3); text-align: center; }
+    .home-hero-wx-label.ok     { color: var(--green); }
+    .home-hero-wx-label.warn   { color: var(--orange); }
+    .home-hero-wx-label.danger { color: var(--red); }
+    .home-hero-wx-range { font-size: 10.5px; color: var(--t-4); text-align: center; }
     .smartplan-label {
       font-size: 11px; font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #C9A96E;
-      opacity: 0.95;
-    }
-    .greet-description {
-      font-size: 13px;
-      color: rgba(255,255,255,0.58);
-      margin-top: 6px;
-      line-height: 1.4;
-      max-width: 220px;
-    }
-    .greet-sub {
-      font-size: 15px; font-weight: 500;
-      color: var(--t-3);
-      letter-spacing: -0.01em;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: #C9A96E; opacity: 0.95;
     }
 
     /* ════════════════════════════════════════════════════════════════
@@ -3254,47 +3249,21 @@
     <!-- ═══════════════════ HOME ═══════════════════ -->
     <section class="view active" id="viewHome" data-view="home">
 
-      <!-- Greeting + widget météo intégré -->
-      <div class="greeting">
-        <div class="greet-text">
-
-  <div class="greet-today-date" id="greetTodayDate">—</div>
-
-  <h1 class="greet-title">
-    Bonjour<span class="accent" id="greetName"></span>
-  </h1>
-
-  <span class="greet-eyebrow" id="greetEyebrow"></span>
-
-</div>
-        <button type="button" class="wx-widget" id="miniWeather" onclick="openWeatherDetail()" aria-label="Voir la météo détaillée">
-          <div class="wx-head">
-            <span class="wx-icon-big" id="wxIcon">⏳</span>
-            <span class="wx-orb" id="wxOrb" data-level="idle"></span>
-          </div>
-          <div class="wx-main">
-            <span class="wx-temp" id="mwxTemp">—°</span>
-            <span class="wx-status" id="mwxStatus">Météo</span>
-            <span class="wx-range" id="mwxRange"></span>
-          </div>
-          <div class="wx-sep"></div>
-          <div class="wx-grid">
-            <div class="wx-stat">
-              <span class="wx-stat-val" id="mwxRain">—</span>
-              <span class="wx-stat-lbl">Pluie</span>
-            </div>
-            <div class="wx-stat">
-              <span class="wx-stat-val" id="mwxRainMm">—</span>
-              <span class="wx-stat-lbl">mm</span>
-            </div>
-            <div class="wx-stat">
-              <span class="wx-stat-val" id="mwxWind">—</span>
-              <span class="wx-stat-lbl">Vent</span>
-            </div>
-          </div>
-        </button>
-
-      </div>
+      <!-- Hero card compacte -->
+      <button type="button" class="home-hero" id="miniWeather" onclick="openWeatherDetail()" aria-label="Voir la météo détaillée">
+        <div class="home-hero-left">
+          <div class="home-hero-greeting" id="greetTodayDate">—</div>
+          <h1 class="home-hero-title">Bonjour<span class="accent" id="greetName"></span></h1>
+          <div class="home-hero-status" id="greetEyebrow"></div>
+        </div>
+        <div class="home-hero-right">
+          <span class="home-hero-wx-icon" id="wxIcon">⏳</span>
+          <span class="home-hero-wx-temp" id="mwxTemp">—°</span>
+          <span class="home-hero-wx-label" id="mwxStatus">—</span>
+          <span class="home-hero-wx-range" id="mwxRange"></span>
+          <span class="wx-orb" id="wxOrb" data-level="idle" style="margin-top:6px"></span>
+        </div>
+      </button>
 
       <!-- 1. JOBS AUJOURD'HUI -->
       <div class="section">
@@ -5095,28 +5064,20 @@ function renderMiniWeather() {
   var tempEl   = document.getElementById('mwxTemp');
   var statusEl = document.getElementById('mwxStatus');
   var rangeEl  = document.getElementById('mwxRange');
-  var windEl   = document.getElementById('mwxWind');
-  var rainEl   = document.getElementById('mwxRain');
-  var rainMmEl = document.getElementById('mwxRainMm');
   var orbEl    = document.getElementById('wxOrb');
   var iconEl   = document.getElementById('wxIcon');
   if (!tempEl) return;
 
   var w = ST.forecast && ST.forecast[0];
   if (!w) {
-    tempEl.textContent = '—°';
+    tempEl.textContent   = '—°';
     if (rangeEl)  rangeEl.textContent  = '';
-    if (windEl)   windEl.textContent   = '—';
-    if (rainEl)   rainEl.textContent   = '—';
-    if (rainMmEl) rainMmEl.textContent = '';
-    statusEl.textContent = 'Météo';
-    statusEl.className   = 'wx-status';
+    if (statusEl) statusEl.textContent = 'Météo';
     if (orbEl) orbEl.setAttribute('data-level', 'idle');
     if (iconEl) iconEl.textContent = '⏳';
     return;
   }
 
-  // Use live current conditions if forecast[0] is today
   var now = new Date();
   var isToday = isoDate(w.date) === isoDate(now);
   var cur = (isToday && ST.current) ? ST.current : null;
@@ -5124,31 +5085,23 @@ function renderMiniWeather() {
   var displayTemp = cur ? cur.temp : w.temp_max;
   var displayCode = cur ? cur.weathercode : w.weathercode;
   var isDay       = cur ? cur.is_day : 1;
-  var displayWind = cur ? cur.windspeed : w.windspeed;
 
   tempEl.textContent = displayTemp + '°';
 
-  // Range line: "T. ress. X° · Max X° / Min X°"
   if (rangeEl) {
-    var rangeParts = ['Max ' + w.temp_max + '° / Min ' + w.temp_min + '°'];
-    if (cur && cur.feels_like !== cur.temp) rangeParts.unshift('T. ress. ' + cur.feels_like + '°');
-    rangeEl.textContent = rangeParts.join(' · ');
+    var parts = ['Max ' + w.temp_max + '° / Min ' + w.temp_min + '°'];
+    if (cur && cur.feels_like !== cur.temp) parts.unshift('Res. ' + cur.feels_like + '°');
+    rangeEl.textContent = parts.join(' · ');
   }
 
-  if (windEl)   windEl.textContent   = displayWind + 'km/h';
-  if (rainEl)   rainEl.textContent   = (w.rain_prob != null ? w.rain_prob : 0) + '%';
-  if (rainMmEl) rainMmEl.textContent = (w.precipitation != null ? w.precipitation : 0) + 'mm';
-  if (iconEl)   iconEl.textContent   = wIconNight(displayCode, isDay);
+  if (iconEl) iconEl.textContent = wIconNight(displayCode, isDay);
 
-  // Status label: sky condition when current available, planning label otherwise
   var st = simpleStatus(w);
   var label = cur ? wLabelNight(displayCode, isDay) : (
     st.level === 'ok'   ? 'Favorable' :
-    st.level === 'warn' ? (w.precipitation > 0 ? 'Risque pluie' : w.windspeed > 25 ? 'Vent léger' : w.temp_min < 5 ? 'Températures fraîches' : 'À surveiller') :
-    w.weathercode >= 95 ? 'Orages' : w.precipitation > 5 ? 'Forte pluie' : w.windspeed > 40 ? 'Grand vent' : w.temp_min < 0 ? 'Gel prévu' : 'Conditions risquées'
+    st.level === 'warn' ? 'À surveiller' : 'Conditions risquées'
   );
-  statusEl.textContent = label;
-  statusEl.className   = 'wx-status ' + st.level;
+  if (statusEl) { statusEl.textContent = label; statusEl.className = 'home-hero-wx-label ' + st.level; }
   if (orbEl) orbEl.setAttribute('data-level', st.level);
 }
 
@@ -5156,23 +5109,24 @@ function renderGreeting() {
   var now = new Date();
   var hour = now.getHours();
   var greeting = hour < 12 ? 'Bonjour' : (hour < 18 ? 'Bon après-midi' : 'Bonsoir');
-  var nameEl = document.getElementById('greetName');
-  if (nameEl) nameEl.textContent = '';
-  var titleEl = document.querySelector('.greet-title');
-  if (titleEl) {
-    // Keep accent span but update greeting text node
-    titleEl.firstChild.nodeValue = greeting;
-  }
-  var dayLabel = DAYS_L[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS_FULL[now.getMonth()];
+
+  // Date above greeting
   var dateEl = document.getElementById('greetTodayDate');
-  if (dateEl) dateEl.textContent = dayLabel;
-  // Eyebrow: short status based on weather
+  if (dateEl) dateEl.textContent = DAYS_L[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS_FULL[now.getMonth()];
+
+  // Title: greeting word
+  var titleEl = document.querySelector('.home-hero-title');
+  if (titleEl) titleEl.firstChild.nodeValue = greeting;
+
+  // Status dot + label
   var eb = document.getElementById('greetEyebrow');
+  if (!eb) return;
   if (ST.forecast && ST.forecast[0]) {
     var risk = dayOverallRisk(ST.forecast[0]);
-    eb.textContent = risk === 'ok' ? 'Conditions favorables aujourd\'hui'
-                   : risk === 'risk' ? 'Conditions à surveiller'
-                   : 'Conditions défavorables';
+    var dot  = risk === 'ok' ? '🟢' : risk === 'risk' ? '🟡' : '🔴';
+    var lbl  = risk === 'ok' ? 'Conditions favorables' : risk === 'risk' ? 'À surveiller' : 'Conditions défavorables';
+    eb.textContent  = dot + ' ' + lbl;
+    eb.className    = 'home-hero-status ' + (risk === 'danger' ? 'danger' : risk === 'risk' ? 'warn' : 'ok');
   } else {
     eb.textContent = '';
   }

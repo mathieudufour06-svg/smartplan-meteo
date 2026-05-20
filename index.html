@@ -4360,12 +4360,24 @@ function exportData() {
     notifPrefs: loadNotifPrefs()
   };
   var json = JSON.stringify(payload, null, 2);
+  var filename = 'smartplan-sauvegarde-' + isoDate(new Date()) + '.json';
   var blob = new Blob([json], { type: 'application/json' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  var date = new Date();
+
+  // Sur mobile : feuille de partage native (iCloud, AirDrop, courriel…)
+  if (navigator.share && navigator.canShare) {
+    var file = new File([blob], filename, { type: 'application/json' });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'SmartPlan – Sauvegarde' })
+        .then(function() { toast('Sauvegarde partagée ✓'); })
+        .catch(function(err) { if (err.name !== 'AbortError') toast('Partage annulé'); });
+      return;
+    }
+  }
+  // Sur ordinateur : téléchargement classique
+  var url = URL.createObjectURL(blob);
+  var a   = document.createElement('a');
   a.href     = url;
-  a.download = 'smartplan-sauvegarde-' + isoDate(date) + '.json';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

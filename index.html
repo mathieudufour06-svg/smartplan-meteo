@@ -228,6 +228,17 @@
       color: #C9A96E;
       opacity: 0.95;
     }
+    .notif-modal h3 { margin: 0 0 14px; font-size: 18px; }
+    .notif-perm-ok { display:block; text-align:center; color:var(--green); font-weight:700; margin-bottom:12px; }
+    .notif-toggle-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 12px 0; border-top: 1px solid var(--line-1);
+      font-size: 15px; font-weight: 600; color: var(--t-1);
+      cursor: pointer;
+    }
+    .notif-toggle-row input[type=checkbox] { width:20px; height:20px; cursor:pointer; }
+    .notif-times { display:flex; flex-direction:column; gap:10px; padding: 10px 0; }
+    .notif-note { font-size:11.5px; color:var(--t-4); margin-top:14px; line-height:1.5; }
     .sh-tagline {
       font-size: 10px; font-weight: 500;
       color: var(--t-4);
@@ -3220,6 +3231,7 @@
       <span class="sh-loc-name" id="locName">—</span>
     </button>
     <span class="sh-spacer"></span>
+    <button class="sh-icon-btn" onclick="openNotifSettings()" aria-label="Notifications">🔔</button>
     <button class="sh-icon-btn" onclick="openJobsModal()" aria-label="Mes métiers">⚙</button>
     <button class="sh-icon-btn" onclick="loadWeather()" aria-label="Rafraîchir">↻</button>
     </div>
@@ -4379,6 +4391,7 @@ function loadST() {
 function saveST() {
   try {
     localStorage.setItem('spm_v2', JSON.stringify({ loc: ST.loc, locSet: ST.locSet, tasks: ST.tasks }));
+    syncAllToSW();
   } catch(e) {
     console.error('[SPM] saveST failed:', e.message);
     toast('⚠ Sauvegarde impossible — stockage plein?');
@@ -9278,7 +9291,200 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   loadWeather();
+
+  // ── Service Worker + Notifications ──
+  initServiceWorker();
+  checkNotificationsOnOpen();
 });
+
+/* ════════════════════════════════════════════════════════════════
+   NOTIFICATIONS
+════════════════════════════════════════════════════════════════ */
+
+function loadNotifPrefs() {
+  try {
+    var raw = localStorage.getItem('spm_notif_prefs');
+    var p = raw ? JSON.parse(raw) : {};
+    return {
+      enabled:     p.enabled !== false,
+      morningTime: p.morningTime || '07:00',
+      eveningTime: p.eveningTime || '20:00'
+    };
+  } catch(e) {
+    return { enabled: true, morningTime: '07:00', eveningTime: '20:00' };
+  }
+}
+
+function saveNotifPrefs(p) {
+  localStorage.setItem('spm_notif_prefs', JSON.stringify(p));
+}
+
+async function initServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    var reg = await navigator.serviceWorker.register('/sw.js');
+    // Syncer les données avec le SW
+    syncDataToSW(reg);
+    // Periodic Background Sync (Chrome Android)
+    if ('periodicSync' in reg) {
+      var status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+      if (status.state === 'granted') {
+        await reg.periodicSync.register('spm-notifications', { minInterval: 60 * 60 * 1000 }); // 1h
+      }
+    }
+  } catch(e) {
+    console.warn('[SPM] SW registration failed:', e.message);
+  }
+}
+
+function syncDataToSW(reg) {
+  if (!reg || !reg.active) return;
+  reg.active.postMessage({
+    type:  'SPM_SYNC',
+    tasks: ST.tasks,
+    prefs: loadNotifPrefs()
+  });
+}
+
+function syncAllToSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.getRegistration('/sw.js').then(function(reg) {
+    if (reg) syncDataToSW(reg);
+  });
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    toast('⚠ Notifications non supportées sur cet appareil'); return false;
+  }
+  var result = await Notification.requestPermission();
+  if (result === 'granted') {
+    toast('✓ Notifications activées');
+    saveNotifPrefs(Object.assign(loadNotifPrefs(), { enabled: true }));
+    syncAllToSW();
+    return true;
+  } else {
+    toast('⚠ Permission refusée — activez les notifications dans les réglages');
+    return false;
+  }
+}
+
+function checkNotificationsOnOpen() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  var prefs = loadNotifPrefs();
+  if (!prefs.enabled) return;
+
+  var now    = new Date();
+  var nowMin = now.getHours() * 60 + now.getMinutes();
+  var win    = 25;
+
+  var morningMin = parseNotifTime(prefs.morningTime);
+  var eveningMin = parseNotifTime(prefs.eveningTime);
+
+  var todayIso    = isoDate(now);
+  var tomorrowObj = new Date(now); tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+  var tomorrowIso = isoDate(tomorrowObj);
+
+  if (Math.abs(nowMin - morningMin) <= win) sendLocalNotif(todayIso, 'matin');
+  if (Math.abs(nowMin - eveningMin) <= win) sendLocalNotif(tomorrowIso, 'veille');
+}
+
+function sendLocalNotif(dateIso, type) {
+  var sentKey = 'spm_notif_sent_' + type + '_' + dateIso;
+  if (localStorage.getItem(sentKey)) return;
+
+  var dayTasks = ST.tasks.filter(function(t) {
+    return t.scheduledDate === dateIso && t.status !== 'backlog';
+  });
+  if (!dayTasks.length) return;
+
+  var dateObj = new Date(dateIso + 'T12:00:00');
+  var dayName = DAYS_L[dateObj.getDay()];
+  var label   = type === 'matin' ? "Aujourd'hui" : ('Demain · ' + dayName + ' ' + dateObj.getDate() + ' ' + MONTHS_FULL[dateObj.getMonth()]);
+
+  var fcIdx = findForecastIndexByDate(dateIso);
+  var w     = fcIdx !== null && ST.forecast ? ST.forecast[fcIdx] : null;
+  var wxLine = w ? (wIcon(w.weathercode) + ' ' + wLabel(w.weathercode) + ' · ' + Math.round(w.temp_max) + '° / ' + Math.round(w.temp_min) + '°') : '';
+
+  var names = dayTasks.slice(0, 3).map(function(t) { return t.name; }).join(', ');
+  if (dayTasks.length > 3) names += ' +' + (dayTasks.length - 3);
+
+  var title = '🏗 SmartPlan · ' + label;
+  var body  = (wxLine ? wxLine + '\n' : '') + dayTasks.length + ' travaux planifiés : ' + names;
+
+  try {
+    new Notification(title, { body: body, tag: 'spm-' + type + '-' + dateIso });
+    localStorage.setItem(sentKey, '1');
+  } catch(e) {}
+}
+
+function parseNotifTime(str) {
+  var p = (str || '07:00').split(':');
+  return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+}
+
+/* ── Modal paramètres notifications ── */
+function openNotifSettings() {
+  var prefs = loadNotifPrefs();
+  var hasPerm = ('Notification' in window) && Notification.permission === 'granted';
+  var permBtn = hasPerm
+    ? '<span class="notif-perm-ok">✓ Autorisées</span>'
+    : '<button class="btn-primary" onclick="requestNotifPermission().then(renderNotifModal)" style="width:100%;margin-bottom:8px">Autoriser les notifications</button>';
+
+  var html = '<div class="notif-modal">'
+    + '<h3>🔔 Notifications</h3>'
+    + permBtn
+    + '<label class="notif-toggle-row">'
+    +   '<span>Activer les notifications</span>'
+    +   '<input type="checkbox" id="notifEnabled"' + (prefs.enabled ? ' checked' : '') + ' onchange="toggleNotifEnabled(this.checked)">'
+    + '</label>'
+    + '<div class="notif-times" id="notifTimes" style="' + (prefs.enabled ? '' : 'opacity:.4;pointer-events:none') + '">'
+    +   '<div class="fg"><label>Matin (jour J)</label>'
+    +   '<input type="time" id="notifMorning" value="' + prefs.morningTime + '" onchange="saveNotifTime()"></div>'
+    +   '<div class="fg"><label>Veille au soir (jour J-1)</label>'
+    +   '<input type="time" id="notifEvening" value="' + prefs.eveningTime + '" onchange="saveNotifTime()"></div>'
+    + '</div>'
+    + '<p class="notif-note">📱 Sur iPhone : l\'app doit être ajoutée à l\'écran d\'accueil pour recevoir les notifications en arrière-plan.</p>'
+    + '</div>';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'overlay';
+  wrap.id = 'notifOverlay';
+  wrap.onclick = function(e) { if (e.target === wrap) closeModal('notifOverlay'); };
+  var modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = '<button type="button" class="modal-close" onclick="closeModal(\'notifOverlay\')">✕</button>' + html;
+  wrap.appendChild(modal);
+  document.body.appendChild(wrap);
+  requestAnimationFrame(function() { wrap.classList.add('open'); });
+}
+
+function renderNotifModal() {
+  closeModal('notifOverlay');
+  setTimeout(openNotifSettings, 80);
+}
+
+function toggleNotifEnabled(val) {
+  var prefs = loadNotifPrefs();
+  prefs.enabled = val;
+  saveNotifPrefs(prefs);
+  var times = document.getElementById('notifTimes');
+  if (times) times.style.cssText = val ? '' : 'opacity:.4;pointer-events:none';
+  syncAllToSW();
+}
+
+function saveNotifTime() {
+  var prefs = loadNotifPrefs();
+  var m = document.getElementById('notifMorning');
+  var e = document.getElementById('notifEvening');
+  if (m) prefs.morningTime = m.value;
+  if (e) prefs.eveningTime = e.value;
+  saveNotifPrefs(prefs);
+  syncAllToSW();
+  toast('✓ Horaires enregistrés');
+}
+
 </script>
 </body>
 </html>

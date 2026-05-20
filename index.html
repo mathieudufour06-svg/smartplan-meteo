@@ -3893,6 +3893,14 @@
   </div>
 </div>
 
+<!-- ══ IMPORT CHOICE OVERLAY ══ -->
+<div class="overlay" id="importChoiceOverlay" onclick="overlayClick(event,'importChoiceOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('importChoiceOverlay')" aria-label="Fermer">✕</button>
+    <div id="importChoiceContent"></div>
+  </div>
+</div>
+
 <!-- ══ OCR IMPORT OVERLAY ══ -->
 <div class="overlay" id="importOcrOverlay" onclick="if(event.target===this)closeModal('importOcrOverlay')">
   <div class="modal">
@@ -4370,6 +4378,8 @@ function importData() {
   document.getElementById('importFileInput').click();
 }
 
+var _pendingImportData = null;
+
 function handleImportFile(e) {
   var file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -4378,36 +4388,83 @@ function handleImportFile(e) {
     try {
       var data = JSON.parse(ev.target.result);
       if (!data || typeof data !== 'object') throw new Error('Format invalide');
-      var count = 0;
-      if (Array.isArray(data.tasks)) {
-        ST.tasks = data.tasks;
-        count = data.tasks.length;
-      }
-      if (data.loc && data.loc.lat && data.loc.lon) {
-        ST.loc    = data.loc;
-        ST.locSet = !!data.locSet;
-      }
-      if (data.customJobs && typeof data.customJobs === 'object') {
-        _customJobs = data.customJobs;
-        Object.keys(_customJobs).forEach(function(k) {
-          var j = _customJobs[k];
-          RISK_RULES[k] = { rain: j.rain||5, wind: j.wind||30, temp: j.temp||5 };
-        });
-        saveCustomJobs();
-        buildTypeGrid();
-      }
-      if (data.notifPrefs && typeof data.notifPrefs === 'object') {
-        localStorage.setItem('spm_notif_prefs', JSON.stringify(data.notifPrefs));
-      }
-      saveST();
-      renderActive();
-      renderJobsList();
-      toast(count + ' tâche(s) importée(s) avec succès ✓');
+      _pendingImportData = data;
+      var incoming = Array.isArray(data.tasks) ? data.tasks.length : 0;
+      var existing = (ST.tasks || []).length;
+      var existingIds = new Set((ST.tasks || []).map(function(t) { return t.id; }));
+      var newOnly = Array.isArray(data.tasks)
+        ? data.tasks.filter(function(t) { return t.id && !existingIds.has(t.id); }).length
+        : 0;
+      showImportChoiceModal(existing, incoming, newOnly);
     } catch(err) {
       toast('Erreur : fichier invalide');
     }
   };
   reader.readAsText(file);
+}
+
+function showImportChoiceModal(existing, incoming, newOnly) {
+  var html = '<h3>📂 Importer les données</h3>'
+    + '<p style="font-size:.85rem;color:var(--t-3);margin-bottom:16px">'
+    + 'Ce fichier contient <strong>' + incoming + ' tâche(s)</strong>.<br>'
+    + 'Vous avez actuellement <strong>' + existing + ' tâche(s)</strong> sur cet appareil.</p>'
+    + '<div style="display:flex;flex-direction:column;gap:10px">'
+    + '<button type="button" class="btn-primary" style="text-align:left;padding:14px 16px" onclick="applyImport(\'merge\')">'
+    + '<strong>➕ Fusionner</strong><br>'
+    + '<span style="font-size:.78rem;font-weight:500;opacity:.8">Ajoute uniquement les ' + newOnly + ' nouvelle(s) tâche(s) — ne touche pas aux existantes</span>'
+    + '</button>'
+    + '<button type="button" class="btn-cancel" style="text-align:left;padding:14px 16px;border:1px solid var(--hairline)" onclick="applyImport(\'replace\')">'
+    + '<strong>🔄 Remplacer tout</strong><br>'
+    + '<span style="font-size:.78rem;font-weight:500;opacity:.8">Efface vos ' + existing + ' tâche(s) actuelles et les remplace par le fichier</span>'
+    + '</button>'
+    + '<button type="button" class="btn-cancel" style="margin-top:4px" onclick="closeModal(\'importChoiceOverlay\')">Annuler</button>'
+    + '</div>';
+  document.getElementById('importChoiceContent').innerHTML = html;
+  openModal('importChoiceOverlay');
+}
+
+function applyImport(mode) {
+  closeModal('importChoiceOverlay');
+  var data = _pendingImportData;
+  _pendingImportData = null;
+  if (!data) return;
+  var count = 0;
+  if (Array.isArray(data.tasks)) {
+    if (mode === 'merge') {
+      var existingIds = new Set((ST.tasks || []).map(function(t) { return t.id; }));
+      var added = data.tasks.filter(function(t) { return t.id && !existingIds.has(t.id); });
+      ST.tasks = (ST.tasks || []).concat(added);
+      count = added.length;
+    } else {
+      ST.tasks = data.tasks;
+      count = data.tasks.length;
+    }
+  }
+  if (data.loc && data.loc.lat && data.loc.lon) {
+    ST.loc    = data.loc;
+    ST.locSet = !!data.locSet;
+  }
+  if (data.customJobs && typeof data.customJobs === 'object') {
+    if (mode === 'merge') {
+      Object.assign(_customJobs, data.customJobs);
+    } else {
+      _customJobs = data.customJobs;
+    }
+    Object.keys(_customJobs).forEach(function(k) {
+      var j = _customJobs[k];
+      RISK_RULES[k] = { rain: j.rain||5, wind: j.wind||30, temp: j.temp||5 };
+    });
+    saveCustomJobs();
+    buildTypeGrid();
+  }
+  if (data.notifPrefs && typeof data.notifPrefs === 'object') {
+    localStorage.setItem('spm_notif_prefs', JSON.stringify(data.notifPrefs));
+  }
+  saveST();
+  renderActive();
+  renderJobsList();
+  var label = mode === 'merge' ? count + ' nouvelle(s) tâche(s) ajoutée(s) ✓' : count + ' tâche(s) importée(s) ✓';
+  toast(label);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -9327,7 +9384,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      ['taskOverlay','locOverlay','dayDetailOverlay','optimizeOverlay','voiceOverlay','photoOverlay','jobsOverlay','wxDetailOverlay']
+      ['taskOverlay','locOverlay','dayDetailOverlay','optimizeOverlay','voiceOverlay','photoOverlay','jobsOverlay','wxDetailOverlay','importChoiceOverlay']
         .forEach(function(id) { closeModal(id); });
       closeNewJobSheet();
     }

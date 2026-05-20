@@ -1782,7 +1782,7 @@
       border-top-right-radius: var(--r-3xl);
       border: 1px solid var(--line-2);
       border-bottom: 0;
-      padding: var(--s5) var(--s5) calc(var(--safe-bot) + var(--s5));
+      padding: calc(var(--safe-top) + var(--s5)) var(--s5) calc(var(--safe-bot) + var(--s5));
       animation: shIn var(--t-slow) var(--ease);
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
@@ -1799,7 +1799,7 @@
     }
     .modal-close {
       position: absolute;
-      top: calc(var(--s5) - 4px); right: calc(var(--s5) - 4px);
+      top: calc(var(--safe-top) + var(--s5) - 4px); right: calc(var(--s5) - 4px);
       width: 36px; height: 36px;
       display: grid; place-items: center;
       border-radius: 50%;

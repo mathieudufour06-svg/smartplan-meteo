@@ -9484,7 +9484,8 @@ function openNotifSettings() {
     + '<p class="notif-note">📱 Sur iPhone : l\'app doit être ajoutée à l\'écran d\'accueil pour recevoir les notifications en arrière-plan.</p>';
 
   document.getElementById('notifModalContent').innerHTML = html;
-  openModal('notifOverlay');
+  // Délai pour laisser iOS terminer la restauration du scroll avant de re-ouvrir
+  setTimeout(function() { openModal('notifOverlay'); }, 80);
 }
 
 function renderNotifModal() {

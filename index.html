@@ -3530,8 +3530,8 @@
       </div>
     </div>
     <div class="fg">
-      <label>Durée</label>
-      <input type="text" id="tDuration" placeholder="ex : 2h, 1 journée" maxlength="30" autocomplete="off" autocorrect="off" spellcheck="false">
+      <label>Durée <span class="fg-opt">(heures)</span></label>
+      <input type="number" id="tDuration" min="0.5" step="0.5" placeholder="ex : 2">
     </div>
     <div class="fg">
       <label>Lieu / Adresse</label>
@@ -5775,7 +5775,7 @@ function useWorkBankItem(id) {
     var prioEl   = document.getElementById('tPrio');
     if (nameEl)   nameEl.value   = item.name || '';
     if (clientEl) clientEl.value = item.client || '';
-    if (durEl)    durEl.value    = item.duration || '';
+    if (durEl)    durEl.value    = parseDurationToHours(item.duration || '') || '';
     // Carry phone/email into description if present — plain text, no emojis
     var notes = item.notes || '';
     var contact = [];
@@ -6817,7 +6817,7 @@ function ocrConfirmImport() {
       var set = function(id, v) { var e = document.getElementById(id); if (e && v) e.value = v; };
       set('tName',     first.name);
       set('tClient',   first.client);
-      set('tDuration', first.duration);
+      set('tDuration', parseDurationToHours(first.duration || '') || '');
       set('tPrio',     first.priority);
       set('tLocation', first.address);
       var descEl = document.getElementById('tDesc');
@@ -8122,6 +8122,14 @@ function parseSmartInput(originalText) {
   work = work.replace(/\b(?:pour\s+)?(?:de\s+)?l['’]ouvrage\b/gi, ' ');
   var dJob = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\s+de\s+(?:job|travail|boulot|ouvrage)\b/i);
   if (dJob) result.duration = dJob[1].replace(',', '.') + 'h';
+  // "8h30", "8h00" — format NhMM (doit précéder d1 pour éviter capture partielle)
+  if (!result.duration) {
+    var dHM = clip(/\b(\d+)\s*h\s*([0-5]\d)\b/i);
+    if (dHM) {
+      var _hh = parseInt(dHM[1], 10), _mm = parseInt(dHM[2], 10);
+      result.duration = _mm === 0 ? _hh + 'h' : _hh + 'h' + ('0' + _mm).slice(-2);
+    }
+  }
   var d1 = !result.duration && clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
   if (d1) result.duration = d1[1].replace(',', '.') + 'h';
   if (!result.duration) {
@@ -8192,7 +8200,8 @@ function parseSmartInput(originalText) {
     hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
     pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
     excavation: ['excavation','terrassement','fouille','tranchée','deblai','remblai','creusage'],
-    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','coupe','abattage','tonte','pelouse','landscape','haie','fleur','emondage','élagage','elagage','taille'],
+    emondage:   ['émondage','emondage','élagage','elagage','taille d\'arbre','taille d\'arbres','coupe d\'arbre','coupe d\'arbres','abattage d\'arbres','abattage d\'arbre'],
+    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','tonte','pelouse','landscape','haie','fleur'],
     electrique: ['électrique','electrique','électricité','electricite','câblage','cablage','panneau','circuit','luminaire'],
     toiture:    ['toiture','toit','couverture','bardeau','membrane','gouttière','gutters','shingles'],
     peinture:   ['peinture','peindre','enduit','revêtement'],
@@ -8277,11 +8286,14 @@ function parseSmartInput(originalText) {
   var _prevLeft;
   do {
     _prevLeft = leftover;
-    leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
+    leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|faire|d[''])\s+/i, '');
     leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d[''])$/i, '');
   } while (leftover !== _prevLeft);
   // Supprimer articles/prépositions isolés au milieu du titre
   leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');
+  // Supprimer tokens temps/durée résiduels (ex: "8h00", "6h", artefacts STT type "O3")
+  leftover = leftover.replace(/\b\d+h\d*\b/gi, ' ');
+  leftover = leftover.replace(/\s+[A-Z]\d+\b/g, ' ');
   leftover = leftover.replace(/\s{2,}/g, ' ').trim();
   if (!leftover || leftover.length < 2) {
     if (result.type) {
@@ -8306,7 +8318,7 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tName').value     = parsed.name     || '';
   document.getElementById('tClient').value   = parsed.client   || '';
   document.getElementById('tLocation').value = parsed.location || '';
-  document.getElementById('tDuration').value = parsed.duration || '';
+  document.getElementById('tDuration').value = parseDurationToHours(parsed.duration || '') || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
   // Pipe phone/email/amount into description — no emojis, plain text
@@ -8712,6 +8724,36 @@ function _bindInlineMicButtons() {
   });
 }
 
+/* Converts a parsed duration string ("8h","1h30","30 min","1 journée") to decimal hours.
+   Returns a number or '' if unparseable. */
+function parseDurationToHours(str) {
+  if (!str) return '';
+  var s = String(str).trim();
+  var m = s.match(/^(\d+(?:[.,]\d+)?)\s*h\s*(\d{0,2})?\s*$/i);
+  if (m) {
+    var h = parseFloat(m[1].replace(',', '.'));
+    var min = m[2] ? parseInt(m[2], 10) : 0;
+    return Math.round((h + min / 60) * 2) / 2 || h;
+  }
+  var mMin = s.match(/^(\d+)\s*min/i);
+  if (mMin) return Math.max(0.5, Math.round(parseInt(mMin[1], 10) / 60 * 2) / 2);
+  if (/demi|1\/2/i.test(s)) return 4;
+  if (/journ[eé]e/i.test(s)) return 8;
+  var n = parseFloat(s);
+  return isNaN(n) ? '' : n;
+}
+
+/* Formats decimal hours as "8h", "1h30", "30min" for display/storage. */
+function fmtDuration(hours) {
+  var h = parseFloat(hours);
+  if (!h || isNaN(h) || h <= 0) return '';
+  var wh = Math.floor(h);
+  var min = Math.round((h - wh) * 60);
+  if (min === 0) return wh + 'h';
+  if (wh === 0)  return min + 'min';
+  return wh + 'h' + ('0' + min).slice(-2);
+}
+
 /* ════════════════════════════════════════════════════════════════
    TASK MODAL — CRÉATION
 ════════════════════════════════════════════════════════════════ */
@@ -8797,7 +8839,7 @@ function openEditTask(id, title) {
   document.getElementById('tName').value     = task.name     || '';
   document.getElementById('tClient').value   = task.client   || '';
   document.getElementById('tLocation').value = task.location || '';
-  document.getElementById('tDuration').value = task.duration || '';
+  document.getElementById('tDuration').value = parseDurationToHours(task.duration || '') || '';
   var descEl = document.getElementById('tDesc');
   if (descEl) descEl.value = task.description || '';
   setTaskGallery(Array.isArray(task.gallery) ? task.gallery : []);
@@ -8853,7 +8895,7 @@ function saveTask() {
   // Coordonnées pré-sélectionnées via l'autocomplétion (évite un appel Nominatim en plus)
   var _acLat   = locEl && locEl.dataset.acLat ? +locEl.dataset.acLat : null;
   var _acLon   = locEl && locEl.dataset.acLon ? +locEl.dataset.acLon : null;
-  var duration = document.getElementById('tDuration').value.trim();
+  var duration = fmtDuration(document.getElementById('tDuration').value);
   var time     = document.getElementById('tTime').value || '';
   var scheduledDate = document.getElementById('tDate').value || '';
   var dayIdx = scheduledDate ? findForecastIndexByDate(scheduledDate) : null;
@@ -8940,7 +8982,7 @@ function saveTaskAsModel() {
     email:    '',
     address:  (document.getElementById('tLocation').value || '').trim(),
     type:     parseSmartInput(name).type || 'renovation',
-    duration: (document.getElementById('tDuration').value || '').trim(),
+    duration: fmtDuration(document.getElementById('tDuration').value),
     priority: document.getElementById('tPrio').value || 'medium',
     notes:    ((document.getElementById('tDesc') || {}).value || '').trim(),
     flexible: false,

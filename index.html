@@ -7993,41 +7993,41 @@ function parseSmartInput(originalText) {
     return m;
   }
 
+  // ── Pré-nettoyage : phrases parasites avant tout parsing ─────────────────
+  // "numéro de téléphone / cell / tél"
+  work = work.replace(/\bnum[eé]ro\s+(?:de\s+)?(?:t[eé]l[eé]phone?|cellulaire|cell?|t[eé]l\.?)\b/gi, ' ');
+  // "pour une durée de" (introducteur de durée)
+  work = work.replace(/\bpour\s+une?\s+dur[eé]e\s+(?:de\s+)?/gi, ' ');
+  // "pour" introduisant un jour nommé ou une date relative
+  work = work.replace(/\bpour\s+(?=(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['']hui)\b)/gi, ' ');
+
+  // ── Email ─────────────────────────────────────────────────────────────────
   var em = clip(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
   if (em) result.email = em[1];
 
+  // ── Téléphone ─────────────────────────────────────────────────────────────
   var ph = clip(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
   if (ph) result.phone = ph[1] + '-' + ph[2] + '-' + ph[3];
 
-  // Canadian format: 12 500 $, $12,500, 12500$, 1 200,00 $ or "12 000 dollars/piastres"
-  var amt = clip(/(?:\$\s*\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d{1,2})?|\b\d{1,3}(?:[\s,]\d{3})+(?:[.,]\d{1,2})?\s*(?:\$|dollars?|piastres?)|\b\d+(?:[.,]\d{1,2})?\s*(?:\$|dollars?|piastres?))/i);
-  if (amt) {
-    var rawAmt = amt[0].trim();
-    rawAmt = rawAmt.replace(/\s*dollars?\s*$/i, ' $').replace(/\s*piastres?\s*$/i, ' $').replace(/\s+\$/, ' $').trim();
-    result.amount = rawAmt;
+  // ── Montant / Prix ────────────────────────────────────────────────────────
+  // "le prix X pièces", "pour un prix de X$", "X pièces" (québécois)
+  var prixM = clip(/\b(?:le\s+prix|pour\s+un\s+prix\s+de)\s+(\d[\d\s,']*(?:pièces?|piastres?|dollars?|\$)?)/i);
+  if (prixM) result.amount = 'Prix ' + prixM[1].trim().replace(/\s+/g, ' ');
+  if (!result.amount) {
+    var piecesM = clip(/\b(\d[\d\s,']*)\s*pièces?\b/i);
+    if (piecesM) result.amount = piecesM[1].trim() + ' pièces';
   }
-
-  // Civic + street keyword (e.g. "123 rue Principale")
-  var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
-  if (addr) result.location = addr[1].trim();
-  if (!result.location) {
-    // "au/à + civic number + street name" without keyword (e.g. "au 250 Painchaut Montréal")
-    // Negative lookahead avoids matching "au 3 heures" (time/duration words)
-    var addrCivic = clip(/\b(?:au|à)\s+(\d{1,5}\s+(?!(?:h(?:eure)?s?|hrs?|min(?:ute)?s?|jours?)\b)[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}){0,4})\b/i);
-    if (addrCivic) {
-      result.location = addrCivic[1].trim();
-      // Also grab a trailing city: "au 612 LaSalle à Montréal"
-      // Note: \b fails before accented chars like 'à', so use (?:^|\s) instead
-      var cityAppend = clip(/(?:^|\s)(?:à|au)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,})\b/i);
-      if (cityAppend) result.location += ', ' + cityAppend[1].trim();
+  if (!result.amount) {
+    // Canadian $: 12 500 $, $12,500, 12500$, "12 000 dollars/piastres"
+    var amt = clip(/(?:\$\s*\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d{1,2})?|\b\d{1,3}(?:[\s,]\d{3})+(?:[.,]\d{1,2})?\s*(?:\$|dollars?|piastres?)|\b\d+(?:[.,]\d{1,2})?\s*(?:\$|dollars?|piastres?))/i);
+    if (amt) {
+      var rawAmt = amt[0].trim();
+      rawAmt = rawAmt.replace(/\s*dollars?\s*$/i, ' $').replace(/\s*piastres?\s*$/i, ' $').replace(/\s+\$/, ' $').trim();
+      result.amount = rawAmt;
     }
   }
-  if (!result.location) {
-    // "à/au/dans/secteur [City]" without civic number
-    var addrCity = clip(/(?:^|\s)(?:à|au|dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,})\b/i);
-    if (addrCity) result.location = addrCity[1].trim();
-  }
 
+  // ── Date (format mois littéral) ───────────────────────────────────────────
   var monthsFr = { janvier:0, 'février':1, fevrier:1, mars:2, avril:3, mai:4, juin:5, juillet:6, 'août':7, aout:7, septembre:8, octobre:9, novembre:10, 'décembre':11, decembre:11 };
   var monthsRe = Object.keys(monthsFr).join('|');
   var dM = clip(new RegExp('\\b(?:du\\s+|le\\s+)?(\\d{1,2})(?:\\s*er)?\\s+(' + monthsRe + ')(?:\\s+(\\d{4}))?\\b', 'i'));
@@ -8041,20 +8041,22 @@ function parseSmartInput(originalText) {
     result.date = isoDate(dt);
   }
 
+  // ── Date (format numérique) ───────────────────────────────────────────────
   if (!result.date) {
     var dN = clip(/\b(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2}|\d{4}))?\b/);
     if (dN) {
       var nd = parseInt(dN[1], 10), nm = parseInt(dN[2], 10) - 1;
       var ny = dN[3] ? (dN[3].length === 2 ? 2000 + parseInt(dN[3], 10) : parseInt(dN[3], 10)) : new Date().getFullYear();
       if (nm >= 0 && nm <= 11 && nd >= 1 && nd <= 31) {
-        var d2 = new Date(ny, nm, nd);
+        var dNum = new Date(ny, nm, nd);
         var t0 = new Date(); t0.setHours(0,0,0,0);
-        if (!dN[3] && d2 < t0) d2 = new Date(ny + 1, nm, nd);
-        result.date = isoDate(d2);
+        if (!dN[3] && dNum < t0) dNum = new Date(ny + 1, nm, nd);
+        result.date = isoDate(dNum);
       }
     }
   }
 
+  // ── Jours nommés / dates relatives ───────────────────────────────────────
   var todayD = new Date();
   if (!result.date) {
     if (/\b(?:apr[eè]s[\-\s]demain)\b/i.test(work)) {
@@ -8063,9 +8065,9 @@ function parseSmartInput(originalText) {
     } else if (/\b(?:demain|tomorrow)\b/i.test(work)) {
       result.dayIndex = 1;
       work = work.replace(/\b(?:demain|tomorrow)\b/gi, ' ');
-    } else if (/\b(?:aujourd[''’]?hui|aujourd hui|today|auj)\b/i.test(work)) {
+    } else if (/\b(?:aujourd[''']?hui|aujourd hui|today|auj)\b/i.test(work)) {
       result.dayIndex = 0;
-      work = work.replace(/\b(?:aujourd[''’]?hui|aujourd hui|today|auj)\b/gi, ' ');
+      work = work.replace(/\b(?:aujourd[''']?hui|aujourd hui|today|auj)\b/gi, ' ');
     } else if (/\b(?:fin\s+de\s+semaine|week[-\s]?end)\b/i.test(work)) {
       var diffW = (6 - todayD.getDay() + 7) % 7;
       if (diffW === 0) diffW = 7;
@@ -8088,49 +8090,82 @@ function parseSmartInput(originalText) {
       work = work.replace(/\b(?:next|prochain|prochaine)\b/gi, ' ');
     }
   }
-  // Strip day names unconditionally (handles "mardi 6 avril" where date absorbs "6 avril" but not "mardi")
+  // Supprimer noms de jours résiduels
   work = work.replace(/\b(?:dimanche|lundi|mardi|mercredi|jeudi|vendredi|samedi|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, ' ');
 
+  // ── Heure ─────────────────────────────────────────────────────────────────
   var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
-  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
-  // "Nh de job/travail" → duration — MUST run before time regex to prevent "3 h" being parsed as 03:00
-  var dJob = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\s+de\s+(?:job|travail|boulot|ouvrage)\b/i);
-  if (dJob) result.duration = dJob[1].replace(',', '.') + 'h';
-
   var tm = clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
   if (tm) {
     var hh = parseInt(tm[1], 10), mm2 = tm[2] ? parseInt(tm[2], 10) : 0;
     result.time = ('0' + hh).slice(-2) + ':' + ('0' + mm2).slice(-2);
   }
   if (!result.time) {
-    if (/\bce\s+matin\b/i.test(work))                                          result.time = '08:00';
-    else if (/\bce\s+midi\b/i.test(work))                                      result.time = '12:00';
-    else if (/\b(?:cet?\s+)?apr[èe]s[\-\s]midi\b/i.test(work))                 result.time = '14:00';
-    else if (/\bce\s+soir\b/i.test(work))                                      result.time = '18:00';
+    if (/\bce\s+matin\b/i.test(work))                              result.time = '08:00';
+    else if (/\bce\s+midi\b/i.test(work))                          result.time = '12:00';
+    else if (/\b(?:cet?\s+)?apr[èe]s[\-\s]midi\b/i.test(work))    result.time = '14:00';
+    else if (/\bce\s+soir\b/i.test(work))                          result.time = '18:00';
   }
+  // Supprimer les qualificatifs d'heure résiduels
+  work = work.replace(/\bdu\s+matin\b/gi, ' ');
+  work = work.replace(/\bdu\s+soir\b/gi, ' ');
+  work = work.replace(/\bde\s+l['']apr[eè]s[\-\s]midi\b/gi, ' ');
+  work = work.replace(/\bl['']apr[eè]s[\-\s]midi\b/gi, ' ');
+  work = work.replace(/\bce\s+(?:matin|midi|soir)\b/gi, ' ');
 
+  // ── Durée ─────────────────────────────────────────────────────────────────
+  work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
+  var dJob = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\s+de\s+(?:job|travail|boulot|ouvrage)\b/i);
+  if (dJob) result.duration = dJob[1].replace(',', '.') + 'h';
   var d1 = !result.duration && clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
   if (d1) result.duration = d1[1].replace(',', '.') + 'h';
   if (!result.duration) {
     var nKeys = Object.keys(frNums).join('|');
-    var d2 = clip(new RegExp('\\b(' + nKeys + ')\\s+heures?\\b', 'i'));
-    if (d2) result.duration = frNums[d2[1].toLowerCase()] + 'h';
+    var dW = clip(new RegExp('\\b(' + nKeys + ')\\s+heures?\\b', 'i'));
+    if (dW) result.duration = frNums[dW[1].toLowerCase()] + 'h';
   }
   if (!result.duration) {
     var d3 = clip(/\b(\d+)\s*min(?:utes?)?\b/i);
     if (d3) result.duration = d3[1] + ' min';
   }
   if (!result.duration) {
-    if (clip(/\bdemi[\-\s]journ[eé]e\b/i))                  result.duration = '1/2 journée';
+    if (clip(/\bdemi[\-\s]journ[eé]e\b/i))                    result.duration = '1/2 journée';
     else if (clip(/\b(?:une\s+)?journ[eé]e\b|\b1\s*jour\b/i)) result.duration = '1 journée';
   }
 
+  // ── Adresse (parsée APRÈS date/heure/durée pour éviter contamination) ────
+  var addr = clip(/\b(\d{1,5}[a-z]?\s+(?:rue|avenue|av\.?|boulevard|boul\.?|chemin|ch\.?|route|rte\.?|impasse|place|rang|mont[eé]e)\s+[A-Za-zÀ-ÖØ-öø-ÿ0-9'\- ]{2,40})/i);
+  if (addr) result.location = addr[1].trim();
+  if (!result.location) {
+    var addrCivic = clip(/\b(?:au|à)\s+(\d{1,5}\s+(?!(?:h(?:eure)?s?|hrs?|min(?:ute)?s?|jours?)\b)[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}){0,4})\b/i);
+    if (addrCivic) {
+      result.location = addrCivic[1].trim();
+      var cityAppend = clip(/(?:^|\s)(?:à|au)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,})\b/i);
+      if (cityAppend) result.location += ', ' + cityAppend[1].trim();
+    }
+  }
+  if (!result.location) {
+    var addrCity = clip(/(?:^|\s)(?:à|au|dans|secteur|quartier)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,})\b/i);
+    if (addrCity) result.location = addrCity[1].trim();
+  }
+  // Nettoyer le lieu : supprimer "numéro" et tout ce qui suit, et les noms de mois/jours résiduels
+  if (result.location) {
+    result.location = result.location
+      .replace(/\s*\bnum[eé]ro\b.*/i, '')
+      .replace(/\b(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b.*/gi, '')
+      .replace(/\b(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\b.*/gi, '')
+      .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  // ── Priorité ──────────────────────────────────────────────────────────────
   if      (/\b(?:urgent[e]?|asap)\b/i.test(work))                                                            { result.priority = 'urgent'; }
   else if (/\b(?:priorit[eé]\s+(?:haute|élev[eé]e)|haute\s+priorit[eé]|\bhaute\b)\b/i.test(work))             { result.priority = 'high'; }
   else if (/\b(?:priorit[eé]\s+basse|basse\s+priorit[eé]|\bbasse\b|low)\b/i.test(work))                       { result.priority = 'low'; }
   else if (/\b(?:priorit[eé]\s+moyenne|moyenne)\b/i.test(work))                                              { result.priority = 'medium'; }
   work = work.replace(/\b(?:urgent[e]?|asap|priorit[eé]\s+(?:haute|basse|moyenne|élev[eé]e)|haute\s+priorit[eé]|basse\s+priorit[eé]|haute|basse|moyenne|low|priorit[eé])\b/gi, ' ');
 
+  // ── Intérieur / Extérieur ─────────────────────────────────────────────────
   if (/\b(?:int[eé]rieur|indoor|inside|au\s+chaud)\b/i.test(work)) {
     result.indoor = true;
     work = work.replace(/\b(?:int[eé]rieur|indoor|inside|au\s+chaud)\b/gi, ' ');
@@ -8139,31 +8174,31 @@ function parseSmartInput(originalText) {
     work = work.replace(/\b(?:ext[eé]rieur|outdoor|outside|dehors)\b/gi, ' ');
   }
 
-  // Explicit "type : terrasse" or "type terrasse" — matches one word only
+  // ── Type de travail ───────────────────────────────────────────────────────
   var explicitType = clip(/\btype\s*[:]\s*([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-]{0,20})\b/i);
   var _explicitTypeName = explicitType ? explicitType[1].trim().toLowerCase() : null;
 
   var jobAliases = {
+    montage:    ['poteaux','poteau','pylône','pylone','pylônes','montage'],
     beton:      ['béton','beton','dalle','coulage','asphalte','asphaltage','ciment','concrete'],
     terrasse:   ['terrasse','composite','deck','patio','balcon','galerie','porche'],
     hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
     pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
     excavation: ['excavation','terrassement','fouille','tranchée','deblai','remblai','creusage'],
-    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','coupe','abattage','tonte','pelouse','landscape','haie','fleur','emondage','élagage','elagage','émondag','taille'],
+    paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','coupe','abattage','tonte','pelouse','landscape','haie','fleur','emondage','élagage','elagage','taille'],
     electrique: ['électrique','electrique','électricité','electricite','câblage','cablage','panneau','circuit','luminaire'],
     toiture:    ['toiture','toit','couverture','bardeau','membrane','gouttière','gutters','shingles'],
     peinture:   ['peinture','peindre','enduit','revêtement'],
     maconnerie: ['maçonnerie','maconnerie','brique','pierre','mortier','block','blocs','parpaing'],
     plomberie:  ['plomberie','plombier','tuyau','drain','égout','aqueduc','robinetterie','tuyaux','soupape'],
     renovation: ['renovation','rénovation','reno','rénov','agrandissement','cuisine','sdb','salle de bain','sous-sol','plancher'],
-    entretien:  ['entretien','maintenance','nettoyage','lavage','déneigement','deneigement','entretien'],
+    entretien:  ['entretien','maintenance','nettoyage','lavage','déneigement','deneigement'],
     commercial: ['commercial','immeuble','complexe','local','bureau','industriel','warehouse'],
   };
   var jobs = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
   Object.keys(jobs).forEach(function(k) {
     if (!jobAliases[k]) jobAliases[k] = [(jobs[k].name || '').toLowerCase(), (jobs[k].short || '').toLowerCase()];
   });
-  // Resolve explicit type prefix first
   if (_explicitTypeName) {
     Object.keys(jobAliases).forEach(function(k) {
       if (result.type) return;
@@ -8173,41 +8208,32 @@ function parseSmartInput(originalText) {
         if (aliases[ai] && _explicitTypeName.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
       }
     });
-    if (!result.type) result.type = _explicitTypeName; // keep raw value if no match
+    if (!result.type) result.type = _explicitTypeName;
   }
   if (!result.type) {
     var lowerWork = work.toLowerCase();
-    var _matchedAlias = null;
     Object.keys(jobAliases).forEach(function(k) {
       if (result.type) return;
       var aliases = jobAliases[k];
       for (var ai = 0; ai < aliases.length; ai++) {
-        if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) {
-          result.type = k;
-          _matchedAlias = aliases[ai];
-          break;
-        }
+        if (aliases[ai] && lowerWork.indexOf(aliases[ai]) !== -1) { result.type = k; break; }
       }
     });
-    // Strip the matched alias word from work so it doesn't contaminate client detection
-    if (_matchedAlias) {
-      work = work.replace(new RegExp('\\b' + _matchedAlias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
-    }
+    // L'alias n'est PAS supprimé de work : il reste dans le titre (ex: "Plantage de poteaux")
   }
-  // No default type fallback — leave null when nothing found
 
-  // Client detection — handles: "chez X", "pour X", explicit prefix, start-of-text "Name, ..."
-  // 1. Explicit context words
-  var contextRe = /\b(?:chez|pour|client[\s:]*|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/i;
+  // ── Détection du client ───────────────────────────────────────────────────
+  // 1. Mots-clés explicites : "chez X", "pour X", "client X"
+  var contextRe = /\b(?:chez|client[\s:]*|at|for)\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,}|d[eu]|de\s+la?|du)){0,3})/i;
   var cm = work.match(contextRe);
   if (cm) {
     result.client = cm[1].trim()
-      .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')  // strip trailing prepositions
+      .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
       .trim()
       .replace(/^(.)/, function(c) { return c.toUpperCase(); });
     work = work.replace(cm[0], ' ');
   } else {
-    // 2. Start-of-text "Firstname Lastname," pattern (handles STT lowercase)
+    // 2. "Prénom Nom," en début de texte (STT minuscules)
     var startNameM = text.match(/^([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,20}(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{1,20}){1,2})\s*,/);
     if (startNameM) {
       var cand = startNameM[1].trim().toLowerCase();
@@ -8222,7 +8248,7 @@ function parseSmartInput(originalText) {
       }
     }
     if (!result.client) {
-      // 3. Fallback: Title Case two-word pattern (desktop STT)
+      // 3. Deux mots en Title Case (nom propre détecté après le type de travail)
       var titleM = work.match(/\b[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}\s+[A-ZÀ-ÖØ-Þ][a-zà-ÿ\-']{1,}(?=[^A-Za-zÀ-ÖØ-öø-ÿ']|$)/);
       if (titleM) {
         result.client = titleM[0].trim();
@@ -8231,16 +8257,24 @@ function parseSmartInput(originalText) {
     }
   }
 
-  // Strip the "type" keyword if still present (used as voice command, not part of title)
-  work = work.replace(/\btype\b/gi, " ");
-  // Strip duration qualifiers that may remain (e.g. "de job", "de travail")
+  // ── Titre / Nom de la tâche (leftover) ───────────────────────────────────
+  work = work.replace(/\btype\b/gi, ' ');
   work = work.replace(/\bde\s+(?:job|travail|boulot|ouvrage)\b/gi, ' ');
+  // Supprimer prépositions isolées (À/à non capturées par le regex temps, Au résiduel d'adresse, etc.)
+  work = work.replace(/\s+[àÀ]\s+/g, ' ');
+  work = work.replace(/\s+au\s+/gi, ' ');
   var leftover = work.replace(/\s+/g, ' ').trim();
   leftover = leftover.replace(/^[\s,\.\-]+|[\s,\.\-]+$/g, '');
-  leftover = leftover.replace(/^(?:type|à|de|et|du|le|la|les|au|aux|en|d[''])\s+/i, '');
-  leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d[''])$/i, '');
+  // Supprimer prépositions/articles en début ou fin (boucle pour en supprimer plusieurs d'affilée)
+  var _prevLeft;
+  do {
+    _prevLeft = leftover;
+    leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
+    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d[''])$/i, '');
+  } while (leftover !== _prevLeft);
+  // Supprimer articles/prépositions isolés au milieu du titre
+  leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');
   leftover = leftover.replace(/\s{2,}/g, ' ').trim();
-  // Fallback: prefer type name, then first comma-segment of original text
   if (!leftover || leftover.length < 2) {
     if (result.type) {
       var _jb = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};

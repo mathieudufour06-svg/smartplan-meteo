@@ -7302,6 +7302,7 @@ var _micRec    = null;
 var _voiceParsedResult = null;
 var _micStopping = false;
 var _micStarting = false;       // debounce: prevent double-start
+var _silenceTimer = null;       // 3-second silence-before-stop delay
 var _micStartedAt = 0;
 var _micGotResult = false;      // ANY transcript (final or interim) received
 var _micStartFallback = null;
@@ -7449,6 +7450,7 @@ function clearMicStartFallback() {
 function toggleMic() {
   if (_micStarting) return;
   if (_micActive) {
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
     _micUserStopped = true;
     _micStopping = true;
     if (_micRec) { try { _micRec.stop(); } catch(e) {} }
@@ -7545,8 +7547,24 @@ function _micAttemptStart() {
     setMicState('listening', 'Parlez…', '🔴');
     _armAutoStop();
   };
-  _micRec.onspeechstart = function() { micLog('onspeechstart'); setMicState('listening', 'Parlez…', '🔴'); };
-  _micRec.onspeechend   = function() { micLog('onspeechend'); };
+  _micRec.onspeechstart = function() {
+    micLog('onspeechstart');
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
+    setMicState('listening', 'Parlez…', '🔴');
+  };
+  _micRec.onspeechend = function() {
+    micLog('onspeechend');
+    if (_micUserStopped || !_micActive) return;
+    setMicState('listening', 'En écoute…', '🎙');
+    _silenceTimer = setTimeout(function() {
+      _silenceTimer = null;
+      if (_micActive && !_micUserStopped) {
+        micLog('silence 3s → arrêt');
+        _micUserStopped = true; _micStopping = true;
+        if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+      }
+    }, 3000);
+  };
   _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
   _micRec.onaudioend    = function() { micLog('onaudioend'); };
 
@@ -7590,6 +7608,7 @@ function _micAttemptStart() {
     var err = e && e.error;
     clearMicStartFallback();
     _micStarting = false;
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
     micLog('onerror ' + err);
     if (err === 'aborted' || _micStopping || _micUserStopped) return;
     if (err === 'not-allowed' || err === 'service-not-allowed') {
@@ -7623,6 +7642,7 @@ function _micAttemptStart() {
   _micRec.onend = function() {
     clearMicStartFallback();
     if (_autoStop) clearTimeout(_autoStop);
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
     _micStarting = false;
     var wasActive = _micActive;
     _micActive = false;
@@ -7745,8 +7765,24 @@ function _taskMicAttempt(textEl) {
       if (_micActive) { _micUserStopped = true; _micStopping = true; try { _micRec.stop(); } catch(e) {} }
     }, 30000);
   };
-  _micRec.onspeechstart = function() { micLog('task onspeechstart'); };
-  _micRec.onspeechend   = function() { micLog('task onspeechend'); };
+  _micRec.onspeechstart = function() {
+    micLog('task onspeechstart');
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
+    setInlineMicState('listening', '🔴');
+  };
+  _micRec.onspeechend = function() {
+    micLog('task onspeechend');
+    if (_micUserStopped || !_micActive) return;
+    setInlineMicState('listening', '⏸');
+    _silenceTimer = setTimeout(function() {
+      _silenceTimer = null;
+      if (_micActive && !_micUserStopped) {
+        micLog('task silence 3s → arrêt');
+        _micUserStopped = true; _micStopping = true;
+        if (_micRec) { try { _micRec.stop(); } catch(e) {} }
+      }
+    }, 3000);
+  };
 
   _micRec.onresult = function(e) {
     var nRes = e && e.results ? e.results.length : 0;
@@ -7771,6 +7807,7 @@ function _taskMicAttempt(textEl) {
 
   _micRec.onerror = function(e) {
     _micStarting = false;
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
     var err = e && e.error;
     micLog('task onerror ' + err);
     if (err === 'aborted' || _micStopping || _micUserStopped) return;
@@ -7788,6 +7825,7 @@ function _taskMicAttempt(textEl) {
   _micRec.onend = function() {
     _micStarting = false; _micActive = false;
     if (_autoStop) clearTimeout(_autoStop);
+    if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
     micLog('task onend gotResult=' + _micGotResult + ' userStopped=' + _micUserStopped);
 
     if (_micUserStopped || _micStopping) {
@@ -8093,7 +8131,27 @@ function parseSmartInput(originalText) {
   // Supprimer noms de jours résiduels
   work = work.replace(/\b(?:dimanche|lundi|mardi|mercredi|jeudi|vendredi|samedi|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, ' ');
 
-  // ── Heure ─────────────────────────────────────────────────────────────────
+  // ── Date partielle : "le 29", "le 15" sans mois → prochain jour correspondant ──
+  if (!result.date) {
+    var dPartial = clip(/\b(?:le|du)\s+(\d{1,2})(?:er)?\b/i);
+    if (dPartial) {
+      var _pday = parseInt(dPartial[1], 10);
+      if (_pday >= 1 && _pday <= 31) {
+        var _pnow = new Date(), _pyr = _pnow.getFullYear(), _pmo = _pnow.getMonth();
+        var _pt0  = new Date(); _pt0.setHours(0,0,0,0);
+        var _pcand = new Date(_pyr, _pmo, _pday);
+        if (_pcand < _pt0) _pcand = new Date(_pyr, _pmo + 1, _pday);
+        result.date = isoDate(_pcand);
+      }
+    }
+  }
+
+  // Supprimer le numéro du jour isolé si une date a été trouvée (ex: "le 29" laisse "29" dans le titre)
+  if (result.date) {
+    var _dayNumClip = parseInt(result.date.split('-')[2], 10);
+    work = work.replace(new RegExp('\\b' + _dayNumClip + '\\b', 'g'), ' ');
+  }
+
   var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
   var tm = clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
   if (tm) {
@@ -8195,7 +8253,8 @@ function parseSmartInput(originalText) {
 
   var jobAliases = {
     montage:    ['poteaux','poteau','pylône','pylone','pylônes','montage'],
-    beton:      ['béton','beton','dalle','coulage','asphalte','asphaltage','ciment','concrete'],
+    asphaltage: ['asphalte','asphaltage','pose d\'asphalte','bitume'],
+    beton:      ['béton','beton','dalle','coulage','ciment','concrete'],
     terrasse:   ['terrasse','composite','deck','patio','balcon','galerie','porche'],
     hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
     pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
@@ -8286,7 +8345,7 @@ function parseSmartInput(originalText) {
   var _prevLeft;
   do {
     _prevLeft = leftover;
-    leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|faire|d[''])\s+/i, '');
+    leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
     leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d[''])$/i, '');
   } while (leftover !== _prevLeft);
   // Supprimer articles/prépositions isolés au milieu du titre

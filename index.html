@@ -8115,9 +8115,11 @@ function parseSmartInput(originalText) {
 
   // ── Durée ─────────────────────────────────────────────────────────────────
   work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
-  // Supprimer "une job de" et "ça va être" avant l'adresse pour éviter contamination
+  // Supprimer expressions parasites avant l'adresse pour éviter contamination
   work = work.replace(/\bune\s+job\s+(?:de\s+)?/gi, ' ');
   work = work.replace(/ça\s+va\s+être/gi, ' ');
+  work = work.replace(/\bde\s+temps\b/gi, ' ');
+  work = work.replace(/\b(?:pour\s+)?(?:de\s+)?l['’]ouvrage\b/gi, ' ');
   var dJob = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\s+de\s+(?:job|travail|boulot|ouvrage)\b/i);
   if (dJob) result.duration = dJob[1].replace(',', '.') + 'h';
   var d1 = !result.duration && clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
@@ -8157,6 +8159,7 @@ function parseSmartInput(originalText) {
       .replace(/\s*\bnum[eé]ro\b.*/i, '')
       .replace(/\b(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b.*/gi, '')
       .replace(/\b(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\b.*/gi, '')
+      .replace(/\s+\bpour\b.*/i, '')
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
       .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
       .replace(/\s+/g, ' ').trim();

@@ -8115,6 +8115,9 @@ function parseSmartInput(originalText) {
 
   // ── Durée ─────────────────────────────────────────────────────────────────
   work = work.replace(/\bdur[éeè]e\s+(?:estim[eé]e?\s+)?(?:de\s+|d['']?\s*)?/gi, ' ');
+  // Supprimer "une job de" et "ça va être" avant l'adresse pour éviter contamination
+  work = work.replace(/\bune\s+job\s+(?:de\s+)?/gi, ' ');
+  work = work.replace(/ça\s+va\s+être/gi, ' ');
   var dJob = clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\s+de\s+(?:job|travail|boulot|ouvrage)\b/i);
   if (dJob) result.duration = dJob[1].replace(',', '.') + 'h';
   var d1 = !result.duration && clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
@@ -8155,6 +8158,7 @@ function parseSmartInput(originalText) {
       .replace(/\b(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b.*/gi, '')
       .replace(/\b(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\b.*/gi, '')
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
+      .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
       .replace(/\s+/g, ' ').trim();
   }
 
@@ -8228,6 +8232,7 @@ function parseSmartInput(originalText) {
   var cm = work.match(contextRe);
   if (cm) {
     result.client = cm[1].trim()
+      .replace(/\s+(?:au|aux|à|chez|pour|sur|de|du|dans|en|un|une)\b.*/i, '')
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
       .trim()
       .replace(/^(.)/, function(c) { return c.toUpperCase(); });
@@ -8270,7 +8275,7 @@ function parseSmartInput(originalText) {
   do {
     _prevLeft = leftover;
     leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
-    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|d[''])$/i, '');
+    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d[''])$/i, '');
   } while (leftover !== _prevLeft);
   // Supprimer articles/prépositions isolés au milieu du titre
   leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');

@@ -8200,8 +8200,9 @@ function parseSmartInput(originalText) {
     if (d3) result.duration = d3[1] + ' min';
   }
   if (!result.duration) {
-    if (clip(/\bdemi[\-\s]journ[eé]e\b/i))                    result.duration = '1/2 journée';
-    else if (clip(/\b(?:une\s+)?journ[eé]e\b|\b1\s*jour\b/i)) result.duration = '1 journée';
+    if (clip(/\bdemi[\-\s]journ[eé]e\b/i))                                                 result.duration = '1/2 journée';
+    else if (clip(/\btoute\s+la\s+journ[eé]e\b|\bjourn[eé]e\s+compl[eè]te\b/i))          result.duration = '8h';
+    else if (clip(/\b(?:une\s+)?journ[eé]e\b|\b1\s*jour\b/i))                             result.duration = '8h';
   }
 
   // ── Adresse (parsée APRÈS date/heure/durée pour éviter contamination) ────
@@ -8227,6 +8228,7 @@ function parseSmartInput(originalText) {
       .replace(/\b(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\b.*/gi, '')
       .replace(/\s+\bpour\b.*/i, '')
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
+      .replace(/\s+[AÀà]\s+po\w{0,3}$/i, '')
       .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
       .replace(/\s+/g, ' ').trim();
   }
@@ -8254,7 +8256,7 @@ function parseSmartInput(originalText) {
   var jobAliases = {
     montage:    ['poteaux','poteau','pylône','pylone','pylônes','montage'],
     asphaltage: ['asphalte','asphaltage','pose d\'asphalte','bitume'],
-    beton:      ['béton','beton','dalle','coulage','ciment','concrete'],
+    beton:      ['béton','beton','dalle de ciment','dalle','coulée de béton','coulée de beton','coulage','ciment','concrete'],
     terrasse:   ['terrasse','composite','deck','patio','balcon','galerie','porche'],
     hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
     pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
@@ -8346,7 +8348,7 @@ function parseSmartInput(originalText) {
   do {
     _prevLeft = leftover;
     leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
-    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d[''])$/i, '');
+    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d['']|toute?\s+la|toute?)$/i, '');
   } while (leftover !== _prevLeft);
   // Supprimer articles/prépositions isolés au milieu du titre
   leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');

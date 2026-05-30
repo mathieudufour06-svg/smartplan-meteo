@@ -8057,7 +8057,9 @@ function analyzeVoicePreview() {
           _voiceParsedResult.geoLon = geo.lon;
           if (el) { el.textContent = '📍 Adresse confirmée'; el.style.color = 'var(--green, #4caf50)'; }
         } else {
-          if (el) { el.textContent = '📍 Adresse non vérifiée'; el.style.color = 'var(--orange)'; }
+          var locRow = document.getElementById('vp-loc-row');
+          if (locRow) { locRow.style.cssText += ';border:1px solid #f55;background:rgba(255,85,102,0.1);border-radius:8px;padding:6px 4px'; }
+          if (el) { el.innerHTML = '<button type="button" onclick="vpEditLoc()" style="color:#f55;font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:13px">⚠️ Adresse non trouvée — Modifier</button>'; }
         }
       });
     })(_voiceParsedResult.location);
@@ -8067,6 +8069,63 @@ function analyzeVoicePreview() {
   document.getElementById('voiceBtnAnalyze').style.display = 'none';
   document.getElementById('voiceBtnBack').style.display    = '';
   document.getElementById('voiceBtnConfirm').style.display = '';
+}
+
+function vpEditLoc() {
+  var valEl = document.getElementById('vp-loc-val');
+  if (!valEl) return;
+  var currentLoc = _voiceParsedResult ? (_voiceParsedResult.location || '') : '';
+  valEl.innerHTML = '<div style="position:relative">'
+    + '<input id="vp-loc-input" type="text" value="' + esc(currentLoc) + '" autocomplete="off"'
+    + ' style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--tint);border-radius:8px;background:var(--surface-2);color:var(--t-1);font-size:14px">'
+    + '<div id="vp-loc-sugg" style="position:absolute;top:100%;left:0;right:0;background:var(--surface-1);border:1px solid var(--hairline);border-radius:8px;z-index:200;max-height:200px;overflow-y:auto;display:none"></div>'
+    + '</div>';
+  var input = document.getElementById('vp-loc-input');
+  var _vpTimer = null;
+  input.addEventListener('input', function() {
+    clearTimeout(_vpTimer);
+    var q = input.value.trim();
+    if (q.length < 3) { var s = document.getElementById('vp-loc-sugg'); if (s) s.style.display = 'none'; return; }
+    _vpTimer = setTimeout(function() { vpFetchSuggestions(q); }, 350);
+  });
+  input.focus();
+}
+
+async function vpFetchSuggestions(q) {
+  var sugg = document.getElementById('vp-loc-sugg');
+  if (!sugg) return;
+  sugg.style.display = 'block';
+  sugg.innerHTML = '<div style="padding:8px;color:var(--t-3);font-size:13px">Recherche…</div>';
+  try {
+    var url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q + ', Québec, Canada')
+      + '&countrycodes=ca&format=json&limit=5&addressdetails=1';
+    var data = await (await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } })).json();
+    if (!data || !data.length) {
+      sugg.innerHTML = '<div style="padding:8px;color:var(--t-3);font-size:13px">Aucun résultat — vérifiez l\'orthographe</div>';
+      return;
+    }
+    sugg.innerHTML = data.map(function(item) {
+      var a = item.address || {};
+      var label = [a.road || a.pedestrian || a.house_number && (a.house_number + ' ' + (a.road||'')),
+                   a.city || a.town || a.village || a.municipality, a.state].filter(Boolean).join(', ') || item.display_name.split(',').slice(0,3).join(',');
+      return '<div class="vp-sugg-item" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--hairline);font-size:13px"'
+           + ' data-lat="' + item.lat + '" data-lon="' + item.lon + '" data-label="' + esc(label) + '">' + esc(label) + '</div>';
+    }).join('');
+    sugg.querySelectorAll('.vp-sugg-item').forEach(function(el) {
+      el.addEventListener('click', function() {
+        var lat = +el.dataset.lat, lon = +el.dataset.lon, label = el.dataset.label;
+        if (_voiceParsedResult) { _voiceParsedResult.location = label; _voiceParsedResult.geoLat = lat; _voiceParsedResult.geoLon = lon; }
+        var inp = document.getElementById('vp-loc-input'); if (inp) inp.value = label;
+        sugg.style.display = 'none';
+        var locRow = document.getElementById('vp-loc-row');
+        if (locRow) { locRow.style.border = ''; locRow.style.background = ''; locRow.style.borderRadius = ''; locRow.style.padding = ''; }
+        var statusEl = document.getElementById('vp-geo-status');
+        if (statusEl) { statusEl.textContent = '📍 Adresse confirmée'; statusEl.style.color = 'var(--green, #4caf50)'; statusEl.innerHTML = '📍 Adresse confirmée'; }
+      });
+    });
+  } catch(e) {
+    sugg.innerHTML = '<div style="padding:8px;color:var(--t-3);font-size:13px">Erreur réseau</div>';
+  }
 }
 
 function voicePreviewBack() {
@@ -8139,7 +8198,7 @@ function _buildVoicePreviewHTML(parsed) {
   if (parsed.time)     html += row('Heure',     parsed.time);
   if (parsed.duration) html += row('Durée',     parsed.duration);
   if (parsed.location) {
-    html += row('Lieu', parsed.location);
+    html += '<div class="vp-row" id="vp-loc-row"><span class="vp-lbl">Lieu</span><span class="vp-val" id="vp-loc-val">' + esc(String(parsed.location)) + '</span></div>';
     html += '<div class="vp-row"><span class="vp-lbl">Coordonnées</span><span id="vp-geo-status" class="vp-val" style="color:var(--t-4)">📍 Vérification…</span></div>';
   }
   if (parsed.phone)    html += row('Téléphone', parsed.phone);

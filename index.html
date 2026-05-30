@@ -7250,9 +7250,10 @@ function openWeatherDetail() {
       var dayLabel = isToday ? "Aujourd'hui"
         : (idx === 1 ? 'Demain'
         : DAYS_LONG[fc.date.getDay()] + ' ' + fc.date.getDate());
+      var displayCode = (isToday && ST.current && ST.current.weathercode != null) ? ST.current.weathercode : fc.weathercode;
       return '<div class="wx-14d-row' + rowCls + '">'
            + '<span class="wx-14d-day">' + dayLabel + '</span>'
-           + '<span class="wx-14d-icon">' + wIcon(fc.weathercode) + '</span>'
+           + '<span class="wx-14d-icon">' + wIcon(displayCode) + '</span>'
            + '<span class="wx-14d-bar"></span>'
            + '<div class="wx-14d-temps"><span class="wx-14d-max">' + fc.temp_max + '°</span><span class="wx-14d-min">' + fc.temp_min + '°</span></div>'
            + '<span class="wx-14d-rain">' + fc.rain_prob + '%</span>'

@@ -4634,11 +4634,18 @@ async function fetchCurrentConditions(lat, lon) {
 var _geocodeCache = {};
 async function geocodeAddress(address) {
   if (!address) return null;
-  var key = address.trim().toLowerCase();
+  // Nettoyage avant Nominatim
+  var addr = address.trim()
+    .replace(/\s+[ÀAàa][Uu]?\s+/g, ', ')          // À / à / Au / au isolés → virgule
+    .replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-')       // St- → Saint-
+    .replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-')     // Ste- → Sainte-
+    .replace(/\bSaint-Jean(?:\s+Richelieu|\s+sur\s+Richelieu)?\b(?!-sur-Richelieu)/gi, 'Saint-Jean-sur-Richelieu')
+    .replace(/\s{2,}/g, ' ').trim();
+  var key = addr.toLowerCase();
   if (_geocodeCache[key]) return _geocodeCache[key];
   try {
     var url = 'https://nominatim.openstreetmap.org/search'
-      + '?q=' + encodeURIComponent(address + ', Québec, Canada')
+      + '?q=' + encodeURIComponent(addr + ', Québec, Canada')
       + '&format=json&limit=1&countrycodes=ca&addressdetails=0';
     var res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
     var data = await res.json();

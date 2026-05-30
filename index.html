@@ -4966,19 +4966,13 @@ function renderCalMonth() {
     html += dotsHtml;
     cell.innerHTML = html;
 
-    cell.onclick = (function(date, fcIndex, jobCount) {
+    cell.onclick = (function(date) {
       return function() {
         _calActive = date;
         renderCalMonth();
-        if (fcIndex !== null) {
-          openDayDetail(fcIndex);
-        } else if (jobCount > 0) {
-          openDayJobsOnly(isoDate(date));
-        } else {
-          openNewJobSheet(isoDate(date), 'schedule');
-        }
+        openCalDaySheet(isoDate(date));
       };
-    })(cellDate, fcIdx !== null ? fcIdx : null, dayJobs.length);
+    })(cellDate);
     grid.appendChild(cell);
   }
   renderCalMonthPreview();
@@ -6976,6 +6970,58 @@ function ocrConfirmImport() {
 ════════════════════════════════════════════════════════════════ */
 function openTodayDetail() { openDayDetail(0); }
 
+function openCalDaySheet(iso) {
+  var d = new Date(iso + 'T00:00:00');
+  var dayName = DAYS_L[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_FULL[d.getMonth()] + ' ' + d.getFullYear();
+  document.getElementById('ddTitle').textContent = dayName;
+  var fcIdx = findForecastIndexByDate(iso);
+  var day = fcIdx !== null && ST.forecast ? ST.forecast[fcIdx] : null;
+  var tasks = (ST.tasks || []).filter(function(t) {
+    return t.status !== 'backlog' && t.scheduledDate === iso;
+  }).sort(function(a, b) {
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    if (a.time) return -1; if (b.time) return 1; return 0;
+  });
+  var jobsDef = getMergedJobTypes();
+  var html = '';
+  if (tasks.length) {
+    html += '<section class="dd-section dd-jobs"><div class="dd-sec-head"><span class="dd-sec-eyebrow">Travaux</span><span class="dd-sec-count">' + tasks.length + '</span></div>';
+    tasks.forEach(function(t) { html += _ddBuildJobDossier(t, day || {}, jobsDef); });
+    html += '</section>';
+  } else {
+    html += '<section class="dd-section dd-empty"><div class="dd-empty-icon">📅</div><div class="dd-empty-title">Aucun travail ce jour</div></section>';
+  }
+  if (day) {
+    var st = simpleStatus(day);
+    html += '<section class="dd-section dd-weather">'
+         +  '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Météo</span>'
+         +    '<span class="status-pill ' + st.level + ' dd-w-pill"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
+         +  '</div>'
+         +  '<div class="dd-w-card"><div class="dd-w-main">'
+         +    '<span class="dd-w-icon">' + wIcon(day.weathercode) + '</span>'
+         +    '<div class="dd-w-num"><div class="dd-w-temp">' + day.temp_max + '°<span class="dd-w-tmin"> / ' + day.temp_min + '°</span></div>'
+         +    '<div class="dd-w-label">' + wLabel(day.weathercode) + '</div></div></div>'
+         +  '<div class="dd-w-stats">'
+         +    '<span class="dd-w-stat"><span class="dd-w-stat-i">💨</span>' + day.windspeed + ' km/h</span>'
+         +    '<span class="dd-w-stat"><span class="dd-w-stat-i">☔</span>' + day.rain_prob + '%</span>'
+         +    '<span class="dd-w-stat"><span class="dd-w-stat-i">💧</span>' + day.precipitation + ' mm</span>'
+         +  '</div></div></section>';
+  }
+  html += '<div style="margin-top:8px"><button type="button" class="dd-add-btn" onclick="closeModal(\'dayDetailOverlay\'); openNewJobSheet(\'' + iso + '\',\'schedule\')">+ Ajouter un travail ce jour</button></div>';
+  document.getElementById('ddContent').innerHTML = html;
+  document.querySelectorAll('#ddContent [data-edit-task]').forEach(function(b) {
+    b.addEventListener('click', function() { closeModal('dayDetailOverlay'); openEditTask(b.dataset.editTask); });
+  });
+  document.querySelectorAll('#ddContent [data-del-task]').forEach(function(b) {
+    b.addEventListener('click', function() { closeModal('dayDetailOverlay'); deleteTaskById(b.dataset.delTask); });
+  });
+  document.querySelectorAll('#ddContent [data-task-to-bank]').forEach(function(b) {
+    b.addEventListener('click', function() { taskToBank(b.dataset.taskToBank); });
+  });
+  openModal('dayDetailOverlay');
+  if (tasks.length && day) _enrichJobsWithLocalWeather(tasks, iso);
+}
+
 function openDayDetail(di) {
   if (!ST.forecast || !ST.forecast[di]) return;
   var day = ST.forecast[di];
@@ -7343,6 +7389,7 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   html += '<div class="dj-actions">'
        +    '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier →</button>'
        +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">↩ Banque</button>'
+       +    '<button type="button" class="dj-to-bank" data-del-task="' + esc(t.id) + '" style="color:var(--red,#f55)" title="Supprimer">🗑</button>'
        +  '</div>';
 
   html += '</article>';

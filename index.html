@@ -8408,6 +8408,9 @@ function parseSmartInput(originalText) {
       .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
       .replace(/\s+\bmoyenn\w*\b\s*$/i, '')
       .replace(/\s+\ble\s+(?:trente(?:\s+et\s+un[e]?)?|vingt[\w\s-]*|seize|quinze|quatorze|treize|douze|onze|dix[\w\s-]*|neuf|huit|sept|six|cinq|quatre|trois|deux|premier|première|un|une)\b\s*/gi, ' ')
+      .replace(/\s+\b(?:pas\s+u(?:rgente?)?|job\s+pas\s+u\w*|job)\b\s*$/i, '')
+      .replace(/\s+\b(?:urgent[e]?|urgence|asap|priorit[eé]\b.*)\b\s*$/i, '')
+      .replace(/\b[a-zàâäéèêëîïôùûüç]{1,3}\b\s*$/i, '')
       .replace(/\s+/g, ' ').trim();
   }
 
@@ -8535,8 +8538,8 @@ function parseSmartInput(originalText) {
   var _prevLeft;
   do {
     _prevLeft = leftover;
-    leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
-    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d['']|toute?\s+la|toute?|urgent[e]?|urgence|priorit[eé]|moyennement)$/i, '');
+    leftover = leftover.replace(/^(?:type|par|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
+    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d['']|toute?\s+la|toute?|urgent[e]?|urgente?|urgence|urge|rgente?|priorit[eé]|moyennement)$/i, '');
   } while (leftover !== _prevLeft);
   // Supprimer articles/prépositions isolés au milieu du titre
   leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');

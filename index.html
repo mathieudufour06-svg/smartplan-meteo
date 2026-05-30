@@ -3544,6 +3544,14 @@
       <input type="text" id="tClient" placeholder="ex : M. Tremblay" maxlength="50" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="fg">
+      <label>Téléphone <span class="fg-opt">(optionnel)</span></label>
+      <input type="tel" id="tPhone" placeholder="ex : 514-555-1234" maxlength="20" autocomplete="off" inputmode="tel" oninput="formatPhoneInput(this)">
+    </div>
+    <div class="fg">
+      <label>Montant <span class="fg-opt">(optionnel)</span></label>
+      <input type="text" id="tAmount" placeholder="ex : 2 500 $" maxlength="30" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="fg">
       <label class="label-row">
         <span>Notes</span>
         <button type="button" class="mic-inline" data-mic-target="tDesc" aria-label="Dicter la description">🎤</button>
@@ -5176,6 +5184,8 @@ function buildJobCard(task, w, jobsDef, opts) {
 
   var meta = [];
   if (task.client)   meta.push('<span>' + esc(task.client) + '</span>');
+  if (task.phone)    meta.push('<span>📞 ' + esc(task.phone) + '</span>');
+  if (task.amount)   meta.push('<span>💰 ' + esc(task.amount) + '</span>');
   meta.push('<span>' + esc(jd.short || jd.name) + '</span>');
   if (task.location) meta.push('<span>' + esc(task.location) + '</span>');
   var durLabel = task.duration ? esc(task.duration) : 'Durée non définie';
@@ -6011,6 +6021,8 @@ function buildTodayCard(task, w, jobsDef) {
   // Meta: lieu · durée
   var metaParts = [];
   if (task.client)   metaParts.push(esc(task.client));
+  if (task.phone)    metaParts.push('📞 ' + esc(task.phone));
+  if (task.amount)   metaParts.push('💰 ' + esc(task.amount));
   if (task.location) metaParts.push(esc(task.location));
   if (task.duration) metaParts.push('⏱ ' + esc(task.duration));
   else               metaParts.push('<em style="color:var(--t-4);font-style:italic">durée non définie</em>');
@@ -8389,17 +8401,16 @@ function applyVoiceParsed(parsed) {
   document.getElementById('taskModalTitle').textContent = 'Nouveaux travaux (vocal)';
   document.getElementById('tName').value     = parsed.name     || '';
   document.getElementById('tClient').value   = parsed.client   || '';
+  document.getElementById('tPhone').value    = parsed.phone    || '';
+  document.getElementById('tAmount').value   = parsed.amount   || '';
   document.getElementById('tLocation').value = parsed.location || '';
   document.getElementById('tDuration').value = parseDurationToHours(parsed.duration || '') || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
-  // Pipe phone/email/amount into description — no emojis, plain text
   var descEl = document.getElementById('tDesc');
   if (descEl) {
     var bits = [];
-    if (parsed.phone)  bits.push(parsed.phone);
-    if (parsed.email)  bits.push(parsed.email);
-    if (parsed.amount) bits.push(parsed.amount);
+    if (parsed.email) bits.push(parsed.email);
     if (bits.length) descEl.value = bits.join(' · ');
   }
   buildTypeGrid(parsed.type);
@@ -8837,6 +8848,8 @@ function openAddTask(dayIdx) {
   document.getElementById('taskModalTitle').textContent = 'Nouveaux travaux';
   document.getElementById('tName').value     = '';
   document.getElementById('tClient').value   = '';
+  document.getElementById('tPhone').value    = '';
+  document.getElementById('tAmount').value   = '';
   document.getElementById('tLocation').value = '';
   document.getElementById('tDuration').value = '';
   var descEl = document.getElementById('tDesc');
@@ -8910,6 +8923,8 @@ function openEditTask(id, title) {
   document.getElementById('taskModalTitle').textContent = title || 'Modifier les travaux';
   document.getElementById('tName').value     = task.name     || '';
   document.getElementById('tClient').value   = task.client   || '';
+  document.getElementById('tPhone').value    = task.phone    || '';
+  document.getElementById('tAmount').value   = task.amount   || '';
   document.getElementById('tLocation').value = task.location || '';
   document.getElementById('tDuration').value = parseDurationToHours(task.duration || '') || '';
   var descEl = document.getElementById('tDesc');
@@ -8962,6 +8977,8 @@ function findForecastIndexByDate(dateIso) {
 function saveTask() {
   var name     = document.getElementById('tName').value.trim();
   var client   = document.getElementById('tClient').value.trim();
+  var phone    = document.getElementById('tPhone').value.trim();
+  var amount   = document.getElementById('tAmount').value.trim();
   var locEl    = document.getElementById('tLocation');
   var location = locEl ? locEl.value.trim() : '';
   // Coordonnées pré-sélectionnées via l'autocomplétion (évite un appel Nominatim en plus)
@@ -8991,7 +9008,7 @@ function saveTask() {
   var descEl  = document.getElementById('tDesc');
   var description = descEl ? descEl.value.trim() : '';
   var patch = {
-    name: name, title: name, client: client, location: location, duration: duration,
+    name: name, title: name, client: client, phone: phone, amount: amount, location: location, duration: duration,
     description: description,
     gallery: _taskGallery.slice(0),
     time: time, scheduledTime: time, scheduledDate: scheduledDate,
@@ -9050,7 +9067,8 @@ function saveTaskAsModel() {
     id:       _wbNewId(),
     name:     name,
     client:   (document.getElementById('tClient').value || '').trim(),
-    phone:    '',
+    phone:    (document.getElementById('tPhone').value || '').trim(),
+    amount:   (document.getElementById('tAmount').value || '').trim(),
     email:    '',
     address:  (document.getElementById('tLocation').value || '').trim(),
     type:     parseSmartInput(name).type || 'renovation',

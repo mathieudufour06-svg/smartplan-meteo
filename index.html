@@ -7484,6 +7484,7 @@ var _micSilentRestarts = 0;   // restarts after no-speech (iOS ends session afte
 var _micBaseline      = '';   // textarea content before listening started
 var _micFinalAccum    = '';   // confirmed final segments
 var _micLatestInterim = '';   // latest interim chunk
+var _micProcessedCount = 0;  // iOS fix: nb de résultats finals déjà traités dans la session
 
 // Language fallback chain — only used for language-not-supported errors
 var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
@@ -7543,6 +7544,7 @@ function openVoice() {
   _micBaseline = '';
   _micFinalAccum = '';
   _micLatestInterim = '';
+  _micProcessedCount = 0;
   _micLangIdx = 0;
   _micRetryScheduled = false;
   _micUserStopped = false;
@@ -7668,6 +7670,7 @@ function startMic() {
     _micBaseline = textEl ? textEl.value.trim() : '';
     _micFinalAccum = '';
     _micLatestInterim = '';
+    _micProcessedCount = 0;
     _micLangIdx = 0;
     _micUserStopped = false;
     _micSilentRestarts = 0;
@@ -7740,18 +7743,17 @@ function _micAttemptStart() {
 
   _micRec.onresult = function(e) {
     var nRes = e && e.results ? e.results.length : 0;
-    // Use resultIndex to avoid re-processing previous finals in continuous mode
-    var rIdx = (e && e.resultIndex != null) ? e.resultIndex : 0;
-    micLog('onresult results=' + nRes + ' resultIndex=' + rIdx);
+    micLog('onresult results=' + nRes + ' processed=' + _micProcessedCount);
     if (!nRes) return;
     var newFinal = '';
     var interim  = '';
-    for (var i = rIdx; i < e.results.length; i++) {
+    // iOS fix: e.resultIndex est toujours 0 sur Safari/iOS — on utilise _micProcessedCount
+    for (var i = _micProcessedCount; i < e.results.length; i++) {
       var res = e.results[i];
       if (!res || !res[0]) continue;
       var t = (res[0].transcript || '');
       micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' t=' + JSON.stringify(t));
-      if (res.isFinal) newFinal += t + ' ';
+      if (res.isFinal) { newFinal += t + ' '; _micProcessedCount++; }
       else interim    += t + ' ';
     }
     newFinal = newFinal.trim();
@@ -7886,6 +7888,7 @@ function startTaskMic() {
     _micBaseline = textEl ? textEl.value.trim() : '';
     _micFinalAccum = '';
     _micLatestInterim = '';
+    _micProcessedCount = 0;
     _micLangIdx = 0;
     _micUserStopped = false;
     _micSilentRestarts = 0;
@@ -7957,15 +7960,14 @@ function _taskMicAttempt(textEl) {
 
   _micRec.onresult = function(e) {
     var nRes = e && e.results ? e.results.length : 0;
-    var rIdx = (e && e.resultIndex != null) ? e.resultIndex : 0;
-    micLog('task onresult results=' + nRes + ' rIdx=' + rIdx);
+    micLog('task onresult results=' + nRes + ' processed=' + _micProcessedCount);
     if (!nRes) return;
     var newFinal = '', interim = '';
-    for (var i = rIdx; i < e.results.length; i++) {
+    for (var i = _micProcessedCount; i < e.results.length; i++) {
       var res = e.results[i];
       if (!res || !res[0]) continue;
       var t = res[0].transcript || '';
-      if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
+      if (res.isFinal) { newFinal += t + ' '; _micProcessedCount++; } else interim += t + ' ';
     }
     newFinal = newFinal.trim(); interim = interim.trim();
     if (newFinal) {
@@ -8973,6 +8975,7 @@ var _inlineMicActive = false;
 var _inlineMicStarting = false;
 var _inlineMicBaseline = '';
 var _inlineMicFinalAccum = '';
+var _inlineMicProcessedCount = 0;
 var _inlineMicLatestInterim = '';
 var _inlineMicLangIdx = 0;
 var _inlineMicGotResult = false;
@@ -9011,6 +9014,7 @@ function toggleInlineMic(btn) {
     _inlineMicBaseline = (target.value || '').trim();
     _inlineMicFinalAccum = '';
     _inlineMicLatestInterim = '';
+    _inlineMicProcessedCount = 0;
     _inlineMicLangIdx = 0;
     _inlineMicGotResult = false;
     _inlineMicSilentRestarts = 0;
@@ -9079,13 +9083,12 @@ function _inlineMicAttempt() {
   _inlineMicRec.onresult = function(e) {
     if (!e || !e.results || !e.results.length) return;
     if (_inlineSilenceTimer) { clearTimeout(_inlineSilenceTimer); _inlineSilenceTimer = null; }
-    var rIdx = (e.resultIndex != null) ? e.resultIndex : 0;
     var newFinal = '', interim = '';
-    for (var i = rIdx; i < e.results.length; i++) {
+    for (var i = _inlineMicProcessedCount; i < e.results.length; i++) {
       var res = e.results[i];
       if (!res || !res[0]) continue;
       var t = res[0].transcript || '';
-      if (res.isFinal) newFinal += t + ' '; else interim += t + ' ';
+      if (res.isFinal) { newFinal += t + ' '; _inlineMicProcessedCount++; } else interim += t + ' ';
     }
     newFinal = newFinal.trim(); interim = interim.trim();
     if (newFinal) {

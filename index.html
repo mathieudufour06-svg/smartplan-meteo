@@ -3552,10 +3552,7 @@
       <input type="text" id="tAmount" placeholder="ex : 2 500 $" maxlength="30" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="fg">
-      <label class="label-row">
-        <span>Notes</span>
-        <button type="button" class="mic-inline" data-mic-target="tDesc" aria-label="Dicter la description">🎤</button>
-      </label>
+      <label>Notes</label>
       <textarea id="tDesc" rows="3" placeholder="Notes, instructions client, accès travaux…"></textarea>
     </div>
     <div class="task-mode-tabs">
@@ -3812,7 +3809,7 @@
     </div>
     <div class="mf">
       <button class="btn-cancel" id="voiceBtnCancel" onclick="closeModal('voiceOverlay')">Annuler</button>
-      <button class="btn-secondary" id="voiceBtnBack" onclick="voicePreviewBack()" style="display:none">← Modifier</button>
+      <button class="btn-secondary" id="voiceBtnBack" onclick="voicePreviewBack()" style="display:none">✏ Modifier</button>
       <button class="btn-primary" id="voiceBtnAnalyze" onclick="analyzeVoicePreview()">Analyser →</button>
       <button class="btn-primary" id="voiceBtnConfirm" onclick="confirmVoiceCreate()" style="display:none">Créer →</button>
     </div>
@@ -4653,6 +4650,29 @@ async function geocodeAddress(address) {
   return null;
 }
 
+function _getLocalWeatherDay(task, iso) {
+  if (!task.geoLat || !task.geoLon) return null;
+  var key = task.geoLat.toFixed(3) + ',' + task.geoLon.toFixed(3);
+  var days = _locWxCache[key];
+  if (!days) return null;
+  for (var i = 0; i < days.length; i++) {
+    if (days[i] && days[i].date && isoDate(new Date(days[i].date)) === iso) return days[i];
+    if (days[i] && days[i].date && isoDate(days[i].date) === iso) return days[i];
+  }
+  return days[0] || null;
+}
+function _prefetchLocalWeather(tasks, onDone) {
+  var fetched = 0;
+  tasks.forEach(function(t) {
+    if (!t.geoLat || !t.geoLon) return;
+    var key = t.geoLat.toFixed(3) + ',' + t.geoLon.toFixed(3);
+    if (_locWxCache[key]) return;
+    fetched++;
+    fetchWeatherForLoc(t.geoLat, t.geoLon).then(function() { if (--fetched === 0 && onDone) onDone(); });
+  });
+  if (fetched === 0 && onDone) onDone();
+}
+
 var _locWxCache = {};
 async function fetchWeatherForLoc(lat, lon) {
   var key = lat.toFixed(3) + ',' + lon.toFixed(3);
@@ -4975,10 +4995,13 @@ function renderCalMonthPreview() {
   var jobs = getMergedJobTypes();
   var listEl = document.createElement('div');
   listEl.className = 'job-list';
+  _prefetchLocalWeather(dayJobs, function() { renderCalMonthPreview(); });
   dayJobs.forEach(function(task) {
     listEl.appendChild(buildJobCard(task, w, jobs));
   });
   preview.appendChild(listEl);
+  var _nb = _buildNearbySectorBanner(dayJobs);
+  if (_nb) preview.appendChild(_nb);
 
   var addBtn = document.createElement('button');
   addBtn.className = 'cal-add-btn';
@@ -5161,12 +5184,17 @@ function buildJobCard(task, w, jobsDef, opts) {
   jobsDef = jobsDef || getMergedJobTypes();
   opts = opts || {};
   var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
+  // Use per-location weather if cached
+  var _localW = task.scheduledDate ? _getLocalWeatherDay(task, task.scheduledDate) : null;
+  var _wxSrc = _localW ? _localW : w;
+  var _wxLocal = !!_localW;
   var levelCls = '';
   var statusMsg = 'Conditions favorables';
-  if (w) {
-    var res = assess(task.type, w, task.weather);
+  if (_wxSrc) {
+    var res = assess(task.type, _wxSrc, task.weather);
     if (res.level === 'risk')   { levelCls = ' warn'; statusMsg = res.msg || 'Vigilance requise'; }
     if (res.level === 'danger') { levelCls = ' bad';  statusMsg = res.msg || 'Conditions défavorables'; }
+    if (_wxLocal) statusMsg += ' (locale)';
   } else {
     statusMsg = 'Pas de météo disponible';
   }
@@ -5974,19 +6002,24 @@ function renderTodayJobs() {
       + '</div>';
     return;
   }
+  _prefetchLocalWeather(todayTasks, function() { renderTodayJobs(); });
   todayTasks.forEach(function(task) {
     list.appendChild(buildTodayCard(task, todayW, jobsDef));
   });
+  var _nearbyBanner = _buildNearbySectorBanner(todayTasks);
+  if (_nearbyBanner) list.appendChild(_nearbyBanner);
 }
 
 function buildTodayCard(task, w, jobsDef) {
   jobsDef = jobsDef || getMergedJobTypes();
   var jd = jobsDef[task.type] || { icon: '🔧', name: task.type, short: task.type };
 
-  // Assess weather for this specific job
+  // Assess weather for this specific job — use per-location cache if available
+  var _tLocalW = _getLocalWeatherDay(task, task.scheduledDate || isoDate(new Date()));
+  var _tWxSrc = _tLocalW || w;
   var levelCls = '', wxIcon = '✅', wxMsg = 'Conditions favorables';
-  if (w) {
-    var res = assess(task.type, w, task.weather);
+  if (_tWxSrc) {
+    var res = assess(task.type, _tWxSrc, task.weather);
     if (res.level === 'risk') {
       levelCls = ' warn'; wxIcon = '⚠️';
       wxMsg = res.msg || 'Vigilance requise';
@@ -5996,6 +6029,7 @@ function buildTodayCard(task, w, jobsDef) {
       wxMsg = res.msg || 'Conditions défavorables';
       if (task.time) wxMsg = wxMsg.replace(/\.$/, '') + ' à ' + task.time;
     }
+    if (_tLocalW) wxMsg = wxMsg.replace('favorables', 'favorables 🌤locale');
   } else {
     wxIcon = '⏳'; wxMsg = 'Météo indisponible';
   }
@@ -7935,6 +7969,22 @@ function analyzeVoicePreview() {
     previewTable.innerHTML = _buildVoicePreviewHTML(_voiceParsedResult);
     previewSection.style.display = 'block';
   }
+  // Géocodage async pour la preview
+  if (_voiceParsedResult && _voiceParsedResult.location) {
+    (function(loc) {
+      geocodeAddress(loc).then(function(geo) {
+        if (!_voiceParsedResult) return;
+        var el = document.getElementById('vp-geo-status');
+        if (geo) {
+          _voiceParsedResult.geoLat = geo.lat;
+          _voiceParsedResult.geoLon = geo.lon;
+          if (el) { el.textContent = '📍 Adresse confirmée'; el.style.color = 'var(--green, #4caf50)'; }
+        } else {
+          if (el) { el.textContent = '📍 Adresse non vérifiée'; el.style.color = 'var(--orange)'; }
+        }
+      });
+    })(_voiceParsedResult.location);
+  }
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = 'none';
   document.getElementById('voiceBtnAnalyze').style.display = 'none';
@@ -7943,13 +7993,24 @@ function analyzeVoicePreview() {
 }
 
 function voicePreviewBack() {
+  if (_voiceParsedResult) {
+    var parsed = _voiceParsedResult;
+    _voiceParsedResult = null;
+    closeModal('voiceOverlay');
+    if (_sheetMode === 'bank') {
+      openWorkBankForm(null);
+      setTimeout(function() { applyParsedToWbForm(parsed); }, 60);
+    } else {
+      applyVoiceParsed(parsed);
+    }
+    return;
+  }
   document.getElementById('voicePreviewSection').style.display = 'none';
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = '';
   document.getElementById('voiceBtnAnalyze').style.display = '';
   document.getElementById('voiceBtnBack').style.display    = 'none';
   document.getElementById('voiceBtnConfirm').style.display = 'none';
-  _voiceParsedResult = null;
 }
 
 function confirmVoiceCreate() {
@@ -8000,7 +8061,10 @@ function _buildVoicePreviewHTML(parsed) {
   html += row('Date',      dateStr);
   if (parsed.time)     html += row('Heure',     parsed.time);
   if (parsed.duration) html += row('Durée',     parsed.duration);
-  if (parsed.location) html += row('Lieu',      parsed.location);
+  if (parsed.location) {
+    html += row('Lieu', parsed.location);
+    html += '<div class="vp-row"><span class="vp-lbl">Coordonnées</span><span id="vp-geo-status" class="vp-val" style="color:var(--t-4)">📍 Vérification…</span></div>';
+  }
   if (parsed.phone)    html += row('Téléphone', parsed.phone);
   if (parsed.email)    html += row('Email',     parsed.email);
   if (parsed.amount)   html += row('Montant',   parsed.amount);
@@ -8146,6 +8210,41 @@ function parseSmartInput(originalText) {
   // Supprimer noms de jours résiduels
   work = work.replace(/\b(?:dimanche|lundi|mardi|mercredi|jeudi|vendredi|samedi|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, ' ');
 
+  // ── Date en toutes lettres : "le six", "le vingt-trois", etc. ────────────────
+  if (!result.date) {
+    var _wnMap = {
+      'trente et un':31,'trente-et-un':31,'trente et une':31,'trente':30,
+      'vingt-neuf':29,'vingt et neuf':29,'vingt neuf':29,
+      'vingt-huit':28,'vingt et huit':28,'vingt huit':28,
+      'vingt-sept':27,'vingt et sept':27,'vingt sept':27,
+      'vingt-six':26,'vingt et six':26,'vingt six':26,
+      'vingt-cinq':25,'vingt et cinq':25,'vingt cinq':25,
+      'vingt-quatre':24,'vingt et quatre':24,'vingt quatre':24,
+      'vingt-trois':23,'vingt et trois':23,'vingt trois':23,
+      'vingt-deux':22,'vingt et deux':22,'vingt deux':22,
+      'vingt et un':21,'vingt-et-un':21,'vingt et une':21,'vingt un':21,
+      'vingt':20,'dix-neuf':19,'dix neuf':19,'dix-huit':18,'dix huit':18,
+      'dix-sept':17,'dix sept':17,'seize':16,'quinze':15,'quatorze':14,
+      'treize':13,'douze':12,'onze':11,'dix':10,
+      'neuf':9,'huit':8,'sept':7,'six':6,'cinq':5,'quatre':4,'trois':3,'deux':2,
+      'premier':1,'première':1,'un':1,'une':1
+    };
+    var _wnKeys = Object.keys(_wnMap).sort(function(a,b){return b.length-a.length;});
+    for (var _wi = 0; _wi < _wnKeys.length && !result.date; _wi++) {
+      var _wk = _wnKeys[_wi];
+      var _wRe = new RegExp('\\b(?:le|du)\\s+(' + _wk.replace(/[-]/g,'[\\-\\s]').replace(/ /g,'\\s+') + ')(?:er)?\\b', 'i');
+      var _wMt = work.match(_wRe);
+      if (_wMt) {
+        var _wDay = _wnMap[_wk];
+        var _wNow = new Date(), _wPt0 = new Date(); _wPt0.setHours(0,0,0,0);
+        var _wCand = new Date(_wNow.getFullYear(), _wNow.getMonth(), _wDay);
+        if (_wCand < _wPt0) _wCand = new Date(_wNow.getFullYear(), _wNow.getMonth() + 1, _wDay);
+        result.date = isoDate(_wCand);
+        work = work.replace(_wMt[0], ' ');
+      }
+    }
+  }
+
   // ── Date partielle : "le 29", "le 15" sans mois → prochain jour correspondant ──
   if (!result.date) {
     var dPartial = clip(/\b(?:le|du)\s+(\d{1,2})(?:er)?\b/i);
@@ -8168,7 +8267,14 @@ function parseSmartInput(originalText) {
   }
 
   var frNums = { un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6, sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12 };
-  var tm = clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
+  // Heure + pm/après-midi : "3h l'après-midi", "14h pm" → ajouter 12 si h < 12
+  var _pmM = clip(/\b(?:à\s*)?(1?\d)\s*[h:]\s*([0-5]\d)?\s*(?:(?:de\s+)?l['']apr[eè]s[\-\s]midi|pm)\b/i);
+  if (_pmM) {
+    var _pmH = parseInt(_pmM[1], 10), _pmMin = _pmM[2] ? parseInt(_pmM[2], 10) : 0;
+    if (_pmH < 12) _pmH += 12;
+    result.time = ('0' + _pmH).slice(-2) + ':' + ('0' + _pmMin).slice(-2);
+  }
+  var tm = !result.time && clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
   if (tm) {
     var hh = parseInt(tm[1], 10), mm2 = tm[2] ? parseInt(tm[2], 10) : 0;
     result.time = ('0' + hh).slice(-2) + ':' + ('0' + mm2).slice(-2);
@@ -8247,6 +8353,7 @@ function parseSmartInput(originalText) {
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
       .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
       .replace(/\s+\bmoyenn\w*\b\s*$/i, '')
+      .replace(/\s+\ble\s+(?:trente(?:\s+et\s+un[e]?)?|vingt[\w\s-]*|seize|quinze|quatorze|treize|douze|onze|dix[\w\s-]*|neuf|huit|sept|six|cinq|quatre|trois|deux|premier|première|un|une)\b\s*/gi, ' ')
       .replace(/\s+/g, ' ').trim();
   }
 
@@ -8281,7 +8388,9 @@ function parseSmartInput(originalText) {
     hauteur:    ['hauteur','échafaudage','echafaudage','scaffold'],
     pave:       ['pavé','pave','pavage','dallage','interlock','pavages','paving'],
     excavation: ['excavation','terrassement','fouille','tranchée','deblai','remblai','creusage'],
-    emondage:   ['émondage','emondage','élagage','elagage','taille d\'arbre','taille d\'arbres','coupe d\'arbre','coupe d\'arbres','abattage d\'arbres','abattage d\'arbre'],
+    abattage:   ['abattage','abattage d\'arbre','abattage d\'arbres','abattage arbres'],
+    emondage:   ['émondage','emondage','élagage','elagage','taille d\'arbre','taille d\'arbres','coupe d\'arbre','coupe d\'arbres'],
+    carrelage:  ['carrelage','job de carrelage','pose de carrelage','tuile','faïence','faience','céramique','ceramique'],
     paysagisme: ['paysage','paysagisme','gazon','plantation','jardin','arbre','arbres','tonte','pelouse','landscape','haie','fleur'],
     electrique: ['électrique','electrique','électricité','electricite','câblage','cablage','panneau','circuit','luminaire'],
     toiture:    ['toiture','toit','couverture','bardeau','membrane','gouttière','gutters','shingles'],
@@ -8358,6 +8467,9 @@ function parseSmartInput(originalText) {
   // ── Titre / Nom de la tâche (leftover) ───────────────────────────────────
   work = work.replace(/\btype\b/gi, ' ');
   work = work.replace(/\bde\s+(?:job|travail|boulot|ouvrage)\b/gi, ' ');
+  work = work.replace(/\bd['']une?\s+(?:dur[eé]e\s+(?:de\s+)?)?/gi, ' ');
+  work = work.replace(/\bde\s+dur[eé]e\b/gi, ' ');
+  work = work.replace(/\bpour\s+moyennement\b/gi, ' ');
   // Supprimer prépositions isolées (À/à non capturées par le regex temps, Au résiduel d'adresse, etc.)
   work = work.replace(/\s+[àÀ]\s+/g, ' ');
   work = work.replace(/\s+au\s+/gi, ' ');

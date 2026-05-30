@@ -3788,12 +3788,12 @@
     <div class="fg" id="voiceTextSection">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <label style="margin:0">Texte dicté / saisi</label>
-        <button type="button" onclick="try{toggleSttCorrections();}catch(e){console.error('toggleSttCorrections',e);}" style="font-size:11px;color:var(--t-3);background:none;border:none;cursor:pointer;padding:0">✏ Corrections</button>
+        <button type="button" onclick="event.preventDefault();event.stopPropagation();try{toggleSttCorrections();}catch(e){console.error('toggleSttCorrections',e);}" style="font-size:11px;color:var(--t-3);background:none;border:none;cursor:pointer;padding:0">✏ Corrections</button>
       </div>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
-      <div id="sttCorrectionsPanel" style="display:none;margin-top:8px">
+      <div id="sttCorrectionsPanel" style="display:none;margin-top:8px" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
         <label style="font-size:11px;color:var(--t-3);display:block;margin-bottom:4px">Une correction par ligne — <strong>mauvais → correct</strong></label>
-        <textarea id="sttCorrectionsText" rows="4" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);padding:6px 8px;resize:vertical" placeholder="Latour-Eiffel → Latourrel&#10;La Tour Eiffel → Latourrel"></textarea>
+        <textarea id="sttCorrectionsText" rows="4" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);padding:6px 8px;resize:vertical" placeholder="Latour-Eiffel → Latourrel&#10;La Tour Eiffel → Latourrel" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()"></textarea>
         <div style="display:flex;gap:6px;margin-top:6px">
           <button type="button" onclick="insertSttArrow()" style="flex-shrink:0;padding:8px 14px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);font-size:16px;color:var(--t-1);cursor:pointer" title="Insérer →">→</button>
           <button type="button" class="btn-secondary" style="flex:1" onclick="saveSttCorrections()">Enregistrer</button>
@@ -7438,7 +7438,8 @@ function openVoice() {
   var bB = document.getElementById('voiceBtnBack');    if (bB) bB.style.display = 'none';
   var bC = document.getElementById('voiceBtnConfirm'); if (bC) bC.style.display = 'none';
   var ta = document.getElementById('voiceText');
-  if (ta) ta.value = '';
+  if (ta) ta.value = _sttBackup || '';
+  _sttBackup = '';
   // Adapt voice overlay to context (bank vs schedule)
   var isBank = _sheetMode === 'bank';
   var exEl = document.querySelector('#voiceOverlay .modal > p em');
@@ -7958,12 +7959,16 @@ function applySttFixes(text) {
   });
   return text.replace(/\s{2,}/g, ' ').trim();
 }
+var _sttBackup = '';
 function toggleSttCorrections() {
   try {
     var panel = document.getElementById('sttCorrectionsPanel');
     if (!panel) return;
     var open = panel.style.display !== 'none';
     if (!open) {
+      // Sauvegarder le texte dicté avant d'ouvrir la section corrections
+      var _voiceTa = document.getElementById('voiceText');
+      if (_voiceTa) _sttBackup = _voiceTa.value;
       var ta = document.getElementById('sttCorrectionsText');
       if (ta) ta.value = (_sttFixes || []).map(function(f){ return f.from + ' → ' + f.to; }).join('\n');
     }

@@ -8664,35 +8664,42 @@ function setInlineMicBtnState(btn, state, icon) {
 }
 
 function toggleInlineMic(btn) {
-  var targetId = btn.dataset.micTarget;
-  var target = document.getElementById(targetId);
-  if (!target) return;
+  try {
+    var targetId = btn.dataset.micTarget;
+    var target = document.getElementById(targetId);
+    if (!target) return;
 
-  if (_inlineMicActive || _inlineMicStarting) {
-    if (_inlineMicBtn === btn) {
+    if (_inlineMicActive || _inlineMicStarting) {
+      if (_inlineMicBtn === btn) {
+        stopInlineMic();
+        return;
+      }
       stopInlineMic();
+    }
+
+    var SR = getSpeechRecognitionCtor();
+    if (!SR) {
+      setInlineMicBtnState(btn, 'error', '⚠');
+      toast('⚠ Dictée non supportée sur ce navigateur');
       return;
     }
-    stopInlineMic();
-  }
+    micCheckHTTPS();
 
-  var SR = getSpeechRecognitionCtor();
-  if (!SR) {
-    setInlineMicBtnState(btn, 'error', '⚠');
-    toast('⚠ Dictée non supportée sur ce navigateur');
-    return;
+    _inlineMicBtn = btn;
+    _inlineMicEl  = target;
+    _inlineMicBaseline = (target.value || '').trim();
+    _inlineMicFinalAccum = '';
+    _inlineMicLatestInterim = '';
+    _inlineMicLangIdx = 0;
+    _inlineMicGotResult = false;
+    _inlineMicSilentRestarts = 0;
+    _inlineMicAttempt();
+  } catch(ex) {
+    console.error('toggleInlineMic error', ex);
+    if (btn) setInlineMicBtnState(btn, 'error', '⚠');
+    var errEl = btn && btn.dataset.micTarget ? document.getElementById(btn.dataset.micTarget) : null;
+    if (errEl && !errEl.value) errEl.value = 'Erreur micro — réessaie';
   }
-  micCheckHTTPS();
-
-  _inlineMicBtn = btn;
-  _inlineMicEl  = target;
-  _inlineMicBaseline = (target.value || '').trim();
-  _inlineMicFinalAccum = '';
-  _inlineMicLatestInterim = '';
-  _inlineMicLangIdx = 0;
-  _inlineMicGotResult = false;
-  _inlineMicSilentRestarts = 0;
-  _inlineMicAttempt();
 }
 
 var _inlineMicSilentRestarts = 0;
@@ -8738,8 +8745,19 @@ function _inlineMicAttempt() {
       if (_inlineMicActive) { try { _inlineMicRec.stop(); } catch(e) {} }
     }, 30000);
   };
+  var _inlineSilenceTimer = null;
+  _inlineMicRec.onspeechend = function() {
+    if (_inlineSilenceTimer) clearTimeout(_inlineSilenceTimer);
+    _inlineSilenceTimer = setTimeout(function _inlSilCheck() {
+      _inlineSilenceTimer = null;
+      if (!_inlineMicActive) return;
+      if (_inlineMicLatestInterim) { _inlineSilenceTimer = setTimeout(_inlSilCheck, 1000); return; }
+      if (_inlineMicRec) { try { _inlineMicRec.stop(); } catch(e) {} }
+    }, 5000);
+  };
   _inlineMicRec.onresult = function(e) {
     if (!e || !e.results || !e.results.length) return;
+    if (_inlineSilenceTimer) { clearTimeout(_inlineSilenceTimer); _inlineSilenceTimer = null; }
     var rIdx = (e.resultIndex != null) ? e.resultIndex : 0;
     var newFinal = '', interim = '';
     for (var i = rIdx; i < e.results.length; i++) {
@@ -8751,13 +8769,15 @@ function _inlineMicAttempt() {
     newFinal = newFinal.trim(); interim = interim.trim();
     if (newFinal) {
       _inlineMicFinalAccum = (_inlineMicFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
+      _inlineMicLatestInterim = '';
       _inlineMicGotResult = true; _inlineMicSilentRestarts = 0;
+      writeLive();
     }
     if (interim) { _inlineMicLatestInterim = interim; _inlineMicGotResult = true; }
-    if (newFinal || interim) writeLive();
   };
   _inlineMicRec.onerror = function(e) {
     _inlineMicStarting = false;
+    if (_inlineSilenceTimer) { clearTimeout(_inlineSilenceTimer); _inlineSilenceTimer = null; }
     var err = e && e.error;
     if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
       _inlineMicActive = false;
@@ -8770,6 +8790,7 @@ function _inlineMicAttempt() {
     _inlineMicStarting = false;
     _inlineMicActive = false;
     if (_autoStop) clearTimeout(_autoStop);
+    if (_inlineSilenceTimer) { clearTimeout(_inlineSilenceTimer); _inlineSilenceTimer = null; }
     if (commit()) {
       setInlineMicBtnState(_inlineMicBtn, 'idle', '🎤');
       _inlineMicBtn = null; _inlineMicEl = null; _inlineMicRec = null;
@@ -8804,7 +8825,7 @@ function _bindInlineMicButtons() {
   btns.forEach(function(btn) {
     if (btn.dataset.micBound) return;
     btn.dataset.micBound = '1';
-    btn.addEventListener('click', function(ev) { ev.preventDefault(); toggleInlineMic(btn); });
+    btn.addEventListener('click', function(ev) { ev.preventDefault(); ev.stopPropagation(); toggleInlineMic(btn); });
   });
 }
 

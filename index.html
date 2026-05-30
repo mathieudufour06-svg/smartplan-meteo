@@ -3791,7 +3791,7 @@
     <div class="fg" id="voiceTextSection">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <label style="margin:0">Texte dicté / saisi</label>
-        <button type="button" onclick="toggleSttCorrections()" style="font-size:11px;color:var(--t-3);background:none;border:none;cursor:pointer;padding:0">✏ Corrections</button>
+        <button type="button" onclick="try{toggleSttCorrections();}catch(e){console.error('toggleSttCorrections',e);}" style="font-size:11px;color:var(--t-3);background:none;border:none;cursor:pointer;padding:0">✏ Corrections</button>
       </div>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
       <div id="sttCorrectionsPanel" style="display:none;margin-top:8px">
@@ -7528,11 +7528,8 @@ function _micAttemptStart() {
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
   _micRec.lang = lang;
-  // iOS Safari: continuous=true blocks onresult (known iOS bug) → use false + silent restart
-  // interimResults=true on iOS can prevent isFinal from firing → disable
-  var ios = isIOSSafari();
-  _micRec.interimResults = !ios;
-  _micRec.continuous = !ios;
+  _micRec.interimResults = true;
+  _micRec.continuous = true;
   _micRec.maxAlternatives = 1;
 
   setMicState('listening', _micSilentRestarts > 0 ? 'Je t\'écoute…' : 'Je t\'écoute…', '🎙');
@@ -7572,12 +7569,13 @@ function _micAttemptStart() {
     _silenceTimer = setTimeout(function _silCheck() {
       _silenceTimer = null;
       if (!_micActive || _micUserStopped) return;
+      if (_micLatestInterim) { _silenceTimer = setTimeout(_silCheck, 1000); return; }
       var ago = Date.now() - _micLastResultAt;
       if (ago < 2000) { _silenceTimer = setTimeout(_silCheck, 2000 - ago + 200); return; }
-      micLog('silence 4s → arrêt');
+      micLog('silence 5s → arrêt');
       _micUserStopped = true; _micStopping = true;
       if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    }, 4000);
+    }, 5000);
   };
   _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
   _micRec.onaudioend    = function() { micLog('onaudioend'); };
@@ -7743,10 +7741,9 @@ function _taskMicAttempt(textEl) {
   var lang = _micLangChain[_micLangIdx] || 'fr-CA';
   if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
   _micRec = new SR();
-  var ios = isIOSSafari();
   _micRec.lang = lang;
-  _micRec.interimResults = !ios;
-  _micRec.continuous = !ios;
+  _micRec.interimResults = true;
+  _micRec.continuous = true;
   _micRec.maxAlternatives = 1;
   _micStarting = true;
   _micGotResult = false;
@@ -7791,12 +7788,13 @@ function _taskMicAttempt(textEl) {
     _silenceTimer = setTimeout(function _silCheck() {
       _silenceTimer = null;
       if (!_micActive || _micUserStopped) return;
+      if (_micLatestInterim) { _silenceTimer = setTimeout(_silCheck, 1000); return; }
       var ago = Date.now() - _micLastResultAt;
       if (ago < 2000) { _silenceTimer = setTimeout(_silCheck, 2000 - ago + 200); return; }
-      micLog('task silence 4s → arrêt');
+      micLog('task silence 5s → arrêt');
       _micUserStopped = true; _micStopping = true;
       if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    }, 4000);
+    }, 5000);
   };
 
   _micRec.onresult = function(e) {
@@ -7892,14 +7890,16 @@ function applySttFixes(text) {
   return text.replace(/\s{2,}/g, ' ').trim();
 }
 function toggleSttCorrections() {
-  var panel = document.getElementById('sttCorrectionsPanel');
-  if (!panel) return;
-  var open = panel.style.display !== 'none';
-  if (!open) {
-    var ta = document.getElementById('sttCorrectionsText');
-    if (ta) ta.value = _sttFixes.map(function(f){ return f.from + ' → ' + f.to; }).join('\n');
-  }
-  panel.style.display = open ? 'none' : '';
+  try {
+    var panel = document.getElementById('sttCorrectionsPanel');
+    if (!panel) return;
+    var open = panel.style.display !== 'none';
+    if (!open) {
+      var ta = document.getElementById('sttCorrectionsText');
+      if (ta) ta.value = (_sttFixes || []).map(function(f){ return f.from + ' → ' + f.to; }).join('\n');
+    }
+    panel.style.display = open ? 'none' : '';
+  } catch(e) { console.error('toggleSttCorrections error', e); }
 }
 function insertSttArrow() {
   var ta = document.getElementById('sttCorrectionsText');
@@ -8246,16 +8246,18 @@ function parseSmartInput(originalText) {
       .replace(/\s+[ÀA]\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{3,})\s*$/i, ', $1')
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
       .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
+      .replace(/\s+\bmoyenn\w*\b\s*$/i, '')
       .replace(/\s+/g, ' ').trim();
   }
 
   // ── Priorité ──────────────────────────────────────────────────────────────
   if      (/\b(?:urgence\s+basse)\b/i.test(work))                                                              { result.priority = 'low'; }
-  else if (/\b(?:urgence\s+moyenne)\b/i.test(work))                                                            { result.priority = 'medium'; }
+  else if (/\b(?:urgence\s+moyenne|moyennement\s+urgent[e]?)\b/i.test(work))                                   { result.priority = 'medium'; }
   else if (/\b(?:urgent[e]?|urgence|asap)\b/i.test(work))                                                      { result.priority = 'urgent'; }
   else if (/\b(?:priorit[eé]\s+(?:haute|élev[eé]e)|haute\s+priorit[eé]|\bhaute\b)\b/i.test(work))             { result.priority = 'high'; }
   else if (/\b(?:priorit[eé]\s+basse|basse\s+priorit[eé]|\bbasse\b|low)\b/i.test(work))                       { result.priority = 'low'; }
   else if (/\b(?:priorit[eé]\s+moyenne|moyenne)\b/i.test(work))                                               { result.priority = 'medium'; }
+  work = work.replace(/\bmoyennement(?:\s+urgent[e]?)?\b/gi, ' ');
   work = work.replace(/\b(?:urgent[e]?|urgence(?:\s+(?:haute|élev[eé]e|moyenne|basse))?|asap|priorit[eé]\s+(?:haute|basse|moyenne|élev[eé]e)|haute\s+priorit[eé]|basse\s+priorit[eé]|haute|basse|moyenne|low|priorit[eé])\b/gi, ' ');
 
   // ── Intérieur / Extérieur ─────────────────────────────────────────────────
@@ -8366,7 +8368,7 @@ function parseSmartInput(originalText) {
   do {
     _prevLeft = leftover;
     leftover = leftover.replace(/^(?:type|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
-    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d['']|toute?\s+la|toute?|urgent[e]?|urgence|priorit[eé])$/i, '');
+    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d['']|toute?\s+la|toute?|urgent[e]?|urgence|priorit[eé]|moyennement)$/i, '');
   } while (leftover !== _prevLeft);
   // Supprimer articles/prépositions isolés au milieu du titre
   leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');
@@ -8701,10 +8703,9 @@ function _inlineMicAttempt() {
   var lang = _micLangChain[_inlineMicLangIdx] || 'fr-CA';
   if (_inlineMicRec) { try { _inlineMicRec.stop(); } catch(e) {} _inlineMicRec = null; }
   _inlineMicRec = new SR();
-  var ios = isIOSSafari();
   _inlineMicRec.lang = lang;
-  _inlineMicRec.interimResults = !ios;
-  _inlineMicRec.continuous = !ios;
+  _inlineMicRec.interimResults = true;
+  _inlineMicRec.continuous = true;
   _inlineMicRec.maxAlternatives = 1;
   _inlineMicStarting = true;
   _inlineMicGotResult = false;

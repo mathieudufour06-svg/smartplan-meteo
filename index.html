@@ -9878,6 +9878,22 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('locName').textContent = ST.loc.name;
   // Pre-render calendar so its title is set even before first navigation
   renderCalendar();
+  // Swipe horizontal sur le calendrier (toutes vues)
+  (function() {
+    var el = document.getElementById('viewCalendar');
+    if (!el) return;
+    var _sx = 0, _sy = 0;
+    el.addEventListener('touchstart', function(e) {
+      _sx = e.changedTouches[0].clientX;
+      _sy = e.changedTouches[0].clientY;
+    }, { passive: true });
+    el.addEventListener('touchend', function(e) {
+      var dx = e.changedTouches[0].clientX - _sx;
+      var dy = e.changedTouches[0].clientY - _sy;
+      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+      calNavigate(dx < 0 ? 1 : -1);
+    }, { passive: true });
+  })();
   // Detect dictation support and adapt UI
   applyVoiceSupportUI();
   _bindInlineMicButtons();

@@ -4867,6 +4867,7 @@ function setCalMode(mode) {
 function calNavigate(delta) {
   if (_calMode === 'month') {
     _calMonthCursor = new Date(_calMonthCursor.getFullYear(), _calMonthCursor.getMonth() + delta, 1);
+    _calActive = new Date(_calMonthCursor);
   } else if (_calMode === 'week') {
     var nx = new Date(_calWeekCursor); nx.setDate(nx.getDate() + delta * 7); _calWeekCursor = nx;
   } else {

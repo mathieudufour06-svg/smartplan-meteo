@@ -4969,8 +4969,8 @@ function renderCalMonth() {
     cell.onclick = (function(date) {
       return function() {
         _calActive = date;
-        renderCalMonth();
         openCalDaySheet(isoDate(date));
+        try { renderCalMonth(); } catch(e) {}
       };
     })(cellDate);
     grid.appendChild(cell);
@@ -6971,6 +6971,9 @@ function ocrConfirmImport() {
 function openTodayDetail() { openDayDetail(0); }
 
 function openCalDaySheet(iso) {
+  try { _openCalDaySheet(iso); } catch(e) { console.error('openCalDaySheet:', e); toast('⚠ Erreur: ' + e.message); }
+}
+function _openCalDaySheet(iso) {
   var d = new Date(iso + 'T00:00:00');
   var dayName = DAYS_L[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_FULL[d.getMonth()] + ' ' + d.getFullYear();
   document.getElementById('ddTitle').textContent = dayName;

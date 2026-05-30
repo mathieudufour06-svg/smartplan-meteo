@@ -4609,6 +4609,7 @@ async function fetchCurrentConditions(lat, lon) {
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
       + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m,is_day'
+      + '&models=gem_seamless'
       + '&timezone=auto';
     var res = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);

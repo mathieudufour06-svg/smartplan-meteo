@@ -7690,11 +7690,16 @@ function _micAttemptStart() {
   _micStarting = true;
   _micStopping = false;
   _micGotResult = false;
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
+  if (_micRec) {
+    var _old = _micRec; _micRec = null;
+    try { _old.abort(); } catch(e) {}
+    setTimeout(function() { _micAttemptStart(); }, 300);
+    return;
+  }
   _micRec = new SR();
   _micRec.lang = lang;
   _micRec.interimResults = true;
-  _micRec.continuous = true;
+  _micRec.continuous = false;  // iOS: redémarrage auto après chaque résultat
   _micRec.maxAlternatives = 1;
 
   setMicState('listening', _micSilentRestarts > 0 ? 'Je t\'écoute…' : 'Je t\'écoute…', '🎙');
@@ -7834,9 +7839,10 @@ function _micAttemptStart() {
       return;
     }
 
-    // 2. Natural end — commit whatever was captured (includes interim fallback)
+    // 2. Natural end after speech — commit then restart automatically (continuous=false)
     if (_micCommitFinal()) {
-      setMicState('idle', 'Toucher pour reprendre');
+      setMicState('listening', 'Je t\'écoute…', '🎙');
+      setTimeout(function() { _micAttemptStart(); }, 300);
       return;
     }
 
@@ -7862,23 +7868,43 @@ function _micAttemptStart() {
     setMicState('error', 'Aucune voix captée — toucher pour réessayer', '⚠');
   };
 
-  try {
-    micLog('calling start() lang=' + lang + ' continuous=' + _micRec.continuous + ' interim=' + _micRec.interimResults);
-    _micRec.start();
-    micLog('start() called OK');
-    _micStartFallback = setTimeout(function() {
-      if (_micStarting && !_micActive) {
+  function _doStart() {
+    try {
+      micLog('calling start() lang=' + lang + ' continuous=' + _micRec.continuous + ' interim=' + _micRec.interimResults);
+      _micRec.start();
+      micLog('start() called OK');
+      _micStartFallback = setTimeout(function() {
+        if (_micStarting && !_micActive) {
+          _micStarting = false;
+          micLog('onstart never fired within 2500ms');
+          try { _micRec.stop(); } catch(e) {}
+          setMicState('error', 'Micro ne répond pas — vérifiez les permissions', '⚠');
+        }
+      }, 2500);
+    } catch(ex) {
+      _micStarting = false;
+      _micActive = false;
+      micLog('start() threw: ' + (ex && ex.message));
+      setMicState('error', 'Dictée déjà active — toucher pour reprendre', '⚠');
+    }
+  }
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream) {
+        stream.getTracks().forEach(function(t) { t.stop(); });
+        _doStart();
+      })
+      .catch(function(err) {
         _micStarting = false;
-        micLog('onstart never fired within 2500ms');
-        try { _micRec.stop(); } catch(e) {}
-        setMicState('error', 'Micro ne répond pas — vérifiez les permissions', '⚠');
-      }
-    }, 2500);
-  } catch(ex) {
-    _micStarting = false;
-    _micActive = false;
-    micLog('start() threw: ' + (ex && ex.message));
-    setMicState('error', 'Dictée déjà active — toucher pour reprendre', '⚠');
+        var msg = (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')
+          ? 'Permission micro refusée — autorise dans Réglages › Safari › Micro'
+          : (err.name === 'NotSupportedError' || err.name === 'NotFoundError')
+          ? 'Micro non supporté sur cet appareil'
+          : 'Micro indisponible — vérifie les réglages';
+        setMicState('error', msg, '⚠');
+      });
+  } else {
+    _doStart();
   }
 }
 
@@ -7904,11 +7930,16 @@ function startTaskMic() {
 function _taskMicAttempt(textEl) {
   var SR = getSpeechRecognitionCtor();
   var lang = _micLangChain[_micLangIdx] || 'fr-CA';
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} _micRec = null; }
+  if (_micRec) {
+    var _old = _micRec; _micRec = null;
+    try { _old.abort(); } catch(e) {}
+    setTimeout(function() { _taskMicAttempt(textEl); }, 300);
+    return;
+  }
   _micRec = new SR();
   _micRec.lang = lang;
   _micRec.interimResults = true;
-  _micRec.continuous = true;
+  _micRec.continuous = false;  // iOS: redémarrage auto après chaque résultat
   _micRec.maxAlternatives = 1;
   _micStarting = true;
   _micGotResult = false;
@@ -8011,7 +8042,11 @@ function _taskMicAttempt(textEl) {
       else setInlineMicState('idle', '🎤');
       return;
     }
-    if (commit()) { setInlineMicState('idle', '✅'); return; }
+    if (commit()) {
+      setInlineMicState('listening', '🎙');
+      setTimeout(function() { _taskMicAttempt(textEl); }, 300);
+      return;
+    }
     if (_micRetryScheduled) {
       _micRetryScheduled = false;
       setTimeout(function() { _taskMicAttempt(textEl); }, 200);
@@ -8028,11 +8063,30 @@ function _taskMicAttempt(textEl) {
     toast('Aucune voix captée — réessayez');
   };
 
-  try { _micRec.start(); }
-  catch(ex) {
-    _micStarting = false; _micActive = false;
-    micLog('task start() threw: ' + (ex && ex.message));
-    setInlineMicState('error', '⚠');
+  function _doTaskStart() {
+    try { _micRec.start(); }
+    catch(ex) {
+      _micStarting = false; _micActive = false;
+      micLog('task start() threw: ' + (ex && ex.message));
+      setInlineMicState('error', '⚠');
+    }
+  }
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream) {
+        stream.getTracks().forEach(function(t) { t.stop(); });
+        _doTaskStart();
+      })
+      .catch(function(err) {
+        _micStarting = false;
+        var msg = (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')
+          ? 'Permission micro refusée — autorise dans Réglages › Safari › Micro'
+          : 'Micro non disponible sur cet appareil';
+        setInlineMicState('error', '⚠');
+        toast(msg);
+      });
+  } else {
+    _doTaskStart();
   }
 }
 

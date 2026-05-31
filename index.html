@@ -7624,16 +7624,63 @@ function clearMicStartFallback() {
   if (_micStartFallback) { clearTimeout(_micStartFallback); _micStartFallback = null; }
 }
 
+function _micShowPermDenied() {
+  var msg = 'Permission micro refusée.\nPour réactiver : Réglages → Safari → Microphone → Autoriser';
+  setMicState('error', msg, '⚠');
+  // Show settings button if on iOS
+  var btnArea = document.getElementById('micPermBtn');
+  if (!btnArea) {
+    var statusEl = document.getElementById('voiceStatus');
+    if (statusEl && statusEl.parentNode) {
+      var btn = document.createElement('button');
+      btn.id = 'micPermBtn';
+      btn.type = 'button';
+      btn.textContent = 'Ouvrir les réglages';
+      btn.style.cssText = 'margin-top:8px;padding:10px 18px;border-radius:10px;background:#4d9dff;color:#fff;font-weight:700;border:none;font-size:14px;cursor:pointer;display:block;width:100%';
+      btn.onclick = function() { window.location.href = 'app-settings:'; };
+      statusEl.parentNode.insertBefore(btn, statusEl.nextSibling);
+    }
+  }
+}
+function _micClearPermBtn() {
+  var btn = document.getElementById('micPermBtn');
+  if (btn) btn.parentNode.removeChild(btn);
+}
+
 function toggleMic() {
   if (_micStarting) return;
   if (_micActive) {
+    _micClearPermBtn();
     if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
     _micUserStopped = true;
     _micStopping = true;
     if (_micRec) { try { _micRec.stop(); } catch(e) {} }
     return;
   }
-  startMic();
+  _micClearPermBtn();
+  // Check mic permission before starting
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'microphone' }).then(function(result) {
+      if (result.state === 'denied') {
+        _micShowPermDenied();
+      } else if (result.state === 'prompt') {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function(s) { s.getTracks().forEach(function(t){t.stop();}); startMic(); })
+          .catch(function() { _micShowPermDenied(); });
+      } else {
+        startMic();
+      }
+    }).catch(function() { startMic(); });
+  } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(s) { s.getTracks().forEach(function(t){t.stop();}); startMic(); })
+      .catch(function(err) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') _micShowPermDenied();
+        else startMic();
+      });
+  } else {
+    startMic();
+  }
 }
 
 // Write live preview to textarea (baseline + final + interim)

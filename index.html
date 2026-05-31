@@ -4139,15 +4139,21 @@ function scoreCls(s) {
    Based purely on rain / wind / temperature thresholds. */
 function simpleStatus(w) {
   if (!w) return { level: 'ok', icon: '⏳', label: 'Météo en chargement' };
-  if (w.weathercode >= 95) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
-  if (w.precipitation > 5) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
-  if (w.windspeed     > 40) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
-  if (w.temp_min      < 0)  return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
-  if (w.temp_max      > 35) return { level: 'bad', icon: '⛔', label: 'Conditions défavorables' };
-  if (w.precipitation > 0)  return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
-  if (w.windspeed     > 25) return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
-  if (w.temp_min      < 5)  return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
-  if (w.temp_max      > 30) return { level: 'warn', icon: '⚠️', label: 'Conditions à risque' };
+  // 🔴 Dangereuses
+  if (w.weathercode >= 95)  return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
+  if (w.windspeed     > 80) return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
+  if (w.precipitation > 25) return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
+  if (w.temp_min      < -5) return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
+  // 🟠 Défavorables
+  if (w.windspeed     > 60) return { level: 'warn', icon: '🟠', label: 'Conditions défavorables' };
+  if (w.precipitation > 10) return { level: 'warn', icon: '🟠', label: 'Conditions défavorables' };
+  if (w.temp_min      < 0)  return { level: 'warn', icon: '🟠', label: 'Conditions défavorables' };
+  // ⚠️ Acceptables
+  if (w.windspeed     > 40) return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
+  if (w.precipitation > 3)  return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
+  if (w.temp_min      < 2)  return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
+  if (w.temp_max      > 38) return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
+  // ✅ Favorables
   return { level: 'ok', icon: '✅', label: 'Bonnes conditions' };
 }
 

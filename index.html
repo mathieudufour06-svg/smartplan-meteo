@@ -5336,8 +5336,9 @@ function renderMiniWeather() {
 
   var st = simpleStatus(w);
   var label = cur ? wLabelNight(displayCode, isDay) : (
-    st.level === 'ok'   ? 'Favorable' :
-    st.level === 'warn' ? 'À surveiller' : 'Conditions risquées'
+    st.level === 'bad'              ? st.label :
+    st.icon  === '🟠'              ? st.label :
+    st.icon  === '⚠️'             ? st.label : 'Conditions favorables'
   );
   if (statusEl) { statusEl.textContent = label; statusEl.className = 'home-hero-wx-label ' + st.level; }
   if (orbEl) orbEl.setAttribute('data-level', st.level);

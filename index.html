@@ -4139,22 +4139,18 @@ function scoreCls(s) {
    Based purely on rain / wind / temperature thresholds. */
 function simpleStatus(w) {
   if (!w) return { level: 'ok', icon: '⏳', label: 'Météo en chargement' };
-  // 🔴 Dangereuses
+  // 🔴 Dangereux
   if (w.weathercode >= 95)  return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
   if (w.windspeed     > 80) return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
   if (w.precipitation > 25) return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
-  if (w.temp_min      < -5) return { level: 'bad',  icon: '🔴', label: 'Conditions dangereuses' };
   // 🟠 Défavorables
   if (w.windspeed     > 60) return { level: 'warn', icon: '🟠', label: 'Conditions défavorables' };
   if (w.precipitation > 10) return { level: 'warn', icon: '🟠', label: 'Conditions défavorables' };
-  if (w.temp_min      < 0)  return { level: 'warn', icon: '🟠', label: 'Conditions défavorables' };
   // ⚠️ Acceptables
-  if (w.windspeed     > 40) return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
-  if (w.precipitation > 3)  return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
-  if (w.temp_min      < 2)  return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
-  if (w.temp_max      > 38) return { level: 'ok',   icon: '⚠️', label: 'Conditions acceptables' };
+  if (w.windspeed     > 40) return { level: 'warn', icon: '⚠️', label: 'Conditions acceptables' };
+  if (w.precipitation > 3)  return { level: 'warn', icon: '⚠️', label: 'Conditions acceptables' };
   // ✅ Favorables
-  return { level: 'ok', icon: '✅', label: 'Bonnes conditions' };
+  return { level: 'ok', icon: '✅', label: 'Conditions favorables' };
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -5376,11 +5372,11 @@ function renderGreeting() {
   var eb = document.getElementById('greetEyebrow');
   if (!eb) return;
   if (ST.forecast && ST.forecast[0]) {
-    var risk = dayOverallRisk(ST.forecast[0]);
-    var dot  = risk === 'ok' ? '🟢' : risk === 'risk' ? '🟡' : '🔴';
-    var lbl  = risk === 'ok' ? 'Conditions favorables' : risk === 'risk' ? 'À surveiller' : 'Conditions défavorables';
+    var st   = simpleStatus(ST.forecast[0]);
+    var dot  = st.level === 'bad' ? '🔴' : st.icon === '🟠' ? '🟠' : st.icon === '⚠️' ? '🟡' : '🟢';
+    var lbl  = st.label;
     eb.textContent  = dot + ' ' + lbl;
-    eb.className    = 'home-hero-status ' + (risk === 'danger' ? 'danger' : risk === 'risk' ? 'warn' : 'ok');
+    eb.className    = 'home-hero-status ' + (st.level === 'bad' ? 'danger' : st.level === 'warn' ? 'warn' : 'ok');
   } else {
     eb.textContent = '';
   }

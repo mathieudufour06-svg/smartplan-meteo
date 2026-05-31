@@ -9690,6 +9690,13 @@ function closeModal(id) {
     document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
       m.style.height = h;
     });
+    // Scroll focused input into view after modal shrinks (keyboard opened)
+    var active = document.activeElement;
+    if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) {
+      setTimeout(function() {
+        try { active.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e) {}
+      }, 80);
+    }
   }
 
   function syncWithDelay() {

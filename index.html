@@ -9686,7 +9686,7 @@ function closeModal(id) {
   var _delayTimer = null;
 
   function sync() {
-    var h = vv.height + 'px';
+    var h = (vv.offsetTop + vv.height) + 'px';
     document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
       m.style.height = h;
     });

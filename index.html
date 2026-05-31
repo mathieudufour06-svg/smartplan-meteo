@@ -2059,11 +2059,11 @@
     .voice-line .voice-status.is-error { color: var(--red); }
 
     .mf {
-      display: flex; gap: var(--s2);
+      display: flex; flex-wrap: wrap; gap: var(--s2);
       margin-top: var(--s4);
     }
     .btn-cancel, .btn-primary, .btn-secondary, .btn-del, .btn-del-no, .btn-del-yes, .btn-geo {
-      flex: 1;
+      flex: 1 1 0;
       padding: 14px 16px;
       border-radius: var(--r-md);
       font-size: 15px; font-weight: 800;
@@ -2072,7 +2072,7 @@
     }
     .btn-cancel { background: var(--surface-2); border: 1px solid var(--line-2); color: var(--t-1); }
     .btn-primary {
-      flex: 2;
+      flex: 1 1 100%;
       background: linear-gradient(135deg, var(--tint), var(--tint-hi));
       color: #fff;
       box-shadow: var(--sh-tint);

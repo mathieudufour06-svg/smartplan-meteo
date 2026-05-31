@@ -9192,6 +9192,7 @@ function openAddTask(dayIdx) {
   _taskSource       = 'manual';
   _taskPhotoPreview = null;
   document.getElementById('taskModalTitle').textContent = 'Nouveaux travaux';
+  document.querySelector('.task-mode-tabs').style.display = '';
   document.getElementById('tName').value     = '';
   document.getElementById('tClient').value   = '';
   document.getElementById('tPhone').value    = '';
@@ -9267,6 +9268,7 @@ function openEditTask(id, title) {
   _taskSource       = task.source || 'manual';
   _taskPhotoPreview = task.photoPreview || null;
   document.getElementById('taskModalTitle').textContent = title || 'Modifier les travaux';
+  document.querySelector('.task-mode-tabs').style.display = 'none';
   document.getElementById('tName').value     = task.name     || '';
   document.getElementById('tClient').value   = task.client   || '';
   document.getElementById('tPhone').value    = task.phone    || '';

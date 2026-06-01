@@ -9140,20 +9140,92 @@ function loadPhotoPreview(files) {
     var img = document.getElementById('photoPreview');
     img.src = _taskPhotoPreview;
     document.getElementById('photoPreviewContainer').style.display = 'block';
+    // Analyse with Claude Vision if API key available
+    parseJobFromImage(e.target.result, file.type || 'image/jpeg');
   };
   reader.readAsDataURL(file);
-  var parsed = parseJobFromImage(file);
-  if (parsed.name && !document.getElementById('photoName').value) document.getElementById('photoName').value = parsed.name;
-  buildPhotoTypeSelect(parsed.type);
-  document.getElementById('photoPrio').value = parsed.priority || 'medium';
 }
 
-function parseJobFromImage(imageFile) {
-  var name = imageFile.name ? imageFile.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ') : 'Travaux photo';
-  return {
-    name: name, client: '', location: '', duration: '', priority: 'medium',
-    type: Object.keys(getMergedJobTypes())[0] || 'general'
-  };
+function parseJobFromImage(dataURL, mimeType) {
+  var apiKey = _ocrGetKey();
+  var nameEl     = document.getElementById('photoName');
+  var clientEl   = document.getElementById('photoClient');
+  var locationEl = document.getElementById('photoLocation');
+  var durationEl = document.getElementById('photoDuration');
+  var prioEl     = document.getElementById('photoPrio');
+
+  if (!apiKey) {
+    // No key: set a neutral placeholder so user knows to fill manually
+    if (nameEl && !nameEl.value) nameEl.placeholder = 'Titre des travaux';
+    return;
+  }
+
+  // Show loading state
+  if (nameEl) { nameEl.value = ''; nameEl.placeholder = 'Analyse en cours…'; }
+
+  // Strip the data:...;base64, prefix
+  var base64 = dataURL.replace(/^data:[^;]+;base64,/, '');
+  var media  = (mimeType || 'image/jpeg').replace(/^data:/, '').split(';')[0] || 'image/jpeg';
+
+  var prompt = 'Tu analyses une photo de notes manuscrites ou imprimées décrivant UN seul travail de terrain. '
+    + 'Retourne UNIQUEMENT un objet JSON valide, sans texte autour, sans backticks markdown. '
+    + 'Clés exactes: titre, client, adresse, telephone, duree, date, priorite, type, montant. '
+    + 'Pour "type" choisis parmi: Émondage, Abattage, Asphalte, Pavage, Béton, Ciment, Carrelage, Montage lignes, Autre. '
+    + 'Pour "priorite" choisis parmi: Basse, Moyenne, Urgente. '
+    + 'Pour "date" format AAAA-MM-JJ, année 2026 si non précisée. '
+    + 'Pour "duree" en heures (ex: 6h). '
+    + 'Si une info est absente mets null. Ne jamais inventer de valeur.';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: media, data: base64 } },
+          { type: 'text', text: prompt }
+        ]
+      }]
+    })
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    var text = (data.content && data.content[0]) ? (data.content[0].text || '') : '';
+    text = text.replace(/```json|```/g, '').trim();
+    var j;
+    try { j = JSON.parse(text); } catch(e) { throw new Error('JSON invalide'); }
+
+    if (nameEl)     nameEl.value     = j.titre    || '';
+    if (clientEl)   clientEl.value   = j.client   || '';
+    if (locationEl) locationEl.value = j.adresse  || '';
+    if (durationEl) durationEl.value = j.duree    || '';
+
+    // Priority mapping
+    var prioMap = { 'Urgente': 'urgent', 'Haute': 'high', 'Moyenne': 'medium', 'Basse': 'low' };
+    if (prioEl && j.priorite) prioEl.value = prioMap[j.priorite] || 'medium';
+
+    // Type: try to match against job types
+    if (j.type) {
+      var sel = document.getElementById('photoType');
+      if (sel) {
+        var opts = Array.prototype.slice.call(sel.options);
+        var match = opts.find(function(o) { return o.text.toLowerCase().includes(j.type.toLowerCase()) || (o.value && j.type.toLowerCase().includes(o.value.toLowerCase())); });
+        if (match) sel.value = match.value;
+      }
+    }
+
+    // Reset placeholder
+    if (nameEl) nameEl.placeholder = 'Titre des travaux';
+  }).catch(function() {
+    if (nameEl) { nameEl.value = ''; nameEl.placeholder = 'Titre des travaux'; }
+    toast('⚠ Impossible d\'analyser la photo — entre les infos manuellement');
+  });
 }
 
 function createPhotoDraft() {

@@ -3887,19 +3887,8 @@
       <div class="mic-label" id="voiceLabel">Toucher pour parler</div>
     </div>
     <div class="fg" id="voiceTextSection">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <label style="margin:0">Texte dicté / saisi</label>
-        <button type="button" onclick="event.preventDefault();event.stopPropagation();try{toggleSttCorrections();}catch(e){console.error('toggleSttCorrections',e);}" style="font-size:11px;color:var(--t-3);background:none;border:none;cursor:pointer;padding:0">✏ Corrections</button>
-      </div>
+      <label style="margin-bottom:4px;display:block">Texte dicté / saisi</label>
       <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…" oninput="_micOnUserEdit(this)"></textarea>
-      <div id="sttCorrectionsPanel" style="display:none;margin-top:8px" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
-        <label style="font-size:11px;color:var(--t-3);display:block;margin-bottom:4px">Une correction par ligne — <strong>mauvais → correct</strong></label>
-        <textarea id="sttCorrectionsText" rows="4" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);padding:6px 8px;resize:vertical" placeholder="Latour-Eiffel → Latourrel&#10;La Tour Eiffel → Latourrel" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()"></textarea>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button type="button" onclick="insertSttArrow()" style="flex-shrink:0;padding:8px 14px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);font-size:16px;color:var(--t-1);cursor:pointer" title="Insérer →">→</button>
-          <button type="button" class="btn-secondary" style="flex:1" onclick="saveSttCorrections()">Enregistrer</button>
-        </div>
-      </div>
     </div>
     <!-- Debug panel: visible only with ?debug=1 in URL -->
     <pre id="micDebugPanel" style="display:none;font-size:9px;line-height:1.3;color:#0f0;background:#111;padding:6px;border-radius:6px;margin-top:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
@@ -7882,12 +7871,12 @@ function _micAttemptStart() {
     if (_autoStop) clearTimeout(_autoStop);
     _autoStop = setTimeout(function() {
       if (_micActive && !_micUserStopped) {
-        micLog('auto-stop 30s');
+        micLog('auto-stop 120s');
         _micUserStopped = true;
         _micStopping = true;
         if (_micRec) { try { _micRec.stop(); } catch(e) {} }
       }
-    }, 30000);
+    }, 120000);
   }
 
   _micRec.onstart = function() {
@@ -7914,10 +7903,10 @@ function _micAttemptStart() {
       if (_micLatestInterim) { _silenceTimer = setTimeout(_silCheck, 1000); return; }
       var ago = Date.now() - _micLastResultAt;
       if (ago < 2000) { _silenceTimer = setTimeout(_silCheck, 2000 - ago + 200); return; }
-      micLog('silence 5s → arrêt');
+      micLog('silence 15s → arrêt');
       _micUserStopped = true; _micStopping = true;
       if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    }, 5000);
+    }, 15000);
   };
   _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
   _micRec.onaudioend    = function() { micLog('onaudioend'); };
@@ -8037,9 +8026,9 @@ function _micAttemptStart() {
 
     // 4. No speech → silent restart (iOS Safari ends session after silence even with continuous=true)
     //    Allow up to 4 restarts (~2 min of patient listening)
-    if (_micSilentRestarts < 4) {
+    if (_micSilentRestarts < 8) {
       _micSilentRestarts++;
-      micLog('silent restart ' + _micSilentRestarts + '/4');
+      micLog('silent restart ' + _micSilentRestarts + '/8');
       setMicState('listening', 'Je t\'écoute…', '🎙');
       setTimeout(function() { _micAttemptStart(); }, 300);
       return;
@@ -8151,7 +8140,7 @@ function _taskMicAttempt(textEl) {
     setInlineMicState('listening', '🔴'); micLog('task onstart');
     _autoStop = setTimeout(function() {
       if (_micActive) { _micUserStopped = true; _micStopping = true; try { _micRec.stop(); } catch(e) {} }
-    }, 30000);
+    }, 120000);
   };
   _micRec.onspeechstart = function() {
     micLog('task onspeechstart');
@@ -8168,10 +8157,10 @@ function _taskMicAttempt(textEl) {
       if (_micLatestInterim) { _silenceTimer = setTimeout(_silCheck, 1000); return; }
       var ago = Date.now() - _micLastResultAt;
       if (ago < 2000) { _silenceTimer = setTimeout(_silCheck, 2000 - ago + 200); return; }
-      micLog('task silence 5s → arrêt');
+      micLog('task silence 15s → arrêt');
       _micUserStopped = true; _micStopping = true;
       if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    }, 5000);
+    }, 15000);
   };
 
   _micRec.onresult = function(e) {
@@ -8233,9 +8222,9 @@ function _taskMicAttempt(textEl) {
       setTimeout(function() { _taskMicAttempt(textEl); }, 200);
       return;
     }
-    if (_micSilentRestarts < 4) {
+    if (_micSilentRestarts < 8) {
       _micSilentRestarts++;
-      micLog('task silent restart ' + _micSilentRestarts + '/4');
+      micLog('task silent restart ' + _micSilentRestarts + '/8');
       setInlineMicState('listening', '🎙');
       setTimeout(function() { _taskMicAttempt(textEl); }, 300);
       return;

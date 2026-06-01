@@ -7844,10 +7844,11 @@ function _micAttemptStart() {
     setTimeout(function() { _micAttemptStart(); }, 300);
     return;
   }
+  var _isChromeIOS = /CriOS/i.test(navigator.userAgent);
   _micRec = new SR();
   _micRec.lang = lang;
   _micRec.interimResults = true;
-  _micRec.continuous = false;  // iOS: redémarrage auto après chaque résultat
+  _micRec.continuous = _isChromeIOS ? true : false;  // Chrome iOS: continu natif; Safari iOS: redémarrage auto
   _micRec.maxAlternatives = 1;
 
   setMicState('listening', _micSilentRestarts > 0 ? 'Je t\'écoute…' : 'Je t\'écoute…', '🎙');
@@ -7904,21 +7905,47 @@ function _micAttemptStart() {
     if (!nRes) return;
     var newFinal = '';
     var interim  = '';
-    // iOS fix: e.resultIndex est toujours 0 sur Safari/iOS — on utilise _micProcessedCount
-    for (var i = _micProcessedCount; i < e.results.length; i++) {
-      var res = e.results[i];
-      if (!res || !res[0]) continue;
-      var t = (res[0].transcript || '');
-      micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' t=' + JSON.stringify(t));
-      if (res.isFinal) { newFinal += t + ' '; _micProcessedCount++; }
-      else interim    += t + ' ';
+
+    if (_isChromeIOS) {
+      // Chrome iOS: resultIndex peu fiable — comparer le texte pour éviter les doublons
+      for (var i = 0; i < e.results.length; i++) {
+        var res = e.results[i];
+        if (!res || !res[0]) continue;
+        var t = (res[0].transcript || '').trim();
+        if (!t) continue;
+        if (res.isFinal) {
+          // N'ajouter que si pas déjà à la fin de _micFinalAccum (évite répétitions)
+          var existing = _micFinalAccum.trimRight();
+          var lastWord = existing.split(/\s+/).pop() || '';
+          var newFirst = t.split(/\s+/)[0] || '';
+          if (!existing || lastWord.toLowerCase() !== newFirst.toLowerCase()) {
+            newFinal += t + ' ';
+          } else {
+            // Supprimer le mot dupliqué en tête
+            newFinal += t.replace(/^\S+\s*/, '') + ' ';
+          }
+        } else {
+          interim = t;
+        }
+      }
+    } else {
+      // Safari iOS fix: e.resultIndex est toujours 0 — on utilise _micProcessedCount
+      for (var i = _micProcessedCount; i < e.results.length; i++) {
+        var res = e.results[i];
+        if (!res || !res[0]) continue;
+        var t = (res[0].transcript || '');
+        micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' t=' + JSON.stringify(t));
+        if (res.isFinal) { newFinal += t + ' '; _micProcessedCount++; }
+        else interim    += t + ' ';
+      }
     }
+
     newFinal = newFinal.trim();
     interim  = interim.trim();
     if (newFinal) {
       _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
       _micGotResult = true; _micLastResultAt = Date.now();
-      _micSilentRestarts = 0; // speech detected — reset restart counter
+      _micSilentRestarts = 0;
     }
     if (interim) {
       _micLatestInterim = interim;
@@ -7987,10 +8014,14 @@ function _micAttemptStart() {
       return;
     }
 
-    // 2. Natural end after speech — commit then restart automatically (continuous=false)
+    // 2. Natural end after speech — commit then restart (Safari iOS only; Chrome iOS uses continuous=true)
     if (_micCommitFinal()) {
-      setMicState('listening', 'Je t\'écoute…', '🎙');
-      setTimeout(function() { _micAttemptStart(); }, 300);
+      if (!_isChromeIOS) {
+        setMicState('listening', 'Je t\'écoute…', '🎙');
+        setTimeout(function() { _micAttemptStart(); }, 300);
+      } else {
+        setMicState('idle', 'Toucher pour reprendre');
+      }
       return;
     }
 

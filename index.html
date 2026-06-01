@@ -3646,7 +3646,14 @@
     <!-- ── FACTURATION ── -->
     <details class="fin-section" id="finFactSection">
       <summary>💰 Facturation</summary>
-      <div class="fg-row" style="margin-top:10px">
+      <!-- Mode tabs: Manuel | Photo -->
+      <div style="display:flex;gap:6px;margin-top:10px;margin-bottom:12px">
+        <button type="button" id="factBtnManuel" class="mode-btn sel" style="flex:1" onclick="setFactMode('manuel')">Manuel</button>
+        <button type="button" id="factBtnPhoto" class="mode-btn" style="flex:1" onclick="setFactMode('photo')">📷 Photo de facture</button>
+      </div>
+      <!-- Manuel fields -->
+      <div id="factManuelSection">
+      <div class="fg-row">
         <div class="fg">
           <label>Montant facturé</label>
           <input type="text" id="tBilled" placeholder="ex : 2 500 $" maxlength="30" autocomplete="off" oninput="updateFinKpi()">
@@ -3684,9 +3691,11 @@
         <div class="fin-kpi"><div class="fin-kpi-label">Taux horaire effectif</div><div class="fin-kpi-val" id="finTauxH">—</div></div>
         <div class="fin-kpi"><div class="fin-kpi-label">Rentabilité</div><div class="fin-kpi-val" id="finRentab">—</div></div>
       </div>
-      <div class="fg" style="margin-top:10px">
+      </div><!-- /factManuelSection -->
+      <!-- Photo section -->
+      <div id="factPhotoSection" style="display:none">
         <input type="file" id="invoicePhotoFile" accept="image/*" capture="environment" style="display:none" onchange="loadInvoicePhoto(this.files)">
-        <button type="button" class="btn-secondary" style="width:100%" onclick="document.getElementById('invoicePhotoFile').click()">📷 Importer une photo de facture</button>
+        <button type="button" class="btn-secondary" style="width:100%" onclick="document.getElementById('invoicePhotoFile').click()">📷 Prendre ou importer une photo</button>
         <div id="invoicePhotoPreviewContainer" style="display:none;margin-top:8px">
           <img id="invoicePhotoPreview" alt="Aperçu facture" style="max-width:100%;border-radius:var(--r-sm)">
         </div>
@@ -9177,6 +9186,14 @@ function loadTaskPhoto(files) {
   if (parsed.name && !document.getElementById('tName').value) document.getElementById('tName').value = parsed.name;
 }
 
+function setFactMode(mode) {
+  document.getElementById('factManuelSection').style.display = mode === 'manuel' ? '' : 'none';
+  document.getElementById('factPhotoSection').style.display  = mode === 'photo'  ? '' : 'none';
+  var bm = document.getElementById('factBtnManuel'), bp = document.getElementById('factBtnPhoto');
+  if (bm) bm.classList.toggle('sel', mode === 'manuel');
+  if (bp) bp.classList.toggle('sel', mode === 'photo');
+}
+
 function loadInvoicePhoto(files) {
   if (!files || !files[0]) return;
   var reader = new FileReader();
@@ -9547,7 +9564,7 @@ function openAddTask(dayIdx) {
   if (typeof dayIdx === 'string' && dayIdx) dateValue = dayIdx;
   else if (typeof dayIdx === 'number' && ST.forecast && ST.forecast[dayIdx]) dateValue = isoDate(ST.forecast[dayIdx].date);
   populateDateInput(dateValue);
-  setTaskMode('manual');
+  setTaskMode('manual'); setFactMode('manuel');
   var _tpc = document.getElementById('taskPhotoPreviewContainer'); if (_tpc) _tpc.style.display = 'none';
   document.getElementById('btnDel').style.display       = 'none';
   document.getElementById('btnToBank').style.display    = 'none';
@@ -9632,7 +9649,7 @@ function openEditTask(id, title) {
   document.getElementById('tMaxWind').value  = tw.maxWind != null ? tw.maxWind : '';
   buildTypeGrid(task.type);
   populateDateInput(task.status === 'backlog' ? '' : (task.scheduledDate || ''));
-  setTaskMode('manual');
+  setTaskMode('manual'); setFactMode('manuel');
   var _tpp = document.getElementById('taskPhotoPreview');
   var _tpc2 = document.getElementById('taskPhotoPreviewContainer');
   if (_taskPhotoPreview && _tpp) _tpp.src = _taskPhotoPreview;

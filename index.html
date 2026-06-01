@@ -2592,6 +2592,28 @@
       line-height: 1.4;
     }
 
+    /* ── Facturation / Temps réel ──────────────────────────────── */
+    .fin-section { margin-top: 6px; border-top: 1px solid var(--line-2); padding-top: 14px; }
+    .fin-section summary { font-size: 13px; font-weight: 700; color: var(--t-2); cursor: pointer; padding: 4px 0; list-style: none; }
+    .fin-section summary::before { content: '▶ '; font-size: 10px; }
+    .fin-section[open] summary::before { content: '▼ '; }
+    .fin-kpi-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+    .fin-kpi { flex: 1 1 120px; background: var(--surface-2); border-radius: var(--r-md); padding: 10px 12px; }
+    .fin-kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--t-4); margin-bottom: 4px; }
+    .fin-kpi-val { font-size: 18px; font-weight: 800; color: var(--t-1); }
+    .fin-kpi-val.ok { color: var(--green); }
+    .fin-kpi-val.warn { color: #ff9f43; }
+    .fin-kpi-val.bad { color: var(--red); }
+    .now-btn { font-size: 12px; padding: 6px 10px; background: var(--surface-3,var(--surface-2)); border-radius: 8px; border: 1px solid var(--line-2); color: var(--tint); font-weight: 700; cursor: pointer; margin-left: 6px; white-space: nowrap; }
+    .fin-dash { background: var(--surface-2); border-radius: var(--r-lg); padding: 16px; margin-top: 12px; }
+    .fin-dash-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--t-4); margin-bottom: 12px; }
+    .fin-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fin-dash-item { }
+    .fin-dash-item .fdl { font-size: 11px; color: var(--t-4); font-weight: 600; }
+    .fin-dash-item .fdv { font-size: 20px; font-weight: 800; color: var(--t-1); margin-top: 2px; }
+    .fin-dash-item .fdv.ok { color: var(--green); }
+    .fin-dash-item .fdv.warn { color: #ff9f43; }
+
     /* ════════════════════════════════════════════════════════════════
        STATUS PILL (terrain-grade replacement for /100 score)
     ════════════════════════════════════════════════════════════════ */
@@ -3294,6 +3316,21 @@
         <div class="week-timeline" id="dayStrip"></div>
       </div>
 
+      <!-- Finances du mois -->
+      <div class="section" id="financeSection">
+        <div class="fin-dash">
+          <div class="fin-dash-title">💰 Finances — ce mois</div>
+          <div class="fin-dash-grid" id="finDashGrid">
+            <div class="fin-dash-item"><div class="fdl">Total facturé</div><div class="fdv" id="fdTotalFacture">—</div></div>
+            <div class="fin-dash-item"><div class="fdl">Total payé</div><div class="fdv ok" id="fdTotalPaye">—</div></div>
+            <div class="fin-dash-item"><div class="fdl">En attente</div><div class="fdv warn" id="fdEnAttente">—</div></div>
+            <div class="fin-dash-item"><div class="fdl">Non facturés</div><div class="fdv" id="fdNonFact">—</div></div>
+            <div class="fin-dash-item"><div class="fdl">Taux horaire moyen</div><div class="fdv" id="fdTauxMoyen">—</div></div>
+            <div class="fin-dash-item"><div class="fdl">Jobs ce mois</div><div class="fdv" id="fdNbJobs">—</div></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Travaux planifiés — dashboard météo intelligent -->
       <div class="section" id="vueChantierSection">
         <div class="section-head">
@@ -3556,6 +3593,69 @@
       <label>Notes</label>
       <textarea id="tDesc" rows="3" placeholder="Notes, instructions client, accès travaux…"></textarea>
     </div>
+
+    <!-- ── TEMPS RÉEL ── -->
+    <details class="fin-section" id="finTempsSection">
+      <summary>⏱ Temps réel</summary>
+      <div class="fg-row" style="margin-top:10px">
+        <div class="fg">
+          <label>Début réel <button type="button" class="now-btn" onclick="setNow('tStartReal')">Maintenant</button></label>
+          <input type="time" id="tStartReal" onchange="updateFinKpi()">
+        </div>
+        <div class="fg">
+          <label>Fin réelle <button type="button" class="now-btn" onclick="setNow('tEndReal')">Maintenant</button></label>
+          <input type="time" id="tEndReal" onchange="updateFinKpi()">
+        </div>
+      </div>
+      <div class="fin-kpi-row" id="finTempsKpi" style="display:none">
+        <div class="fin-kpi"><div class="fin-kpi-label">Durée réelle</div><div class="fin-kpi-val" id="finDureeReelle">—</div></div>
+        <div class="fin-kpi"><div class="fin-kpi-label">Écart</div><div class="fin-kpi-val" id="finEcart">—</div></div>
+      </div>
+    </details>
+
+    <!-- ── FACTURATION ── -->
+    <details class="fin-section" id="finFactSection">
+      <summary>💰 Facturation</summary>
+      <div class="fg-row" style="margin-top:10px">
+        <div class="fg">
+          <label>Montant facturé</label>
+          <input type="text" id="tBilled" placeholder="ex : 2 500 $" maxlength="30" autocomplete="off" oninput="updateFinKpi()">
+        </div>
+        <div class="fg">
+          <label>Statut paiement</label>
+          <select id="tPayStatus">
+            <option value="">Non facturé</option>
+            <option value="invoiced">Facturé</option>
+            <option value="paid">Payé ✓</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg-row">
+        <div class="fg">
+          <label>Mode de paiement</label>
+          <select id="tPayMode">
+            <option value="">—</option>
+            <option value="cash">Comptant</option>
+            <option value="cheque">Chèque</option>
+            <option value="virement">Virement</option>
+            <option value="carte">Carte</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Date de paiement</label>
+          <input type="date" id="tPayDate">
+        </div>
+      </div>
+      <div class="fg">
+        <label>Notes de facturation</label>
+        <textarea id="tBillNotes" rows="2" placeholder="Numéro de facture, conditions, remarques…"></textarea>
+      </div>
+      <div class="fin-kpi-row" id="finFactKpi" style="display:none">
+        <div class="fin-kpi"><div class="fin-kpi-label">Taux horaire effectif</div><div class="fin-kpi-val" id="finTauxH">—</div></div>
+        <div class="fin-kpi"><div class="fin-kpi-label">Rentabilité</div><div class="fin-kpi-val" id="finRentab">—</div></div>
+      </div>
+    </details>
+
     <div class="task-mode-tabs">
       <button type="button" id="taskModeBtnManual" class="mode-btn sel" onclick="setTaskMode('manual')">Manuel</button>
       <button type="button" id="taskModeBtnVoice" class="mode-btn" onclick="setTaskMode('voice')">Dicter</button>
@@ -5294,6 +5394,7 @@ function renderHome() {
   renderHero();
   renderTodayJobs();
   renderDayStrip();
+  renderFinanceDash();
   renderBanqueTravaux();
   renderOptimization();
 }
@@ -8837,6 +8938,21 @@ function applyVoiceParsed(parsed) {
   document.getElementById('tDuration').value = parseDurationToHours(parsed.duration || '') || '';
   document.getElementById('tTime').value     = parsed.time     || '';
   document.getElementById('tPrio').value     = parsed.priority || 'medium';
+  // Détection vocale paiement
+  (function() {
+    var raw = (document.getElementById('taskVoiceText') || {}).value || '';
+    var lo = raw.toLowerCase();
+    var ps = document.getElementById('tPayStatus');
+    var pm = document.getElementById('tPayMode');
+    if (!ps || !pm) return;
+    if (/pay[eé]\s+(par\s+)?virement/.test(lo))      { ps.value = 'paid'; pm.value = 'virement'; }
+    else if (/pay[eé]\s+(par\s+)?ch[eè]que/.test(lo)){ ps.value = 'paid'; pm.value = 'cheque'; }
+    else if (/pay[eé]\s+(par\s+)?carte/.test(lo))     { ps.value = 'paid'; pm.value = 'carte'; }
+    else if (/pay[eé]\s+(cash|comptant)/.test(lo))    { ps.value = 'paid'; pm.value = 'cash'; }
+    else if (/pay[eé]/.test(lo))                       { ps.value = 'paid'; }
+    else if (/factur[eé]/.test(lo))                    { ps.value = 'invoiced'; }
+    else if (/pas encore pay[eé]|non pay[eé]/.test(lo)){ ps.value = ''; }
+  })();
   var descEl = document.getElementById('tDesc');
   if (descEl) {
     var bits = [];
@@ -9315,6 +9431,18 @@ function openAddTask(dayIdx) {
   document.getElementById('tMaxTemp').value  = '';
   document.getElementById('tMaxRain').value  = '';
   document.getElementById('tMaxWind').value  = '';
+  document.getElementById('tStartReal').value = '';
+  document.getElementById('tEndReal').value   = '';
+  document.getElementById('tBilled').value    = '';
+  document.getElementById('tPayStatus').value = '';
+  document.getElementById('tPayMode').value   = '';
+  document.getElementById('tPayDate').value   = '';
+  var bnEl2 = document.getElementById('tBillNotes');
+  if (bnEl2) bnEl2.value = '';
+  var fkpi = document.getElementById('finFactKpi');
+  var tkpi = document.getElementById('finTempsKpi');
+  if (fkpi) fkpi.style.display = 'none';
+  if (tkpi) tkpi.style.display = 'none';
   buildTypeGrid();
   var dateValue = '';
   if (typeof dayIdx === 'string' && dayIdx) dateValue = dayIdx;
@@ -9387,6 +9515,17 @@ function openEditTask(id, title) {
   _bindInlineMicButtons();
   document.getElementById('tTime').value     = task.time     || '';
   document.getElementById('tPrio').value     = task.priority || 'medium';
+  // Temps réel
+  document.getElementById('tStartReal').value = task.startReal  || '';
+  document.getElementById('tEndReal').value   = task.endReal    || '';
+  // Facturation
+  document.getElementById('tBilled').value    = task.billed     || '';
+  document.getElementById('tPayStatus').value = task.payStatus  || '';
+  document.getElementById('tPayMode').value   = task.payMode    || '';
+  document.getElementById('tPayDate').value   = task.payDate    || '';
+  var bnEl = document.getElementById('tBillNotes');
+  if (bnEl) bnEl.value = task.billNotes || '';
+  setTimeout(updateFinKpi, 0);
   var tw = task.weather || {};
   document.getElementById('tMinTemp').value  = tw.minTemp != null ? tw.minTemp : '';
   document.getElementById('tMaxTemp').value  = tw.maxTemp != null ? tw.maxTemp : '';
@@ -9460,6 +9599,14 @@ function saveTask() {
   var hasW = weather.minTemp != null || weather.maxTemp != null || weather.maxRain != null || weather.maxWind != null;
   var descEl  = document.getElementById('tDesc');
   var description = descEl ? descEl.value.trim() : '';
+  var startReal  = (document.getElementById('tStartReal')  || {}).value || '';
+  var endReal    = (document.getElementById('tEndReal')    || {}).value || '';
+  var billed     = (document.getElementById('tBilled')     || {}).value.trim();
+  var payStatus  = (document.getElementById('tPayStatus')  || {}).value;
+  var payMode    = (document.getElementById('tPayMode')    || {}).value;
+  var payDate    = (document.getElementById('tPayDate')    || {}).value;
+  var billNotesEl= document.getElementById('tBillNotes');
+  var billNotes  = billNotesEl ? billNotesEl.value.trim() : '';
   var patch = {
     name: name, title: name, client: client, phone: phone, amount: amount, location: location, duration: duration,
     description: description,
@@ -9467,6 +9614,8 @@ function saveTask() {
     time: time, scheduledTime: time, scheduledDate: scheduledDate,
     type: (parseSmartInput(name).type || 'renovation'), priority: prio, dayIndex: dayIdx, status: status, source: source,
     weather: hasW ? weather : null,
+    startReal: startReal, endReal: endReal,
+    billed: billed, payStatus: payStatus, payMode: payMode, payDate: payDate, billNotes: billNotes,
   };
   if (_taskPhotoPreview !== null) patch.photoPreview = _taskPhotoPreview;
   var _savedTaskId;
@@ -10393,6 +10542,125 @@ function saveNotifAlerte(val) {
   saveNotifPrefs(prefs);
   syncAllToSW();
   toast(val ? '✓ Alertes anticipées activées' : 'Alertes anticipées désactivées');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MODULE FINANCIER — Temps réel + Facturation
+════════════════════════════════════════════════════════════════ */
+
+function setNow(fieldId) {
+  var el = document.getElementById(fieldId);
+  if (!el) return;
+  var now = new Date();
+  el.value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  updateFinKpi();
+}
+
+function _parseAmt(str) {
+  if (!str) return null;
+  var n = parseFloat((str+'').replace(/[^\d.,]/g,'').replace(',','.'));
+  return isNaN(n) ? null : n;
+}
+
+function _timeToMin(t) {
+  if (!t) return null;
+  var p = t.split(':');
+  return parseInt(p[0],10)*60 + parseInt(p[1],10);
+}
+
+function updateFinKpi() {
+  var startV  = (document.getElementById('tStartReal') || {}).value;
+  var endV    = (document.getElementById('tEndReal')   || {}).value;
+  var durV    = (document.getElementById('tDuration')  || {}).value;
+  var billedV = (document.getElementById('tBilled')    || {}).value;
+  var amtV    = (document.getElementById('tAmount')    || {}).value;
+
+  var startMin = _timeToMin(startV);
+  var endMin   = _timeToMin(endV);
+  var durReal  = (startMin !== null && endMin !== null) ? (endMin - startMin) : null;
+  if (durReal !== null && durReal < 0) durReal += 24*60;
+
+  var tempsKpi = document.getElementById('finTempsKpi');
+  if (tempsKpi) {
+    if (durReal !== null) {
+      tempsKpi.style.display = '';
+      var h = Math.floor(durReal/60), m = durReal%60;
+      document.getElementById('finDureeReelle').textContent = h + 'h' + (m ? m+'m' : '');
+      var durEst = parseFloat(durV) || null;
+      var ecartEl = document.getElementById('finEcart');
+      if (durEst !== null) {
+        var ecartH = (durReal/60) - durEst;
+        var sign = ecartH >= 0 ? '+' : '';
+        ecartEl.textContent = sign + ecartH.toFixed(1) + 'h';
+        ecartEl.className = 'fin-kpi-val ' + (ecartH > 0 ? 'bad' : 'ok');
+      } else {
+        ecartEl.textContent = '—'; ecartEl.className = 'fin-kpi-val';
+      }
+    } else {
+      tempsKpi.style.display = 'none';
+    }
+  }
+
+  var factKpi = document.getElementById('finFactKpi');
+  if (factKpi) {
+    var billed = _parseAmt(billedV);
+    var estimated = _parseAmt(amtV);
+    if (billed !== null && durReal !== null && durReal > 0) {
+      factKpi.style.display = '';
+      var tauxH = billed / (durReal/60);
+      document.getElementById('finTauxH').textContent = Math.round(tauxH) + ' $/h';
+      if (estimated !== null) {
+        var pct = Math.round((billed/estimated - 1)*100);
+        var rentEl = document.getElementById('finRentab');
+        rentEl.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+        rentEl.className = 'fin-kpi-val ' + (pct >= 0 ? 'ok' : 'bad');
+      }
+    } else if (billed !== null && estimated !== null) {
+      factKpi.style.display = '';
+      var pct2 = Math.round((billed/estimated - 1)*100);
+      document.getElementById('finTauxH').textContent = '—';
+      var rentEl2 = document.getElementById('finRentab');
+      rentEl2.textContent = (pct2 >= 0 ? '+' : '') + pct2 + '%';
+      rentEl2.className = 'fin-kpi-val ' + (pct2 >= 0 ? 'ok' : 'bad');
+    } else {
+      factKpi.style.display = 'none';
+    }
+  }
+}
+
+function renderFinanceDash() {
+  var now = new Date();
+  var thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  var tasks = ST.tasks.filter(function(t) {
+    return (t.scheduledDate || '').startsWith(thisMonth);
+  });
+
+  var totalFacture = 0, totalPaye = 0, nonFact = 0, tauxSum = 0, tauxCount = 0;
+  tasks.forEach(function(t) {
+    var b = _parseAmt(t.billed);
+    if (b) {
+      totalFacture += b;
+      if (t.payStatus === 'paid') totalPaye += b;
+    } else {
+      nonFact++;
+    }
+    if (b && t.startReal && t.endReal) {
+      var s = _timeToMin(t.startReal), e = _timeToMin(t.endReal);
+      if (s !== null && e !== null) {
+        var dur = e - s; if (dur < 0) dur += 24*60;
+        if (dur > 0) { tauxSum += b/(dur/60); tauxCount++; }
+      }
+    }
+  });
+
+  var fmt = function(n) { return n ? n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}) : '0 $'; };
+  var set = function(id, v, cls) { var el = document.getElementById(id); if (el) { el.textContent = v; if (cls) el.className = 'fdv ' + cls; } };
+  set('fdTotalFacture', fmt(totalFacture));
+  set('fdTotalPaye',    fmt(totalPaye), totalPaye > 0 ? 'ok' : '');
+  set('fdEnAttente',    fmt(totalFacture - totalPaye), (totalFacture - totalPaye) > 0 ? 'warn' : '');
+  set('fdNonFact',      nonFact + ' job' + (nonFact !== 1 ? 's' : ''));
+  set('fdTauxMoyen',    tauxCount ? Math.round(tauxSum/tauxCount) + ' $/h' : '—');
+  set('fdNbJobs',       tasks.length + ' job' + (tasks.length !== 1 ? 's' : ''));
 }
 
 </script>

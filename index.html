@@ -4030,6 +4030,16 @@
     <h3>⚙ Mes métiers</h3>
     <div id="jobsList"></div>
     <div style="border-top:1px solid var(--hairline); margin: 14px 0 12px"></div>
+    <div style="border-top:1px solid var(--hairline);margin:14px 0 12px"></div>
+    <p style="font-size:.72rem;font-weight:700;color:var(--t-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">🔑 Clé API Claude (analyse photo)</p>
+    <p style="font-size:.8rem;color:var(--t-3);margin-bottom:10px">Sauvegardée sur ton appareil uniquement. Nécessaire pour l'analyse photo IA.</p>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input id="settingsApiKeyInput" type="password" placeholder="sk-ant-api03-…" style="flex:1;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);font-size:13px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button type="button" onclick="saveApiKey()" style="padding:8px 14px;background:var(--tint,#3b82f6);color:#fff;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer">Sauvegarder</button>
+    </div>
+    <div id="settingsApiKeyStatus" style="font-size:12px;color:var(--t-3);margin-bottom:4px"></div>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="font-size:11px;color:var(--tint,#3b82f6)">Obtenir une clé API →</a>
+    <div style="border-top:1px solid var(--hairline);margin:14px 0 12px"></div>
     <p style="font-size:.72rem; font-weight:700; color:var(--t-3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px">💾 Sauvegarde des données</p>
     <p style="font-size:.8rem; color:var(--t-3); margin-bottom:12px">Exportez vos tâches, métiers et préférences dans un fichier JSON pour les sauvegarder ou les transférer.</p>
     <div class="mf" style="margin-bottom:0">
@@ -4370,6 +4380,7 @@ function openJobsModal() {
   resetJobForm();
   renderJobsList();
   openModal('jobsOverlay');
+  setTimeout(_initSettingsApiKey, 0);
 }
 
 function renderColorSwatches(selectedId) {
@@ -6584,9 +6595,38 @@ function _ocrActivateKey() {
   toast('✓ Vision IA activée');
 }
 
+function saveApiKey() {
+  var input = document.getElementById('settingsApiKeyInput');
+  var key = input ? input.value.trim() : '';
+  var status = document.getElementById('settingsApiKeyStatus');
+  if (!key) {
+    // Clear key
+    localStorage.removeItem('smartplan_claude_key');
+    if (status) status.textContent = 'Clé supprimée.';
+    return;
+  }
+  if (!key.startsWith('sk-ant-')) {
+    toast('⚠ Clé invalide — elle doit commencer par sk-ant-');
+    return;
+  }
+  localStorage.setItem('smartplan_claude_key', key);
+  if (input) input.value = '';
+  if (status) status.textContent = '✓ Clé sauvegardée — analyse photo activée.';
+  _ocrRefreshKeyUI();
+  toast('✓ Clé API sauvegardée');
+}
+
+function _initSettingsApiKey() {
+  var status = document.getElementById('settingsApiKeyStatus');
+  if (!status) return;
+  var key = localStorage.getItem('smartplan_claude_key');
+  status.textContent = key ? '✓ Clé en place — analyse photo active.' : 'Aucune clé — analyse photo désactivée.';
+}
+
 var _OCR_VISION_PROMPT =
   'Tu es un expert en gestion de chantiers de construction québécois.\n\n'
-  + 'Analyse cette image (photo, soumission papier, notes manuscrites, PDF) et extrait TOUS les travaux visibles.\n\n'
+  + 'Analyse cette image (photo, soumission papier, notes manuscrites, PDF).\n\n'
+  + 'Cette photo décrit UN SEUL travail. Retourne TOUJOURS exactement un seul objet job, jamais plusieurs. Fusionne toutes les lignes de la photo en un seul travail.\n\n'
   + 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après.\n\n'
   + '{\n  "jobs": [\n    {\n'
   + '      "name": "titre court du travail (ex: Terrasse composite Tremblay)",\n'
@@ -6602,7 +6642,7 @@ var _OCR_VISION_PROMPT =
   + '      "notes": "autres informations utiles ou null"\n'
   + '    }\n  ]\n}\n\n'
   + 'Règles:\n'
-  + '- Crée plusieurs entrées si l\'image contient plusieurs travaux distincts\n'
+  + '- UN SEUL job par photo, toujours\n'
   + '- Déduis le type de travaux selon le contexte même si non explicite\n'
   + '- priority: délai immédiat=urgent, demandé bientôt=high, standard=medium, flexible=low\n'
   + '- Si champ absent ou illisible: utilise null (jamais de chaîne vide)\n'
@@ -6729,23 +6769,19 @@ function ocrHandleFiles(files) {
     return;
   }
 
-  // Fallback: Tesseract
-  _ocrSetScanLabel('Chargement du module OCR…', 'Connexion internet requise');
-  var _loadTimeout = setTimeout(function() {
-    _ocrShowStep('source');
-    toast('⚠ Délai dépassé — vérifiez votre connexion');
-  }, 30000);
-  _loadTesseract().then(function(T) {
-    clearTimeout(_loadTimeout);
-    // Restore raw-text section for Tesseract mode
-    var rd = document.getElementById('ocrRawDetails');
-    if (rd) rd.style.display = '';
-    _ocrProcessFiles(arr, T);
-  }).catch(function() {
-    clearTimeout(_loadTimeout);
-    _ocrShowStep('source');
-    toast('⚠ Module OCR indisponible (connexion ?)');
-  });
+  // No API key — show inline prompt instead of Tesseract
+  _ocrShowStep('source');
+  var status = document.getElementById('ocrAiStatus');
+  if (status) status.innerHTML =
+    '<div style="background:var(--surface-2);border-radius:var(--r-md);padding:14px;margin-top:10px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:6px">🔑 Clé API requise pour analyser les photos</div>'
+    + '<div style="font-size:12px;color:var(--t-3);margin-bottom:10px">Colle ta clé Anthropic ci-dessous — elle est sauvegardée sur ton appareil uniquement.</div>'
+    + '<div style="display:flex;gap:8px">'
+    + '<input id="ocrKeyInput" type="password" placeholder="sk-ant-api03-…" style="flex:1;padding:8px 10px;background:var(--surface-3,#1a1a2e);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);font-size:13px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+    + '<button type="button" onclick="_ocrActivateKey()" style="padding:8px 14px;background:var(--tint,#3b82f6);color:#fff;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer">Sauvegarder</button>'
+    + '</div>'
+    + '<a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="font-size:11px;color:var(--tint,#3b82f6);display:block;margin-top:8px">Obtenir une clé API →</a>'
+    + '</div>';
 }
 
 function _ocrSetScanLabel(label, sub) {
@@ -7035,8 +7071,10 @@ function _ocrRenderResults(jobs) {
   var count = document.getElementById('ocrResultsCount');
   if (!list) return;
   list.innerHTML = '';
-  jobs.forEach(function(job, i) { list.appendChild(_ocrBuildCard(job, i)); });
-  if (count) count.textContent = jobs.length;
+  // Always show only the first job — one photo = one card
+  var single = jobs.slice(0, 1);
+  single.forEach(function(job, i) { list.appendChild(_ocrBuildCard(job, i)); });
+  if (count) count.textContent = single.length;
 }
 
 function _ocrReadCard(card) {

@@ -7906,38 +7906,17 @@ function _micAttemptStart() {
     var newFinal = '';
     var interim  = '';
 
-    if (_isChromeIOS) {
-      // Chrome iOS: resultIndex peu fiable — comparer le texte pour éviter les doublons
-      for (var i = 0; i < e.results.length; i++) {
-        var res = e.results[i];
-        if (!res || !res[0]) continue;
-        var t = (res[0].transcript || '').trim();
-        if (!t) continue;
-        if (res.isFinal) {
-          // N'ajouter que si pas déjà à la fin de _micFinalAccum (évite répétitions)
-          var existing = _micFinalAccum.trimRight();
-          var lastWord = existing.split(/\s+/).pop() || '';
-          var newFirst = t.split(/\s+/)[0] || '';
-          if (!existing || lastWord.toLowerCase() !== newFirst.toLowerCase()) {
-            newFinal += t + ' ';
-          } else {
-            // Supprimer le mot dupliqué en tête
-            newFinal += t.replace(/^\S+\s*/, '') + ' ';
-          }
-        } else {
-          interim = t;
-        }
-      }
-    } else {
-      // Safari iOS fix: e.resultIndex est toujours 0 — on utilise _micProcessedCount
-      for (var i = _micProcessedCount; i < e.results.length; i++) {
-        var res = e.results[i];
-        if (!res || !res[0]) continue;
-        var t = (res[0].transcript || '');
-        micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' t=' + JSON.stringify(t));
-        if (res.isFinal) { newFinal += t + ' '; _micProcessedCount++; }
-        else interim    += t + ' ';
-      }
+    // Même stratégie pour Chrome iOS et Safari iOS :
+    // _micProcessedCount évite de retraiter les résultats finaux déjà accumulés.
+    // (Safari: resultIndex toujours 0 — Chrome iOS: itère depuis 0 à chaque event)
+    for (var i = _micProcessedCount; i < e.results.length; i++) {
+      var res = e.results[i];
+      if (!res || !res[0]) continue;
+      var t = (res[0].transcript || '').trim();
+      if (!t) continue;
+      micLog('  [' + i + '] isFinal=' + !!res.isFinal + ' t=' + JSON.stringify(t));
+      if (res.isFinal) { newFinal += t + ' '; _micProcessedCount++; }
+      else interim = t;
     }
 
     newFinal = newFinal.trim();

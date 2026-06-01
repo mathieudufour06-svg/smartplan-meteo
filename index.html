@@ -6682,7 +6682,7 @@ function _ocrWithClaudeVision(files, apiKey) {
 
       _ocrResults = jobs.map(function(j) {
         return {
-          name:     (j.name     || '').trim(),
+          name:     _ocrCleanName((j.name || '').trim()),
           client:   j.client   || '',
           phone:    j.phone    || '',
           email:    j.email    || '',
@@ -6693,7 +6693,7 @@ function _ocrWithClaudeVision(files, apiKey) {
           priority: /^(urgent|high|medium|low)$/.test(j.priority) ? j.priority : 'medium',
           notes:    [j.notes, j.date ? '📅 ' + j.date : ''].filter(Boolean).join(' · ')
         };
-      }).filter(function(j) { return j.name.length > 0; });
+      }).filter(function(j) { return j.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length >= 5; });
 
       if (!_ocrResults.length) { _ocrShowStep('empty'); return; }
 
@@ -6898,87 +6898,66 @@ function _ocrProcessFiles(files, T) {
   next();
 }
 
-/* ─ Segment raw OCR into per-job chunks ─ */
+/* ─ Always return exactly ONE segment from raw OCR text ─ */
 function _ocrSegmentJobs(text) {
-  // Strategy 1: numbered list
+  // When multi-job structure is explicit (numbered/bulleted list with 2+ items), split.
+  // For everything else: merge into one block → one job per photo.
   var numbered = text.match(/(?:^|\n)\s*\d+[\.\)]\s+.+/g);
   if (numbered && numbered.length >= 2)
     return numbered.map(function(s) { return s.replace(/^\s*\d+[\.\)]\s+/, '').trim(); });
 
-  // Strategy 2: bullet list
   var bullets = text.match(/(?:^|\n)\s*[-•–*]\s+.+/g);
   if (bullets && bullets.length >= 2)
     return bullets.map(function(s) { return s.replace(/^\s*[-•–*]\s+/, '').trim(); });
 
-  // Strategy 3: paragraphs separated by blank line
-  var paras = text.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
-  if (paras.length >= 2) return paras;
-
-  // Strategy 4: merge short lines sensibly — require strong boundary signals to split jobs
-  var lines = text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 4; });
-  if (lines.length >= 2) {
-    var merged = [lines[0]];
-    for (var i = 1; i < lines.length; i++) {
-      var prev = merged[merged.length - 1];
-      // New job only if: sentence ends AND next line starts with a known job-type keyword
-      var newJobKeyword = /^(?:travaux?|toiture|béton|asphalte|émondage|excavation|peinture|électricité|plomberie|rénovation|isolation|fondation|démolition|terrassement|paysagisme|terr[ae]ss)/i.test(lines[i]);
-      if (/[.!?]$/.test(prev) && newJobKeyword) {
-        merged.push(lines[i]);
-      } else {
-        merged[merged.length - 1] += ' ' + lines[i];
-      }
-    }
-    return merged.length >= 2 ? merged : [merged[0] || text];
-  }
-  return [text];
+  // All other cases: merge everything into a single block
+  var merged = (text || '').replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return [merged];
 }
 
-/* ─ Parse one segment into a job object ─ */
+/* ─ Clean OCR artifacts from any string ─ */
 function _ocrCleanName(s) {
-  // Strip OCR artifacts: backslash, angle brackets, degree sign, pipe, @ alone
-  s = s.replace(/[\\<>°|]/g, ' ');
-  // Strip timestamps like "17:32", "8h30" at edges
-  s = s.replace(/\b\d{1,2}:\d{2}\b/g, ' ');
-  // Strip isolated symbols and digits-only tokens
-  s = s.replace(/\b[@#\$%&*~^]+\b/g, ' ').replace(/\s+/g, ' ').trim();
-  // Remove leading/trailing punctuation
+  // Remove characters that are not letters, digits, spaces, hyphens, apostrophes, commas, dots
+  s = (s || '').replace(/[=@€©\\<>°~|#+*%^&[\]{}()]/g, ' ');
+  // Remove timestamps (17:32, 8h30…)
+  s = s.replace(/\b\d{1,2}[h:]\d{2}\b/gi, ' ');
+  // Collapse spaces, trim punctuation edges
+  s = s.replace(/\s{2,}/g, ' ').trim();
   s = s.replace(/^[\s\-_.,;:!?]+|[\s\-_.,;:!?]+$/g, '').trim();
   return s;
 }
 
 function _ocrParseSegment(seg) {
-  var clean = (seg || '').replace(/\f/g, '\n').replace(/\r\n?/g, '\n').trim();
-  // Pre-clean segment: strip common OCR junk lines (pure symbols, timestamps)
-  var cleanedLines = clean.split('\n').filter(function(l) {
-    var stripped = l.replace(/[\s\-_.,;:!?\\<>°|@#0-9]+/g, '').trim();
-    return stripped.length >= 2; // keep lines that have at least 2 actual letters
-  });
-  var cleanSeg = cleanedLines.join('\n') || clean;
+  var raw = (seg || '').replace(/\f/g, ' ').replace(/\r\n?/g, ' ').trim();
 
+  // Strip lines that contain no alphabet characters (pure symbols / timestamps)
+  var letters = raw.replace(/[^a-zA-ZÀ-ÿ]/g, '');
+  if (letters.length < 5) return null; // not enough text to form a job
+
+  // Keep only lines that have at least 2 actual letters (remove OCR noise lines)
+  var cleanLines = raw.split(/\n/).filter(function(l) {
+    return (l.replace(/[^a-zA-ZÀ-ÿ]/g, '').length >= 2);
+  });
+  var cleanSeg = cleanLines.length ? cleanLines.join(' ') : raw;
+  cleanSeg = cleanSeg.replace(/\s{2,}/g, ' ').trim();
+
+  // Pass full text to parseSmartInput — same as voice dictation
   var parsed = parseSmartInput(cleanSeg);
 
-  // Clean the name of OCR artifacts
+  // Clean OCR artifacts from the name
   if (parsed.name) parsed.name = _ocrCleanName(parsed.name);
 
-  // Strengthen name only if parseSmartInput didn't produce a usable one
-  var hasName = parsed.name && parsed.name.length > 2 && /[a-zA-ZÀ-ÿ]{3,}/.test(parsed.name);
+  // If name is still unusable, derive it from the cleaned segment
+  var hasName = parsed.name && /[a-zA-ZÀ-ÿ]{3,}/.test(parsed.name);
   if (!hasName) {
-    // Walk lines top-to-bottom, pick first one that looks like a job description
-    var lines = cleanSeg.split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      var l = _ocrCleanName(lines[i].replace(/^[-•–*\d.\)\s]+/, '').trim());
-      if (l.length > 2 && /[a-zA-ZÀ-ÿ]{3,}/.test(l)) {
-        parsed.name = l.substring(0, 60);
-        break;
-      }
-    }
-    // Last resort: first 60 chars, cleaned
-    if (!parsed.name || parsed.name.length < 2) {
-      parsed.name = _ocrCleanName(cleanSeg.replace(/\s+/g, ' ')).substring(0, 60).trim();
-    }
+    // Take up to first 60 chars of cleanSeg, cleaned
+    parsed.name = _ocrCleanName(cleanSeg).substring(0, 60).trim();
   }
-  // Capitalise first letter
-  if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
+
+  // Final name cleanup and capitalisation
+  parsed.name = _ocrCleanName(parsed.name).substring(0, 60).trim();
+  if (!parsed.name || parsed.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length < 2) return null;
+  parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
   return parsed;
 }
 

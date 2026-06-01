@@ -7585,11 +7585,11 @@ var _micUserStopped = false;
 var _micRetryScheduled = false;
 var _micSilentRestarts = 0;   // restarts after no-speech (iOS ends session after silence)
 
-// Transcript accumulation (fix iOS Safari "no isFinal" issue)
+// Transcript accumulation
 var _micBaseline      = '';   // textarea content before listening started
-var _micFinalAccum    = '';   // confirmed final segments
-var _micLatestInterim = '';   // latest interim chunk
-var _micProcessedCount = 0;  // iOS fix: nb de résultats finals déjà traités dans la session
+var _micFinalAccum    = '';   // confirmed final segments — survives restarts
+var _micLatestInterim = '';   // latest interim chunk (display only)
+var _micProcessedCount = 0;  // per-session index: reset on each new SR instance
 
 // Language fallback chain — only used for language-not-supported errors
 var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
@@ -7820,12 +7820,12 @@ function startMic() {
   if (!_micRetryScheduled) {
     var textEl = voiceTextElement();
     _micBaseline = textEl ? textEl.value.trim() : '';
-    _micFinalAccum = '';
+    _micFinalAccum    = '';  // reset transcript for new user session
     _micLatestInterim = '';
-    _micProcessedCount = 0;
     _micLangIdx = 0;
     _micUserStopped = false;
     _micSilentRestarts = 0;
+    // _micProcessedCount reset happens in _micAttemptStart() when new SR is created
   }
   _micRetryScheduled = false;
   _micAttemptStart();
@@ -7846,6 +7846,7 @@ function _micAttemptStart() {
   }
   var _isChromeIOS = /CriOS/i.test(navigator.userAgent);
   _micRec = new SR();
+  _micProcessedCount = 0;   // reset per-session: new SR instance = results[] starts at 0
   _micRec.lang = lang;
   _micRec.interimResults = true;
   _micRec.continuous = _isChromeIOS ? true : false;  // Chrome iOS: continu natif; Safari iOS: redémarrage auto
@@ -10176,6 +10177,12 @@ function isoDate(d) {
 
 document.addEventListener('DOMContentLoaded', function() {
   loadST();
+  // PWA standalone: warm-up getUserMedia pour activer la permission micro dans le contexte PWA
+  if (window.navigator.standalone === true && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(s) { s.getTracks().forEach(function(t) { t.stop(); }); })
+      .catch(function() {}); // silence — l'utilisateur peut accorder via toggleMic()
+  }
   // Auto-géolocalisation au premier lancement (silencieuse)
   if (!ST.locSet && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(

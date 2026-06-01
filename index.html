@@ -6493,19 +6493,21 @@ function ocrReparse() {
   var ta = document.getElementById('ocrRawText');
   var text = (ta ? ta.value : _ocrRawText).trim();
   if (!text) { toast('⚠ Texte vide — écrivez ou collez le contenu à analyser'); return; }
-  var segments = _ocrSegmentJobs(text);
-  var results = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
+  var oneLine = text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  var words = oneLine.match(/[a-zA-ZÀ-ÿ]{2,}/g) || [];
+  if (words.length < 3) { toast('⚠ Texte insuffisant — moins de 3 mots reconnus'); return; }
+  var parsed = parseSmartInput(oneLine);
+  parsed.name = (parsed.name || '').replace(/[=@€©\\<>°~|#+*%^&\[\]{}()]/g, ' ')
+    .replace(/\b\d{1,2}[h:]\d{2}\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+  if (!parsed.name || parsed.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length < 3)
+    parsed.name = oneLine.replace(/[=@€©\\<>°~|]/g,'').substring(0, 60).trim();
+  if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
   var list  = document.getElementById('ocrCardsList');
   var count = document.getElementById('ocrResultsCount');
-  if (!results.length) {
-    if (list) list.innerHTML = '<div style="text-align:center;padding:var(--s5);color:var(--t-3);font-size:.84rem">Aucun travail détecté — vérifiez les noms de travaux.</div>';
-    if (count) count.textContent = '0';
-    toast('⚠ Aucun travail trouvé dans ce texte');
-    return;
-  }
-  _ocrResults = results;
-  _ocrRenderResults(results);
-  toast('✓ ' + results.length + ' travail' + (results.length > 1 ? 's' : '') + ' détecté' + (results.length > 1 ? 's' : ''));
+  _ocrResults = [parsed];
+  _ocrRenderResults([parsed]);
+  if (count) count.textContent = '1';
+  toast('✓ 1 travail détecté');
 }
 
 function _ocrShowStep(name) {
@@ -6879,8 +6881,24 @@ function _ocrProcessFiles(files, T) {
     if (rawArea)    rawArea.value = clean;
     if (rawDetails) rawDetails.removeAttribute('open');
     if (!clean) { _ocrShowStep('empty'); return; }
-    var segments = _ocrSegmentJobs(clean);
-    _ocrResults = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
+
+    // Merge all lines into one block, pass directly to parseSmartInput — one job per photo
+    var oneLine = clean.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    // Require at least 3 alphabetic words before creating a job
+    var words = oneLine.match(/[a-zA-ZÀ-ÿ]{2,}/g) || [];
+    if (words.length < 3) { _ocrShowStep('empty'); return; }
+
+    var parsed = parseSmartInput(oneLine);
+    // Clean OCR artifacts from name
+    parsed.name = (parsed.name || '').replace(/[=@€©\\<>°~|#+*%^&\[\]{}()]/g, ' ')
+      .replace(/\b\d{1,2}[h:]\d{2}\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+    // Fallback name: first meaningful phrase from the raw line
+    if (!parsed.name || parsed.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length < 3) {
+      parsed.name = oneLine.replace(/[=@€©\\<>°~|]/g,'').substring(0, 60).trim();
+    }
+    if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
+
+    _ocrResults = [parsed];
     if (!_ocrResults.length) {
       // Still show results step with raw text editing (user can correct and reparse)
       var list = document.getElementById('ocrCardsList');

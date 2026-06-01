@@ -2613,6 +2613,36 @@
     .fin-dash-item .fdv { font-size: 20px; font-weight: 800; color: var(--t-1); margin-top: 2px; }
     .fin-dash-item .fdv.ok { color: var(--green); }
     .fin-dash-item .fdv.warn { color: #ff9f43; }
+    /* Finance overlay */
+    .fin-ov-tabs { display:flex; gap:6px; margin-bottom:14px; }
+    .fin-ov-tab { flex:1; padding:8px 4px; background:var(--surface-2); border:none; border-radius:var(--r-sm); font-size:13px; font-weight:700; color:var(--t-3); cursor:pointer; }
+    .fin-ov-tab.sel { background:var(--accent,#3b82f6); color:#fff; }
+    .fin-ov-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .fin-ov-kpi { background:var(--surface-2); border-radius:var(--r-md); padding:12px; }
+    .fin-ov-kpi-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--t-4); margin-bottom:4px; }
+    .fin-ov-kpi-val { font-size:20px; font-weight:800; color:var(--t-1); }
+    .fin-ov-kpi-val.ok { color:var(--green,#2dd483); }
+    .fin-ov-kpi-val.warn { color:#ff9f43; }
+    .fin-inv-amt.ok { color:var(--green,#2dd483); }
+    .fin-ov-bar { height:18px; border-radius:8px; background:var(--surface-3,#2a2a3a); overflow:hidden; display:flex; margin:6px 0 2px; }
+    .fin-ov-bar-paid { height:100%; background:var(--green); border-radius:8px 0 0 8px; transition:width .4s; }
+    .fin-ov-bar-legend { font-size:11px; color:var(--t-4); display:flex; justify-content:space-between; }
+    .fin-ov-filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .fin-filt { padding:5px 12px; background:var(--surface-2); border:none; border-radius:20px; font-size:12px; color:var(--t-3); cursor:pointer; font-weight:600; }
+    .fin-filt.sel { background:var(--accent,#3b82f6); color:#fff; }
+    .fin-inv-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line-2); cursor:pointer; }
+    .fin-inv-info { flex:1; min-width:0; }
+    .fin-inv-name { font-size:14px; font-weight:700; color:var(--t-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fin-inv-sub { font-size:11px; color:var(--t-4); margin-top:2px; }
+    .fin-inv-right { text-align:right; flex-shrink:0; }
+    .fin-inv-amt { font-size:15px; font-weight:800; color:var(--t-1); }
+    .fin-inv-badge { display:inline-block; margin-top:3px; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; cursor:pointer; }
+    .fin-inv-badge.none { background:#2a2a2a; color:var(--t-3); }
+    .fin-inv-badge.invoiced { background:#3d3000; color:#ff9f43; }
+    .fin-inv-badge.paid { background:#0d2b1a; color:var(--green); }
+    .fin-histo-month { font-size:12px; font-weight:800; text-transform:uppercase; color:var(--t-4); margin:16px 0 6px; letter-spacing:.06em; }
+    .fin-smenu-item { display:block; width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:var(--t-1); cursor:pointer; }
+    .fin-smenu-item:hover { background:var(--surface-3,#2a2a3a); }
 
     /* ════════════════════════════════════════════════════════════════
        STATUS PILL (terrain-grade replacement for /100 score)
@@ -3318,8 +3348,8 @@
 
       <!-- Finances du mois -->
       <div class="section" id="financeSection">
-        <div class="fin-dash">
-          <div class="fin-dash-title">💰 Finances — ce mois</div>
+        <div class="fin-dash" onclick="openFinances()" style="cursor:pointer">
+          <div class="fin-dash-title">💰 Finances — ce mois <span style="float:right;font-size:16px;color:var(--t-4)">›</span></div>
           <div class="fin-dash-grid" id="finDashGrid">
             <div class="fin-dash-item"><div class="fdl">Total facturé</div><div class="fdv" id="fdTotalFacture">—</div></div>
             <div class="fin-dash-item"><div class="fdl">Total payé</div><div class="fdv ok" id="fdTotalPaye">—</div></div>
@@ -3616,7 +3646,14 @@
     <!-- ── FACTURATION ── -->
     <details class="fin-section" id="finFactSection">
       <summary>💰 Facturation</summary>
-      <div class="fg-row" style="margin-top:10px">
+      <!-- Mode tabs: Manuel | Photo -->
+      <div style="display:flex;gap:6px;margin-top:10px;margin-bottom:12px">
+        <button type="button" id="factBtnManuel" class="mode-btn sel" style="flex:1" onclick="setFactMode('manuel')">Manuel</button>
+        <button type="button" id="factBtnPhoto" class="mode-btn" style="flex:1" onclick="setFactMode('photo')">📷 Photo de facture</button>
+      </div>
+      <!-- Manuel fields -->
+      <div id="factManuelSection">
+      <div class="fg-row">
         <div class="fg">
           <label>Montant facturé</label>
           <input type="text" id="tBilled" placeholder="ex : 2 500 $" maxlength="30" autocomplete="off" oninput="updateFinKpi()">
@@ -3654,32 +3691,16 @@
         <div class="fin-kpi"><div class="fin-kpi-label">Taux horaire effectif</div><div class="fin-kpi-val" id="finTauxH">—</div></div>
         <div class="fin-kpi"><div class="fin-kpi-label">Rentabilité</div><div class="fin-kpi-val" id="finRentab">—</div></div>
       </div>
+      </div><!-- /factManuelSection -->
+      <!-- Photo section -->
+      <div id="factPhotoSection" style="display:none">
+        <input type="file" id="invoicePhotoFile" accept="image/*" capture="environment" style="display:none" onchange="loadInvoicePhoto(this.files)">
+        <button type="button" class="btn-secondary" style="width:100%" onclick="document.getElementById('invoicePhotoFile').click()">📷 Prendre ou importer une photo</button>
+        <div id="invoicePhotoPreviewContainer" style="display:none;margin-top:8px">
+          <img id="invoicePhotoPreview" alt="Aperçu facture" style="max-width:100%;border-radius:var(--r-sm)">
+        </div>
+      </div>
     </details>
-
-    <div class="task-mode-tabs">
-      <button type="button" id="taskModeBtnManual" class="mode-btn sel" onclick="setTaskMode('manual')">Manuel</button>
-      <button type="button" id="taskModeBtnVoice" class="mode-btn" onclick="setTaskMode('voice')">Dicter</button>
-      <button type="button" id="taskModeBtnPhoto" class="mode-btn" onclick="setTaskMode('photo')">Photo</button>
-    </div>
-    <div class="task-mode-block active" id="taskManualSection">
-      <div class="mode-note">Remplissez les détails des travaux puis sauvegardez.</div>
-    </div>
-    <div class="task-mode-block" id="taskVoiceSection">
-      <div class="mode-note">Dictez une phrase, puis appuyez sur Analyser.</div>
-      <div class="voice-line">
-        <button type="button" class="btn-secondary" onclick="startTaskMic()">🎙 Démarrer la dictée</button>
-        <span class="voice-status" id="taskVoiceStatus">🎤</span>
-      </div>
-      <textarea id="taskVoiceText" rows="3" placeholder="Le texte dicté apparaîtra ici"></textarea>
-      <button type="button" class="btn-secondary" onclick="applyTaskVoice()" style="margin-top: 8px;">Analyser et remplir</button>
-    </div>
-    <div class="task-mode-block" id="taskPhotoSection">
-      <div class="mode-note">Importez une photo pour pré-remplir les champs.</div>
-      <input type="file" id="taskPhotoFile" class="task-file-input" accept="image/*" capture="environment" onchange="loadTaskPhoto(this.files)">
-      <div class="task-photo-preview" id="taskPhotoPreviewContainer" style="display:none">
-        <img id="taskPhotoPreview" alt="Aperçu photo">
-      </div>
-    </div>
     <div class="fg">
       <label>Photos des travaux</label>
       <div class="gallery-zone" id="galleryZone">
@@ -3876,6 +3897,45 @@
   </div>
 </div>
 
+<!-- FINANCE OVERLAY -->
+<div class="overlay" id="financeOverlay" onclick="overlayClick(event,'financeOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('financeOverlay')" aria-label="Fermer">✕</button>
+    <h3>💰 Finances</h3>
+    <div class="fin-ov-tabs">
+      <button type="button" class="fin-ov-tab sel" onclick="finTab('resume')">Résumé</button>
+      <button type="button" class="fin-ov-tab" onclick="finTab('factures')">Factures</button>
+      <button type="button" class="fin-ov-tab" onclick="finTab('historique')">Historique</button>
+    </div>
+    <!-- Résumé -->
+    <div class="fin-ov-panel" id="finPanelResume">
+      <div class="fin-ov-grid" id="finOvGrid"></div>
+      <div class="fin-ov-bar-wrap" id="finOvBarWrap" style="margin-top:16px"></div>
+    </div>
+    <!-- Factures -->
+    <div class="fin-ov-panel" id="finPanelFactures" style="display:none">
+      <div class="fin-ov-filters">
+        <button type="button" class="fin-filt sel" onclick="finSetFilter(this,'all')">Tous</button>
+        <button type="button" class="fin-filt" onclick="finSetFilter(this,'none')">Non facturés</button>
+        <button type="button" class="fin-filt" onclick="finSetFilter(this,'invoiced')">En attente</button>
+        <button type="button" class="fin-filt" onclick="finSetFilter(this,'paid')">Payés</button>
+      </div>
+      <div id="finInvoiceList"></div>
+    </div>
+    <!-- Historique -->
+    <div class="fin-ov-panel" id="finPanelHistorique" style="display:none">
+      <div id="finHistoList"></div>
+    </div>
+    <!-- Quick status menu -->
+    <div id="finStatusMenu" style="display:none;position:fixed;z-index:2000;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-md);box-shadow:0 8px 32px #0008;padding:6px 0;min-width:160px">
+      <button type="button" class="fin-smenu-item" onclick="finApplyStatus('')">⬜ Non facturé</button>
+      <button type="button" class="fin-smenu-item" onclick="finApplyStatus('invoiced')">🟡 Facturé</button>
+      <button type="button" class="fin-smenu-item" onclick="finApplyStatus('paid')">🟢 Payé</button>
+    </div>
+    <button type="button" class="btn-cancel" style="margin-top:16px" onclick="closeModal('financeOverlay')">Fermer</button>
+  </div>
+</div>
+
 <!-- VOICE MODAL -->
 <div class="overlay" id="voiceOverlay" onclick="overlayClick(event,'voiceOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
@@ -3887,19 +3947,8 @@
       <div class="mic-label" id="voiceLabel">Toucher pour parler</div>
     </div>
     <div class="fg" id="voiceTextSection">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <label style="margin:0">Texte dicté / saisi</label>
-        <button type="button" onclick="event.preventDefault();event.stopPropagation();try{toggleSttCorrections();}catch(e){console.error('toggleSttCorrections',e);}" style="font-size:11px;color:var(--t-3);background:none;border:none;cursor:pointer;padding:0">✏ Corrections</button>
-      </div>
-      <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…"></textarea>
-      <div id="sttCorrectionsPanel" style="display:none;margin-top:8px" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
-        <label style="font-size:11px;color:var(--t-3);display:block;margin-bottom:4px">Une correction par ligne — <strong>mauvais → correct</strong></label>
-        <textarea id="sttCorrectionsText" rows="4" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);padding:6px 8px;resize:vertical" placeholder="Latour-Eiffel → Latourrel&#10;La Tour Eiffel → Latourrel" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()"></textarea>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button type="button" onclick="insertSttArrow()" style="flex-shrink:0;padding:8px 14px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);font-size:16px;color:var(--t-1);cursor:pointer" title="Insérer →">→</button>
-          <button type="button" class="btn-secondary" style="flex:1" onclick="saveSttCorrections()">Enregistrer</button>
-        </div>
-      </div>
+      <label style="margin-bottom:4px;display:block">Texte dicté / saisi</label>
+      <textarea id="voiceText" rows="3" placeholder="Toiture chez Tremblay vendredi priorité haute…" oninput="_micOnUserEdit(this)"></textarea>
     </div>
     <!-- Debug panel: visible only with ?debug=1 in URL -->
     <pre id="micDebugPanel" style="display:none;font-size:9px;line-height:1.3;color:#0f0;background:#111;padding:6px;border-radius:6px;margin-top:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
@@ -7590,6 +7639,7 @@ var _micBaseline      = '';   // textarea content before listening started
 var _micFinalAccum    = '';   // confirmed final segments — survives restarts
 var _micLatestInterim = '';   // latest interim chunk (display only)
 var _micProcessedCount = 0;  // per-session index: reset on each new SR instance
+var _micUserEdited    = false; // user manually edited the textarea while mic was active
 
 // Language fallback chain — only used for language-not-supported errors
 var _micLangChain = ['fr-CA', 'fr-FR', 'en-US'];
@@ -7667,6 +7717,16 @@ function openVoice() {
 function voiceTextElement() {
   // voiceOverlay uses #voiceText; taskOverlay uses #taskVoiceText directly (not via this fn)
   return document.getElementById('voiceText');
+}
+
+function _micOnUserEdit(el) {
+  if (!_micActive && !_micStarting) return; // not from mic dispatch
+  // User manually edited textarea — sync _micFinalAccum to current content
+  // so new speech appends after their edit, not overwriting it
+  _micUserEdited    = true;
+  _micFinalAccum    = el.value.trim();
+  _micLatestInterim = '';
+  _micBaseline      = '';
 }
 function voiceStatusElement() {
   return document.getElementById('taskVoiceStatus') || document.getElementById('voiceStatus');
@@ -7788,12 +7848,22 @@ function toggleMic() {
 function _micWriteLive() {
   var textEl = voiceTextElement();
   if (!textEl) return;
+  if (_micUserEdited) {
+    // User manually edited the field — only append new final segments after their text
+    var cur = textEl.value;
+    if (_micFinalAccum && !cur.endsWith(_micFinalAccum.trim())) {
+      var suffix = _micFinalAccum.trim();
+      // Find what's new since the last time we synced
+      textEl.value = (cur.trimRight() + ' ' + suffix).replace(/\s+/g, ' ').trim();
+      try { textEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
+    }
+    return;
+  }
   var parts = [];
   if (_micBaseline) parts.push(_micBaseline);
   var combined = (_micFinalAccum + ' ' + _micLatestInterim).replace(/\s+/g, ' ').trim();
   if (combined) parts.push(combined);
   textEl.value = parts.join(' ');
-  // Notify any listeners (form validation, state, etc.)
   try { textEl.dispatchEvent(new Event('input', { bubbles: true })); } catch(e) {}
 }
 
@@ -7820,8 +7890,9 @@ function startMic() {
   if (!_micRetryScheduled) {
     var textEl = voiceTextElement();
     _micBaseline = textEl ? textEl.value.trim() : '';
-    _micFinalAccum    = '';  // reset transcript for new user session
+    _micFinalAccum    = '';
     _micLatestInterim = '';
+    _micUserEdited    = false;
     _micLangIdx = 0;
     _micUserStopped = false;
     _micSilentRestarts = 0;
@@ -7860,12 +7931,12 @@ function _micAttemptStart() {
     if (_autoStop) clearTimeout(_autoStop);
     _autoStop = setTimeout(function() {
       if (_micActive && !_micUserStopped) {
-        micLog('auto-stop 30s');
+        micLog('auto-stop 120s');
         _micUserStopped = true;
         _micStopping = true;
         if (_micRec) { try { _micRec.stop(); } catch(e) {} }
       }
-    }, 30000);
+    }, 120000);
   }
 
   _micRec.onstart = function() {
@@ -7892,10 +7963,10 @@ function _micAttemptStart() {
       if (_micLatestInterim) { _silenceTimer = setTimeout(_silCheck, 1000); return; }
       var ago = Date.now() - _micLastResultAt;
       if (ago < 2000) { _silenceTimer = setTimeout(_silCheck, 2000 - ago + 200); return; }
-      micLog('silence 5s → arrêt');
+      micLog('silence 15s → arrêt');
       _micUserStopped = true; _micStopping = true;
       if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    }, 5000);
+    }, 15000);
   };
   _micRec.onaudiostart  = function() { micLog('onaudiostart'); };
   _micRec.onaudioend    = function() { micLog('onaudioend'); };
@@ -8015,9 +8086,9 @@ function _micAttemptStart() {
 
     // 4. No speech → silent restart (iOS Safari ends session after silence even with continuous=true)
     //    Allow up to 4 restarts (~2 min of patient listening)
-    if (_micSilentRestarts < 4) {
+    if (_micSilentRestarts < 8) {
       _micSilentRestarts++;
-      micLog('silent restart ' + _micSilentRestarts + '/4');
+      micLog('silent restart ' + _micSilentRestarts + '/8');
       setMicState('listening', 'Je t\'écoute…', '🎙');
       setTimeout(function() { _micAttemptStart(); }, 300);
       return;
@@ -8129,7 +8200,7 @@ function _taskMicAttempt(textEl) {
     setInlineMicState('listening', '🔴'); micLog('task onstart');
     _autoStop = setTimeout(function() {
       if (_micActive) { _micUserStopped = true; _micStopping = true; try { _micRec.stop(); } catch(e) {} }
-    }, 30000);
+    }, 120000);
   };
   _micRec.onspeechstart = function() {
     micLog('task onspeechstart');
@@ -8146,10 +8217,10 @@ function _taskMicAttempt(textEl) {
       if (_micLatestInterim) { _silenceTimer = setTimeout(_silCheck, 1000); return; }
       var ago = Date.now() - _micLastResultAt;
       if (ago < 2000) { _silenceTimer = setTimeout(_silCheck, 2000 - ago + 200); return; }
-      micLog('task silence 5s → arrêt');
+      micLog('task silence 15s → arrêt');
       _micUserStopped = true; _micStopping = true;
       if (_micRec) { try { _micRec.stop(); } catch(e) {} }
-    }, 5000);
+    }, 15000);
   };
 
   _micRec.onresult = function(e) {
@@ -8211,9 +8282,9 @@ function _taskMicAttempt(textEl) {
       setTimeout(function() { _taskMicAttempt(textEl); }, 200);
       return;
     }
-    if (_micSilentRestarts < 4) {
+    if (_micSilentRestarts < 8) {
       _micSilentRestarts++;
-      micLog('task silent restart ' + _micSilentRestarts + '/4');
+      micLog('task silent restart ' + _micSilentRestarts + '/8');
       setInlineMicState('listening', '🎙');
       setTimeout(function() { _taskMicAttempt(textEl); }, 300);
       return;
@@ -8306,9 +8377,14 @@ function analyzeVoicePreview() {
   var textEl = document.getElementById('voiceText');
   var rawText = textEl ? textEl.value.trim() : '';
   if (!rawText) { toast('⚠ Aucun texte à analyser'); return; }
+  // Stop mic immediately — abort prevents any pending onresult from firing
+  _micUserStopped = true;
+  _micStopping    = true;
+  if (_micRec) { try { _micRec.abort(); } catch(e) {} _micRec = null; }
+  _micActive  = false;
+  _micStarting = false;
   var text = applySttFixes(rawText);
   if (text !== rawText && textEl) textEl.value = text;
-  if (_micRec) { try { _micRec.stop(); } catch(e) {} }
   _voiceParsedResult = parseVoiceInput(text);
   var previewSection = document.getElementById('voicePreviewSection');
   var previewTable   = document.getElementById('voicePreviewTable');
@@ -8515,6 +8591,15 @@ function parseSmartInput(originalText) {
     if (m) work = work.replace(re, ' ');
     return m;
   }
+
+  // ── Fusion de fragments chiffres contigus → numéro de téléphone ─────────
+  // STT peut fragmenter "514 226 9523" en segments séparés ou "cinq cinq quatre..."
+  // Fusionner des séquences de tokens entièrement numériques contigus si leur total = 10 chiffres
+  work = work.replace(/((?:\s\d+){2,})/g, function(seq) {
+    var digits = seq.replace(/\s/g,'');
+    if (digits.length === 10) return ' ' + digits;
+    return seq;
+  });
 
   // ── Pré-nettoyage : phrases parasites avant tout parsing ─────────────────
   // "numéro de téléphone / cell / tél"
@@ -9093,12 +9178,32 @@ function loadTaskPhoto(files) {
   var reader = new FileReader();
   reader.onload = function(e) {
     _taskPhotoPreview = e.target.result;
-    document.getElementById('taskPhotoPreview').src = _taskPhotoPreview;
-    document.getElementById('taskPhotoPreviewContainer').style.display = 'block';
+    var _el = document.getElementById('taskPhotoPreview'); if (_el) _el.src = _taskPhotoPreview;
+    var _c = document.getElementById('taskPhotoPreviewContainer'); if (_c) _c.style.display = 'block';
   };
   reader.readAsDataURL(file);
   var parsed = parseJobFromImage(file);
   if (parsed.name && !document.getElementById('tName').value) document.getElementById('tName').value = parsed.name;
+}
+
+function setFactMode(mode) {
+  document.getElementById('factManuelSection').style.display = mode === 'manuel' ? '' : 'none';
+  document.getElementById('factPhotoSection').style.display  = mode === 'photo'  ? '' : 'none';
+  var bm = document.getElementById('factBtnManuel'), bp = document.getElementById('factBtnPhoto');
+  if (bm) bm.classList.toggle('sel', mode === 'manuel');
+  if (bp) bp.classList.toggle('sel', mode === 'photo');
+}
+
+function loadInvoicePhoto(files) {
+  if (!files || !files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('invoicePhotoPreview');
+    var container = document.getElementById('invoicePhotoPreviewContainer');
+    if (img) img.src = e.target.result;
+    if (container) container.style.display = 'block';
+  };
+  reader.readAsDataURL(files[0]);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -9424,7 +9529,7 @@ function openAddTask(dayIdx) {
   _taskSource       = 'manual';
   _taskPhotoPreview = null;
   document.getElementById('taskModalTitle').textContent = 'Nouveaux travaux';
-  document.querySelector('.task-mode-tabs').style.display = '';
+  var _tabs = document.querySelector('.task-mode-tabs'); if (_tabs) _tabs.style.display = '';
   document.getElementById('tName').value     = '';
   document.getElementById('tClient').value   = '';
   document.getElementById('tPhone').value    = '';
@@ -9459,8 +9564,8 @@ function openAddTask(dayIdx) {
   if (typeof dayIdx === 'string' && dayIdx) dateValue = dayIdx;
   else if (typeof dayIdx === 'number' && ST.forecast && ST.forecast[dayIdx]) dateValue = isoDate(ST.forecast[dayIdx].date);
   populateDateInput(dateValue);
-  setTaskMode('manual');
-  document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
+  setTaskMode('manual'); setFactMode('manuel');
+  var _tpc = document.getElementById('taskPhotoPreviewContainer'); if (_tpc) _tpc.style.display = 'none';
   document.getElementById('btnDel').style.display       = 'none';
   document.getElementById('btnToBank').style.display    = 'none';
   document.getElementById('btnSaveModel').style.display = '';
@@ -9512,7 +9617,7 @@ function openEditTask(id, title) {
   _taskSource       = task.source || 'manual';
   _taskPhotoPreview = task.photoPreview || null;
   document.getElementById('taskModalTitle').textContent = title || 'Modifier les travaux';
-  document.querySelector('.task-mode-tabs').style.display = 'none';
+  var _tabs2 = document.querySelector('.task-mode-tabs'); if (_tabs2) _tabs2.style.display = 'none';
   document.getElementById('tName').value     = task.name     || '';
   document.getElementById('tClient').value   = task.client   || '';
   document.getElementById('tPhone').value    = task.phone    || '';
@@ -9544,13 +9649,11 @@ function openEditTask(id, title) {
   document.getElementById('tMaxWind').value  = tw.maxWind != null ? tw.maxWind : '';
   buildTypeGrid(task.type);
   populateDateInput(task.status === 'backlog' ? '' : (task.scheduledDate || ''));
-  setTaskMode('manual');
-  if (_taskPhotoPreview) {
-    document.getElementById('taskPhotoPreview').src = _taskPhotoPreview;
-    document.getElementById('taskPhotoPreviewContainer').style.display = 'block';
-  } else {
-    document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
-  }
+  setTaskMode('manual'); setFactMode('manuel');
+  var _tpp = document.getElementById('taskPhotoPreview');
+  var _tpc2 = document.getElementById('taskPhotoPreviewContainer');
+  if (_taskPhotoPreview && _tpp) _tpp.src = _taskPhotoPreview;
+  if (_tpc2) _tpc2.style.display = _taskPhotoPreview ? 'block' : 'none';
   document.getElementById('btnDel').style.display       = '';
   document.getElementById('btnToBank').style.display    = '';
   document.getElementById('btnSaveModel').style.display = 'none';
@@ -10643,6 +10746,164 @@ function updateFinKpi() {
       factKpi.style.display = 'none';
     }
   }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FINANCE OVERLAY
+════════════════════════════════════════════════════════════════ */
+var _finFilter = 'all';
+var _finStatusTargetId = null;
+
+function openFinances() { openFinanceOverlay(); }
+function openFinanceOverlay() {
+  renderFinResume();
+  renderFinFactures();
+  renderFinHistorique();
+  openModal('financeOverlay');
+}
+
+function finTab(tab) {
+  ['resume','factures','historique'].forEach(function(t) {
+    document.getElementById('finPanel' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.fin-ov-tab').forEach(function(b, i) {
+    b.classList.toggle('sel', ['resume','factures','historique'][i] === tab);
+  });
+}
+
+function finSetFilter(btn, filter) {
+  _finFilter = filter;
+  document.querySelectorAll('.fin-filt').forEach(function(b) { b.classList.remove('sel'); });
+  btn.classList.add('sel');
+  renderFinFactures();
+}
+
+function renderFinResume() {
+  var now = new Date();
+  var thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  var tasks = ST.tasks.filter(function(t) { return (t.scheduledDate||'').startsWith(thisMonth); });
+  var totalF = 0, totalP = 0, tauxSum = 0, tauxCount = 0;
+  tasks.forEach(function(t) {
+    var b = _parseAmt(t.billed);
+    if (b) {
+      totalF += b;
+      if (t.payStatus === 'paid') totalP += b;
+      if (t.startReal && t.endReal) {
+        var s = _timeToMin(t.startReal), e = _timeToMin(t.endReal);
+        if (s !== null && e !== null) { var d = e - s; if (d < 0) d += 24*60; if (d > 0) { tauxSum += b/(d/60); tauxCount++; } }
+      }
+    }
+  });
+  var fmt = function(n) { return n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}); };
+  var enAttente = totalF - totalP;
+  var grid = document.getElementById('finOvGrid');
+  grid.innerHTML = [
+    ['Total facturé', fmt(totalF), ''],
+    ['Total payé', fmt(totalP), 'ok'],
+    ['En attente', fmt(enAttente), enAttente > 0 ? 'warn' : ''],
+    ['Taux horaire moyen', tauxCount ? Math.round(tauxSum/tauxCount)+' $/h' : '—', '']
+  ].map(function(row) {
+    return '<div class="fin-ov-kpi"><div class="fin-ov-kpi-label">'+row[0]+'</div>'
+         + '<div class="fin-ov-kpi-val '+row[2]+'">'+row[1]+'</div></div>';
+  }).join('');
+  var barWrap = document.getElementById('finOvBarWrap');
+  var pct = totalF > 0 ? Math.round(totalP/totalF*100) : 0;
+  barWrap.innerHTML = '<div style="font-size:12px;color:var(--t-4);margin-bottom:4px">Paiements reçus — '+pct+' %</div>'
+    + '<div class="fin-ov-bar"><div class="fin-ov-bar-paid" style="width:'+pct+'%"></div></div>'
+    + '<div class="fin-ov-bar-legend"><span>🟢 Payé '+fmt(totalP)+'</span><span>⬜ Attente '+fmt(enAttente)+'</span></div>';
+}
+
+function renderFinFactures() {
+  var tasks = ST.tasks.slice().filter(function(t) {
+    if (_finFilter === 'none') return !t.billed || !_parseAmt(t.billed);
+    if (_finFilter === 'invoiced') return t.payStatus === 'invoiced';
+    if (_finFilter === 'paid') return t.payStatus === 'paid';
+    return true;
+  }).sort(function(a,b) { return (b.scheduledDate||'').localeCompare(a.scheduledDate||''); });
+  var fmt = function(n) { return n ? n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}) : '—'; };
+  var badgeInfo = {
+    '': ['none','⬜ Non facturé'],
+    'invoiced': ['invoiced','🟡 Facturé'],
+    'paid': ['paid','🟢 Payé']
+  };
+  var html = tasks.length ? tasks.map(function(t) {
+    var b = _parseAmt(t.billed);
+    var ps = t.payStatus || '';
+    var bi = badgeInfo[ps] || badgeInfo[''];
+    var date = t.scheduledDate ? t.scheduledDate.slice(5).replace('-','/') : '';
+    return '<div class="fin-inv-row" onclick="finOpenTask(\''+esc(t.id)+'\')">'
+      + '<div class="fin-inv-info"><div class="fin-inv-name">'+esc(t.name||'Sans nom')+'</div>'
+      + '<div class="fin-inv-sub">'+(t.client?esc(t.client)+' · ':'')+date+'</div></div>'
+      + '<div class="fin-inv-right"><div class="fin-inv-amt">'+fmt(b)+'</div>'
+      + '<div class="fin-inv-badge '+bi[0]+'" onclick="event.stopPropagation();finOpenStatusMenu(event,\''+esc(t.id)+'\')">'+bi[1]+'</div></div>'
+      + '</div>';
+  }).join('') : '<p style="color:var(--t-4);font-size:13px;text-align:center;padding:24px 0">Aucune facture</p>';
+  document.getElementById('finInvoiceList').innerHTML = html;
+}
+
+function renderFinHistorique() {
+  var paid = ST.tasks.filter(function(t) { return t.payStatus === 'paid' && t.payDate; })
+    .sort(function(a,b) { return (b.payDate||'').localeCompare(a.payDate||''); });
+  var fmt = function(n) { return n ? n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}) : '—'; };
+  var months = ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  var html = '', curMonth = '';
+  if (!paid.length) { html = '<p style="color:var(--t-4);font-size:13px;text-align:center;padding:24px 0">Aucun paiement enregistré</p>'; }
+  paid.forEach(function(t) {
+    var m = (t.payDate||'').slice(0,7);
+    if (m !== curMonth) {
+      curMonth = m;
+      var parts = m.split('-');
+      html += '<div class="fin-histo-month">'+months[parseInt(parts[1],10)-1]+' '+parts[0]+'</div>';
+    }
+    var b = _parseAmt(t.billed);
+    html += '<div class="fin-inv-row" onclick="finOpenTask(\''+esc(t.id)+'\')">'
+      + '<div class="fin-inv-info"><div class="fin-inv-name">'+esc(t.name||'Sans nom')+'</div>'
+      + '<div class="fin-inv-sub">'+(t.client?esc(t.client)+' · ':'')+(t.payDate||'')+'</div></div>'
+      + '<div class="fin-inv-right"><div class="fin-inv-amt ok">'+fmt(b)+'</div></div>'
+      + '</div>';
+  });
+  document.getElementById('finHistoList').innerHTML = html;
+}
+
+function finOpenTask(id) {
+  closeModal('financeOverlay');
+  setTimeout(function() {
+    openEditTask(id);
+    setTimeout(function() {
+      var fs = document.getElementById('finFactSection');
+      if (fs && !fs.open) fs.open = true;
+    }, 200);
+  }, 150);
+}
+
+function finOpenStatusMenu(ev, id) {
+  _finStatusTargetId = id;
+  var menu = document.getElementById('finStatusMenu');
+  menu.style.display = 'block';
+  var rect = ev.target.getBoundingClientRect();
+  var top = rect.bottom + 4;
+  var left = rect.left;
+  if (left + 170 > window.innerWidth) left = window.innerWidth - 174;
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+  setTimeout(function() {
+    document.addEventListener('click', finCloseMenu, { once: true });
+  }, 0);
+}
+
+function finCloseMenu() {
+  var menu = document.getElementById('finStatusMenu');
+  if (menu) menu.style.display = 'none';
+}
+
+function finApplyStatus(status) {
+  finCloseMenu();
+  if (!_finStatusTargetId) return;
+  var idx = ST.tasks.findIndex(function(t) { return t.id === _finStatusTargetId; });
+  if (idx < 0) return;
+  ST.tasks[idx].payStatus = status;
+  if (status === 'paid' && !ST.tasks[idx].payDate) ST.tasks[idx].payDate = new Date().toISOString().slice(0,10);
+  saveST(); renderFinanceDash(); renderFinFactures(); renderFinHistorique();
 }
 
 function renderFinanceDash() {

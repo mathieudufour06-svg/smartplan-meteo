@@ -10014,6 +10014,7 @@ function isoDate(d) {
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
+  sessionStorage.removeItem('_swReloaded'); // reset SW reload guard each fresh load
   loadST();
   // Auto-géolocalisation au premier lancement (silencieuse)
   if (!ST.locSet && navigator.geolocation) {
@@ -10124,8 +10125,10 @@ async function initServiceWorker() {
     var reg = await navigator.serviceWorker.register('/sw.js');
     // Syncer les données avec le SW
     syncDataToSW(reg);
-    // Recharger automatiquement quand un nouveau SW prend le contrôle
+    // Recharger une seule fois quand un nouveau SW prend le contrôle
     navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (sessionStorage.getItem('_swReloaded')) return;
+      sessionStorage.setItem('_swReloaded', '1');
       window.location.reload();
     });
     // Détecter un SW en attente (update déjà téléchargé)
@@ -10140,8 +10143,10 @@ async function initServiceWorker() {
     }
     if (reg.installing) { _onUpdateFound(); }
     reg.addEventListener('updatefound', _onUpdateFound);
-    // Vérifier une mise à jour toutes les 60 secondes
-    setInterval(function() { reg.update(); }, 60000);
+    // Vérifier une mise à jour toutes les 60 secondes (une fois la page stable)
+    setTimeout(function() {
+      setInterval(function() { reg.update(); }, 60000);
+    }, 10000);
     // Periodic Background Sync (Chrome Android)
     if ('periodicSync' in reg) {
       var status = await navigator.permissions.query({ name: 'periodic-background-sync' });

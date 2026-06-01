@@ -3654,32 +3654,14 @@
         <div class="fin-kpi"><div class="fin-kpi-label">Taux horaire effectif</div><div class="fin-kpi-val" id="finTauxH">—</div></div>
         <div class="fin-kpi"><div class="fin-kpi-label">Rentabilité</div><div class="fin-kpi-val" id="finRentab">—</div></div>
       </div>
+      <div class="fg" style="margin-top:10px">
+        <input type="file" id="invoicePhotoFile" accept="image/*" capture="environment" style="display:none" onchange="loadInvoicePhoto(this.files)">
+        <button type="button" class="btn-secondary" style="width:100%" onclick="document.getElementById('invoicePhotoFile').click()">📷 Importer une photo de facture</button>
+        <div id="invoicePhotoPreviewContainer" style="display:none;margin-top:8px">
+          <img id="invoicePhotoPreview" alt="Aperçu facture" style="max-width:100%;border-radius:var(--r-sm)">
+        </div>
+      </div>
     </details>
-
-    <div class="task-mode-tabs">
-      <button type="button" id="taskModeBtnManual" class="mode-btn sel" onclick="setTaskMode('manual')">Manuel</button>
-      <button type="button" id="taskModeBtnVoice" class="mode-btn" onclick="setTaskMode('voice')">Dicter</button>
-      <button type="button" id="taskModeBtnPhoto" class="mode-btn" onclick="setTaskMode('photo')">Photo</button>
-    </div>
-    <div class="task-mode-block active" id="taskManualSection">
-      <div class="mode-note">Remplissez les détails des travaux puis sauvegardez.</div>
-    </div>
-    <div class="task-mode-block" id="taskVoiceSection">
-      <div class="mode-note">Dictez une phrase, puis appuyez sur Analyser.</div>
-      <div class="voice-line">
-        <button type="button" class="btn-secondary" onclick="startTaskMic()">🎙 Démarrer la dictée</button>
-        <span class="voice-status" id="taskVoiceStatus">🎤</span>
-      </div>
-      <textarea id="taskVoiceText" rows="3" placeholder="Le texte dicté apparaîtra ici"></textarea>
-      <button type="button" class="btn-secondary" onclick="applyTaskVoice()" style="margin-top: 8px;">Analyser et remplir</button>
-    </div>
-    <div class="task-mode-block" id="taskPhotoSection">
-      <div class="mode-note">Importez une photo pour pré-remplir les champs.</div>
-      <input type="file" id="taskPhotoFile" class="task-file-input" accept="image/*" capture="environment" onchange="loadTaskPhoto(this.files)">
-      <div class="task-photo-preview" id="taskPhotoPreviewContainer" style="display:none">
-        <img id="taskPhotoPreview" alt="Aperçu photo">
-      </div>
-    </div>
     <div class="fg">
       <label>Photos des travaux</label>
       <div class="gallery-zone" id="galleryZone">
@@ -9118,12 +9100,24 @@ function loadTaskPhoto(files) {
   var reader = new FileReader();
   reader.onload = function(e) {
     _taskPhotoPreview = e.target.result;
-    document.getElementById('taskPhotoPreview').src = _taskPhotoPreview;
-    document.getElementById('taskPhotoPreviewContainer').style.display = 'block';
+    var _el = document.getElementById('taskPhotoPreview'); if (_el) _el.src = _taskPhotoPreview;
+    var _c = document.getElementById('taskPhotoPreviewContainer'); if (_c) _c.style.display = 'block';
   };
   reader.readAsDataURL(file);
   var parsed = parseJobFromImage(file);
   if (parsed.name && !document.getElementById('tName').value) document.getElementById('tName').value = parsed.name;
+}
+
+function loadInvoicePhoto(files) {
+  if (!files || !files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('invoicePhotoPreview');
+    var container = document.getElementById('invoicePhotoPreviewContainer');
+    if (img) img.src = e.target.result;
+    if (container) container.style.display = 'block';
+  };
+  reader.readAsDataURL(files[0]);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -9449,7 +9443,7 @@ function openAddTask(dayIdx) {
   _taskSource       = 'manual';
   _taskPhotoPreview = null;
   document.getElementById('taskModalTitle').textContent = 'Nouveaux travaux';
-  document.querySelector('.task-mode-tabs').style.display = '';
+  var _tabs = document.querySelector('.task-mode-tabs'); if (_tabs) _tabs.style.display = '';
   document.getElementById('tName').value     = '';
   document.getElementById('tClient').value   = '';
   document.getElementById('tPhone').value    = '';
@@ -9485,7 +9479,7 @@ function openAddTask(dayIdx) {
   else if (typeof dayIdx === 'number' && ST.forecast && ST.forecast[dayIdx]) dateValue = isoDate(ST.forecast[dayIdx].date);
   populateDateInput(dateValue);
   setTaskMode('manual');
-  document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
+  var _tpc = document.getElementById('taskPhotoPreviewContainer'); if (_tpc) _tpc.style.display = 'none';
   document.getElementById('btnDel').style.display       = 'none';
   document.getElementById('btnToBank').style.display    = 'none';
   document.getElementById('btnSaveModel').style.display = '';
@@ -9537,7 +9531,7 @@ function openEditTask(id, title) {
   _taskSource       = task.source || 'manual';
   _taskPhotoPreview = task.photoPreview || null;
   document.getElementById('taskModalTitle').textContent = title || 'Modifier les travaux';
-  document.querySelector('.task-mode-tabs').style.display = 'none';
+  var _tabs2 = document.querySelector('.task-mode-tabs'); if (_tabs2) _tabs2.style.display = 'none';
   document.getElementById('tName').value     = task.name     || '';
   document.getElementById('tClient').value   = task.client   || '';
   document.getElementById('tPhone').value    = task.phone    || '';
@@ -9570,12 +9564,10 @@ function openEditTask(id, title) {
   buildTypeGrid(task.type);
   populateDateInput(task.status === 'backlog' ? '' : (task.scheduledDate || ''));
   setTaskMode('manual');
-  if (_taskPhotoPreview) {
-    document.getElementById('taskPhotoPreview').src = _taskPhotoPreview;
-    document.getElementById('taskPhotoPreviewContainer').style.display = 'block';
-  } else {
-    document.getElementById('taskPhotoPreviewContainer').style.display = 'none';
-  }
+  var _tpp = document.getElementById('taskPhotoPreview');
+  var _tpc2 = document.getElementById('taskPhotoPreviewContainer');
+  if (_taskPhotoPreview && _tpp) _tpp.src = _taskPhotoPreview;
+  if (_tpc2) _tpc2.style.display = _taskPhotoPreview ? 'block' : 'none';
   document.getElementById('btnDel').style.display       = '';
   document.getElementById('btnToBank').style.display    = '';
   document.getElementById('btnSaveModel').style.display = 'none';

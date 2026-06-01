@@ -3348,7 +3348,7 @@
 
       <!-- Finances du mois -->
       <div class="section" id="financeSection">
-        <div class="fin-dash" onclick="openFinanceOverlay()" style="cursor:pointer">
+        <div class="fin-dash" onclick="openFinances()" style="cursor:pointer">
           <div class="fin-dash-title">💰 Finances — ce mois <span style="float:right;font-size:16px;color:var(--t-4)">›</span></div>
           <div class="fin-dash-grid" id="finDashGrid">
             <div class="fin-dash-item"><div class="fdl">Total facturé</div><div class="fdv" id="fdTotalFacture">—</div></div>
@@ -10754,6 +10754,7 @@ function updateFinKpi() {
 var _finFilter = 'all';
 var _finStatusTargetId = null;
 
+function openFinances() { openFinanceOverlay(); }
 function openFinanceOverlay() {
   renderFinResume();
   renderFinFactures();

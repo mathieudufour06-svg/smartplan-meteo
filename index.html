@@ -9185,7 +9185,7 @@ function parseJobFromImage(dataURL, mimeType) {
       'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       messages: [{
         role: 'user',
@@ -9196,10 +9196,11 @@ function parseJobFromImage(dataURL, mimeType) {
       }]
     })
   }).then(function(res) { return res.json(); }).then(function(data) {
+    console.log('[Vision] réponse API:', data);
     var text = (data.content && data.content[0]) ? (data.content[0].text || '') : '';
     text = text.replace(/```json|```/g, '').trim();
     var j;
-    try { j = JSON.parse(text); } catch(e) { throw new Error('JSON invalide'); }
+    try { j = JSON.parse(text); } catch(e) { console.error('[Vision] JSON invalide:', text); throw new Error('JSON invalide'); }
 
     if (nameEl)     nameEl.value     = j.titre    || '';
     if (clientEl)   clientEl.value   = j.client   || '';
@@ -9222,7 +9223,8 @@ function parseJobFromImage(dataURL, mimeType) {
 
     // Reset placeholder
     if (nameEl) nameEl.placeholder = 'Titre des travaux';
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[Vision] erreur:', err);
     if (nameEl) { nameEl.value = ''; nameEl.placeholder = 'Titre des travaux'; }
     toast('⚠ Impossible d\'analyser la photo — entre les infos manuellement');
   });

@@ -2613,6 +2613,36 @@
     .fin-dash-item .fdv { font-size: 20px; font-weight: 800; color: var(--t-1); margin-top: 2px; }
     .fin-dash-item .fdv.ok { color: var(--green); }
     .fin-dash-item .fdv.warn { color: #ff9f43; }
+    /* Finance overlay */
+    .fin-ov-tabs { display:flex; gap:6px; margin-bottom:14px; }
+    .fin-ov-tab { flex:1; padding:8px 4px; background:var(--surface-2); border:none; border-radius:var(--r-sm); font-size:13px; font-weight:700; color:var(--t-3); cursor:pointer; }
+    .fin-ov-tab.sel { background:var(--accent,#3b82f6); color:#fff; }
+    .fin-ov-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .fin-ov-kpi { background:var(--surface-2); border-radius:var(--r-md); padding:12px; }
+    .fin-ov-kpi-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--t-4); margin-bottom:4px; }
+    .fin-ov-kpi-val { font-size:20px; font-weight:800; color:var(--t-1); }
+    .fin-ov-kpi-val.ok { color:var(--green,#2dd483); }
+    .fin-ov-kpi-val.warn { color:#ff9f43; }
+    .fin-inv-amt.ok { color:var(--green,#2dd483); }
+    .fin-ov-bar { height:18px; border-radius:8px; background:var(--surface-3,#2a2a3a); overflow:hidden; display:flex; margin:6px 0 2px; }
+    .fin-ov-bar-paid { height:100%; background:var(--green); border-radius:8px 0 0 8px; transition:width .4s; }
+    .fin-ov-bar-legend { font-size:11px; color:var(--t-4); display:flex; justify-content:space-between; }
+    .fin-ov-filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .fin-filt { padding:5px 12px; background:var(--surface-2); border:none; border-radius:20px; font-size:12px; color:var(--t-3); cursor:pointer; font-weight:600; }
+    .fin-filt.sel { background:var(--accent,#3b82f6); color:#fff; }
+    .fin-inv-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line-2); cursor:pointer; }
+    .fin-inv-info { flex:1; min-width:0; }
+    .fin-inv-name { font-size:14px; font-weight:700; color:var(--t-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fin-inv-sub { font-size:11px; color:var(--t-4); margin-top:2px; }
+    .fin-inv-right { text-align:right; flex-shrink:0; }
+    .fin-inv-amt { font-size:15px; font-weight:800; color:var(--t-1); }
+    .fin-inv-badge { display:inline-block; margin-top:3px; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:700; cursor:pointer; }
+    .fin-inv-badge.none { background:#2a2a2a; color:var(--t-3); }
+    .fin-inv-badge.invoiced { background:#3d3000; color:#ff9f43; }
+    .fin-inv-badge.paid { background:#0d2b1a; color:var(--green); }
+    .fin-histo-month { font-size:12px; font-weight:800; text-transform:uppercase; color:var(--t-4); margin:16px 0 6px; letter-spacing:.06em; }
+    .fin-smenu-item { display:block; width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:var(--t-1); cursor:pointer; }
+    .fin-smenu-item:hover { background:var(--surface-3,#2a2a3a); }
 
     /* ════════════════════════════════════════════════════════════════
        STATUS PILL (terrain-grade replacement for /100 score)
@@ -3318,8 +3348,8 @@
 
       <!-- Finances du mois -->
       <div class="section" id="financeSection">
-        <div class="fin-dash">
-          <div class="fin-dash-title">💰 Finances — ce mois</div>
+        <div class="fin-dash" onclick="openFinanceOverlay()" style="cursor:pointer">
+          <div class="fin-dash-title">💰 Finances — ce mois <span style="float:right;font-size:16px;color:var(--t-4)">›</span></div>
           <div class="fin-dash-grid" id="finDashGrid">
             <div class="fin-dash-item"><div class="fdl">Total facturé</div><div class="fdv" id="fdTotalFacture">—</div></div>
             <div class="fin-dash-item"><div class="fdl">Total payé</div><div class="fdv ok" id="fdTotalPaye">—</div></div>
@@ -3855,6 +3885,45 @@
       <button type="button" class="btn-cancel" onclick="closeModal('workBankOverlay')">Annuler</button>
       <button type="button" class="btn-primary" onclick="saveWorkBankItem()">Enregistrer</button>
     </div>
+  </div>
+</div>
+
+<!-- FINANCE OVERLAY -->
+<div class="overlay" id="financeOverlay" onclick="overlayClick(event,'financeOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('financeOverlay')" aria-label="Fermer">✕</button>
+    <h3>💰 Finances</h3>
+    <div class="fin-ov-tabs">
+      <button type="button" class="fin-ov-tab sel" onclick="finTab('resume')">Résumé</button>
+      <button type="button" class="fin-ov-tab" onclick="finTab('factures')">Factures</button>
+      <button type="button" class="fin-ov-tab" onclick="finTab('historique')">Historique</button>
+    </div>
+    <!-- Résumé -->
+    <div class="fin-ov-panel" id="finPanelResume">
+      <div class="fin-ov-grid" id="finOvGrid"></div>
+      <div class="fin-ov-bar-wrap" id="finOvBarWrap" style="margin-top:16px"></div>
+    </div>
+    <!-- Factures -->
+    <div class="fin-ov-panel" id="finPanelFactures" style="display:none">
+      <div class="fin-ov-filters">
+        <button type="button" class="fin-filt sel" onclick="finSetFilter(this,'all')">Tous</button>
+        <button type="button" class="fin-filt" onclick="finSetFilter(this,'none')">Non facturés</button>
+        <button type="button" class="fin-filt" onclick="finSetFilter(this,'invoiced')">En attente</button>
+        <button type="button" class="fin-filt" onclick="finSetFilter(this,'paid')">Payés</button>
+      </div>
+      <div id="finInvoiceList"></div>
+    </div>
+    <!-- Historique -->
+    <div class="fin-ov-panel" id="finPanelHistorique" style="display:none">
+      <div id="finHistoList"></div>
+    </div>
+    <!-- Quick status menu -->
+    <div id="finStatusMenu" style="display:none;position:fixed;z-index:2000;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-md);box-shadow:0 8px 32px #0008;padding:6px 0;min-width:160px">
+      <button type="button" class="fin-smenu-item" onclick="finApplyStatus('')">⬜ Non facturé</button>
+      <button type="button" class="fin-smenu-item" onclick="finApplyStatus('invoiced')">🟡 Facturé</button>
+      <button type="button" class="fin-smenu-item" onclick="finApplyStatus('paid')">🟢 Payé</button>
+    </div>
+    <button type="button" class="btn-cancel" style="margin-top:16px" onclick="closeModal('financeOverlay')">Fermer</button>
   </div>
 </div>
 
@@ -10660,6 +10729,163 @@ function updateFinKpi() {
       factKpi.style.display = 'none';
     }
   }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FINANCE OVERLAY
+════════════════════════════════════════════════════════════════ */
+var _finFilter = 'all';
+var _finStatusTargetId = null;
+
+function openFinanceOverlay() {
+  renderFinResume();
+  renderFinFactures();
+  renderFinHistorique();
+  openModal('financeOverlay');
+}
+
+function finTab(tab) {
+  ['resume','factures','historique'].forEach(function(t) {
+    document.getElementById('finPanel' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.fin-ov-tab').forEach(function(b, i) {
+    b.classList.toggle('sel', ['resume','factures','historique'][i] === tab);
+  });
+}
+
+function finSetFilter(btn, filter) {
+  _finFilter = filter;
+  document.querySelectorAll('.fin-filt').forEach(function(b) { b.classList.remove('sel'); });
+  btn.classList.add('sel');
+  renderFinFactures();
+}
+
+function renderFinResume() {
+  var now = new Date();
+  var thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  var tasks = ST.tasks.filter(function(t) { return (t.scheduledDate||'').startsWith(thisMonth); });
+  var totalF = 0, totalP = 0, tauxSum = 0, tauxCount = 0;
+  tasks.forEach(function(t) {
+    var b = _parseAmt(t.billed);
+    if (b) {
+      totalF += b;
+      if (t.payStatus === 'paid') totalP += b;
+      if (t.startReal && t.endReal) {
+        var s = _timeToMin(t.startReal), e = _timeToMin(t.endReal);
+        if (s !== null && e !== null) { var d = e - s; if (d < 0) d += 24*60; if (d > 0) { tauxSum += b/(d/60); tauxCount++; } }
+      }
+    }
+  });
+  var fmt = function(n) { return n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}); };
+  var enAttente = totalF - totalP;
+  var grid = document.getElementById('finOvGrid');
+  grid.innerHTML = [
+    ['Total facturé', fmt(totalF), ''],
+    ['Total payé', fmt(totalP), 'ok'],
+    ['En attente', fmt(enAttente), enAttente > 0 ? 'warn' : ''],
+    ['Taux horaire moyen', tauxCount ? Math.round(tauxSum/tauxCount)+' $/h' : '—', '']
+  ].map(function(row) {
+    return '<div class="fin-ov-kpi"><div class="fin-ov-kpi-label">'+row[0]+'</div>'
+         + '<div class="fin-ov-kpi-val '+row[2]+'">'+row[1]+'</div></div>';
+  }).join('');
+  var barWrap = document.getElementById('finOvBarWrap');
+  var pct = totalF > 0 ? Math.round(totalP/totalF*100) : 0;
+  barWrap.innerHTML = '<div style="font-size:12px;color:var(--t-4);margin-bottom:4px">Paiements reçus — '+pct+' %</div>'
+    + '<div class="fin-ov-bar"><div class="fin-ov-bar-paid" style="width:'+pct+'%"></div></div>'
+    + '<div class="fin-ov-bar-legend"><span>🟢 Payé '+fmt(totalP)+'</span><span>⬜ Attente '+fmt(enAttente)+'</span></div>';
+}
+
+function renderFinFactures() {
+  var tasks = ST.tasks.slice().filter(function(t) {
+    if (_finFilter === 'none') return !t.billed || !_parseAmt(t.billed);
+    if (_finFilter === 'invoiced') return t.payStatus === 'invoiced';
+    if (_finFilter === 'paid') return t.payStatus === 'paid';
+    return true;
+  }).sort(function(a,b) { return (b.scheduledDate||'').localeCompare(a.scheduledDate||''); });
+  var fmt = function(n) { return n ? n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}) : '—'; };
+  var badgeInfo = {
+    '': ['none','⬜ Non facturé'],
+    'invoiced': ['invoiced','🟡 Facturé'],
+    'paid': ['paid','🟢 Payé']
+  };
+  var html = tasks.length ? tasks.map(function(t) {
+    var b = _parseAmt(t.billed);
+    var ps = t.payStatus || '';
+    var bi = badgeInfo[ps] || badgeInfo[''];
+    var date = t.scheduledDate ? t.scheduledDate.slice(5).replace('-','/') : '';
+    return '<div class="fin-inv-row" onclick="finOpenTask(\''+esc(t.id)+'\')">'
+      + '<div class="fin-inv-info"><div class="fin-inv-name">'+esc(t.name||'Sans nom')+'</div>'
+      + '<div class="fin-inv-sub">'+(t.client?esc(t.client)+' · ':'')+date+'</div></div>'
+      + '<div class="fin-inv-right"><div class="fin-inv-amt">'+fmt(b)+'</div>'
+      + '<div class="fin-inv-badge '+bi[0]+'" onclick="event.stopPropagation();finOpenStatusMenu(event,\''+esc(t.id)+'\')">'+bi[1]+'</div></div>'
+      + '</div>';
+  }).join('') : '<p style="color:var(--t-4);font-size:13px;text-align:center;padding:24px 0">Aucune facture</p>';
+  document.getElementById('finInvoiceList').innerHTML = html;
+}
+
+function renderFinHistorique() {
+  var paid = ST.tasks.filter(function(t) { return t.payStatus === 'paid' && t.payDate; })
+    .sort(function(a,b) { return (b.payDate||'').localeCompare(a.payDate||''); });
+  var fmt = function(n) { return n ? n.toLocaleString('fr-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}) : '—'; };
+  var months = ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  var html = '', curMonth = '';
+  if (!paid.length) { html = '<p style="color:var(--t-4);font-size:13px;text-align:center;padding:24px 0">Aucun paiement enregistré</p>'; }
+  paid.forEach(function(t) {
+    var m = (t.payDate||'').slice(0,7);
+    if (m !== curMonth) {
+      curMonth = m;
+      var parts = m.split('-');
+      html += '<div class="fin-histo-month">'+months[parseInt(parts[1],10)-1]+' '+parts[0]+'</div>';
+    }
+    var b = _parseAmt(t.billed);
+    html += '<div class="fin-inv-row" onclick="finOpenTask(\''+esc(t.id)+'\')">'
+      + '<div class="fin-inv-info"><div class="fin-inv-name">'+esc(t.name||'Sans nom')+'</div>'
+      + '<div class="fin-inv-sub">'+(t.client?esc(t.client)+' · ':'')+(t.payDate||'')+'</div></div>'
+      + '<div class="fin-inv-right"><div class="fin-inv-amt ok">'+fmt(b)+'</div></div>'
+      + '</div>';
+  });
+  document.getElementById('finHistoList').innerHTML = html;
+}
+
+function finOpenTask(id) {
+  closeModal('financeOverlay');
+  setTimeout(function() {
+    openEditTask(id);
+    setTimeout(function() {
+      var fs = document.getElementById('finFactSection');
+      if (fs && !fs.open) fs.open = true;
+    }, 200);
+  }, 150);
+}
+
+function finOpenStatusMenu(ev, id) {
+  _finStatusTargetId = id;
+  var menu = document.getElementById('finStatusMenu');
+  menu.style.display = 'block';
+  var rect = ev.target.getBoundingClientRect();
+  var top = rect.bottom + 4;
+  var left = rect.left;
+  if (left + 170 > window.innerWidth) left = window.innerWidth - 174;
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+  setTimeout(function() {
+    document.addEventListener('click', finCloseMenu, { once: true });
+  }, 0);
+}
+
+function finCloseMenu() {
+  var menu = document.getElementById('finStatusMenu');
+  if (menu) menu.style.display = 'none';
+}
+
+function finApplyStatus(status) {
+  finCloseMenu();
+  if (!_finStatusTargetId) return;
+  var idx = ST.tasks.findIndex(function(t) { return t.id === _finStatusTargetId; });
+  if (idx < 0) return;
+  ST.tasks[idx].payStatus = status;
+  if (status === 'paid' && !ST.tasks[idx].payDate) ST.tasks[idx].payDate = new Date().toISOString().slice(0,10);
+  saveST(); renderFinanceDash(); renderFinFactures(); renderFinHistorique();
 }
 
 function renderFinanceDash() {

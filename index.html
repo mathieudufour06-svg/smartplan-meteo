@@ -6914,44 +6914,67 @@ function _ocrSegmentJobs(text) {
   var paras = text.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
   if (paras.length >= 2) return paras;
 
-  // Strategy 4: merge short lines sensibly
+  // Strategy 4: merge short lines sensibly — require strong boundary signals to split jobs
   var lines = text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 4; });
   if (lines.length >= 2) {
     var merged = [lines[0]];
     for (var i = 1; i < lines.length; i++) {
       var prev = merged[merged.length - 1];
-      // New job heuristic: new capitalized word after a sentence-end
-      if (/^[A-ZÀ-ÖÙ-Þ]/.test(lines[i]) && /[.!?:;]$/.test(prev)) {
+      // New job only if: sentence ends AND next line starts with a known job-type keyword
+      var newJobKeyword = /^(?:travaux?|toiture|béton|asphalte|émondage|excavation|peinture|électricité|plomberie|rénovation|isolation|fondation|démolition|terrassement|paysagisme|terr[ae]ss)/i.test(lines[i]);
+      if (/[.!?]$/.test(prev) && newJobKeyword) {
         merged.push(lines[i]);
       } else {
         merged[merged.length - 1] += ' ' + lines[i];
       }
     }
-    return merged.length >= 2 ? merged : [text];
+    return merged.length >= 2 ? merged : [merged[0] || text];
   }
   return [text];
 }
 
 /* ─ Parse one segment into a job object ─ */
+function _ocrCleanName(s) {
+  // Strip OCR artifacts: backslash, angle brackets, degree sign, pipe, @ alone
+  s = s.replace(/[\\<>°|]/g, ' ');
+  // Strip timestamps like "17:32", "8h30" at edges
+  s = s.replace(/\b\d{1,2}:\d{2}\b/g, ' ');
+  // Strip isolated symbols and digits-only tokens
+  s = s.replace(/\b[@#\$%&*~^]+\b/g, ' ').replace(/\s+/g, ' ').trim();
+  // Remove leading/trailing punctuation
+  s = s.replace(/^[\s\-_.,;:!?]+|[\s\-_.,;:!?]+$/g, '').trim();
+  return s;
+}
+
 function _ocrParseSegment(seg) {
   var clean = (seg || '').replace(/\f/g, '\n').replace(/\r\n?/g, '\n').trim();
-  var parsed = parseSmartInput(clean);
+  // Pre-clean segment: strip common OCR junk lines (pure symbols, timestamps)
+  var cleanedLines = clean.split('\n').filter(function(l) {
+    var stripped = l.replace(/[\s\-_.,;:!?\\<>°|@#0-9]+/g, '').trim();
+    return stripped.length >= 2; // keep lines that have at least 2 actual letters
+  });
+  var cleanSeg = cleanedLines.join('\n') || clean;
 
-  // Strengthen name: parseSmartInput leftover can be garbage on messy OCR
-  var hasName = parsed.name && parsed.name.length > 2 && /[a-zA-ZÀ-ÿ]{2,}/.test(parsed.name);
+  var parsed = parseSmartInput(cleanSeg);
+
+  // Clean the name of OCR artifacts
+  if (parsed.name) parsed.name = _ocrCleanName(parsed.name);
+
+  // Strengthen name only if parseSmartInput didn't produce a usable one
+  var hasName = parsed.name && parsed.name.length > 2 && /[a-zA-ZÀ-ÿ]{3,}/.test(parsed.name);
   if (!hasName) {
-    // Walk lines top-to-bottom, pick first one with >= 3 letters
-    var lines = clean.split('\n');
+    // Walk lines top-to-bottom, pick first one that looks like a job description
+    var lines = cleanSeg.split('\n');
     for (var i = 0; i < lines.length; i++) {
-      var l = lines[i].replace(/^[-•–*\d.\)\s]+/, '').trim();
-      if (l.length > 2 && /[a-zA-ZÀ-ÿ]{2,}/.test(l)) {
+      var l = _ocrCleanName(lines[i].replace(/^[-•–*\d.\)\s]+/, '').trim());
+      if (l.length > 2 && /[a-zA-ZÀ-ÿ]{3,}/.test(l)) {
         parsed.name = l.substring(0, 60);
         break;
       }
     }
-    // Last resort: first 60 chars of the whole segment
+    // Last resort: first 60 chars, cleaned
     if (!parsed.name || parsed.name.length < 2) {
-      parsed.name = clean.replace(/\s+/g, ' ').substring(0, 60).trim();
+      parsed.name = _ocrCleanName(cleanSeg.replace(/\s+/g, ' ')).substring(0, 60).trim();
     }
   }
   // Capitalise first letter

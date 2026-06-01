@@ -2,7 +2,7 @@
    SmartPlan Météo — Service Worker
    Gère les notifications push en arrière-plan
    ============================================================ */
-var CACHE_NAME = 'spm-notif-v3';
+var CACHE_NAME = 'spm-v4';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
@@ -18,8 +18,26 @@ self.addEventListener('activate', function(e) {
     }).then(function() { return self.clients.claim(); })
   );
 });
-/* Pas de fetch handler — on ne met PAS index.html en cache SW.
-   Netlify gère le cache HTTP (Cache-Control). */
+
+/* ── NetworkFirst pour index.html uniquement ── */
+self.addEventListener('fetch', function(e) {
+  if (e.request.method !== 'GET') return;
+  var url = e.request.url;
+  // Seulement la page principale — pas les API externes
+  var isPage = e.request.destination === 'document'
+    || url.endsWith('/')
+    || url.endsWith('/index.html');
+  if (!isPage) return;
+  e.respondWith(
+    fetch(e.request, { cache: 'no-store' })
+      .then(function(res) {
+        var copy = res.clone();
+        caches.open(CACHE_NAME).then(function(c) { c.put(e.request, copy); });
+        return res;
+      })
+      .catch(function() { return caches.match(e.request); })
+  );
+});
 
 /* ── Réception des données depuis l'app ── */
 self.addEventListener('message', function(e) {

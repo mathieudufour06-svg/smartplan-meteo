@@ -2,7 +2,7 @@
   "name": "SmartPlan Météo",
   "short_name": "SmartPlan",
   "description": "Planification intelligente de chantier selon la météo",
-  "start_url": "/",
+  "start_url": "/?v=4",
   "display": "standalone",
   "background_color": "#06070b",
   "theme_color": "#06070b",

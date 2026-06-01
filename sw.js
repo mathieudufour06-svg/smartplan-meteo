@@ -2,19 +2,45 @@
    SmartPlan Météo — Service Worker
    Gère les notifications push en arrière-plan
    ============================================================ */
-var CACHE_NAME = 'spm-notif-v1';
+var CACHE_NAME = 'spm-notif-v2';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', function(e) {
-  e.waitUntil(self.clients.claim());
+  // Purger les anciens caches dès l'activation
+  e.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    }).then(function() { return self.clients.claim(); })
+  );
+});
+
+/* ── NetworkFirst pour index.html — toujours la version fraîche ── */
+self.addEventListener('fetch', function(e) {
+  var url = e.request.url;
+  var isHtml = e.request.destination === 'document' ||
+               url.endsWith('/') || url.endsWith('/index.html');
+  if (!isHtml) return; // laisser passer les autres requêtes sans interception
+  e.respondWith(
+    fetch(e.request).then(function(netRes) {
+      var clone = netRes.clone();
+      caches.open(CACHE_NAME).then(function(c) { c.put(e.request, clone); });
+      return netRes;
+    }).catch(function() {
+      return caches.match(e.request);
+    })
+  );
 });
 
 /* ── Réception des données depuis l'app ── */
 self.addEventListener('message', function(e) {
   if (!e.data) return;
+  if (e.data.type === 'SKIP_WAITING') { self.skipWaiting(); return; }
   if (e.data.type === 'SPM_SYNC') {
     storeSyncData(e.data.tasks, e.data.prefs);
   }

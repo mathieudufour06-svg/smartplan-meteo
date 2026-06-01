@@ -10124,11 +10124,29 @@ async function initServiceWorker() {
     var reg = await navigator.serviceWorker.register('/sw.js');
     // Syncer les données avec le SW
     syncDataToSW(reg);
+    // Recharger automatiquement quand un nouveau SW prend le contrôle
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      window.location.reload();
+    });
+    // Détecter un SW en attente (update déjà téléchargé)
+    function _onUpdateFound() {
+      var installing = reg.installing;
+      if (!installing) return;
+      installing.addEventListener('statechange', function() {
+        if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+          installing.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    }
+    if (reg.installing) { _onUpdateFound(); }
+    reg.addEventListener('updatefound', _onUpdateFound);
+    // Vérifier une mise à jour toutes les 60 secondes
+    setInterval(function() { reg.update(); }, 60000);
     // Periodic Background Sync (Chrome Android)
     if ('periodicSync' in reg) {
       var status = await navigator.permissions.query({ name: 'periodic-background-sync' });
       if (status.state === 'granted') {
-        await reg.periodicSync.register('spm-notifications', { minInterval: 60 * 60 * 1000 }); // 1h
+        await reg.periodicSync.register('spm-notifications', { minInterval: 60 * 60 * 1000 });
       }
     }
   } catch(e) {

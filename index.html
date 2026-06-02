@@ -2607,7 +2607,7 @@
     .fin-kpi-val.bad { color: var(--red); }
     .now-btn { font-size: 12px; padding: 6px 10px; background: var(--surface-3,var(--surface-2)); border-radius: 8px; border: 1px solid var(--line-2); color: var(--tint); font-weight: 700; cursor: pointer; margin-left: 6px; white-space: nowrap; }
     .fin-dash { background: var(--surface-2); border-radius: var(--r-lg); padding: 16px; margin-top: 12px; }
-    .fin-dash-title { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: #ffffff; margin-bottom: 12px; }
+    .fin-dash-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--t-4); margin-bottom: 12px; }
     .fin-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .fin-dash-item { }
     .fin-dash-item .fdl { font-size: 11px; color: var(--t-4); font-weight: 600; }
@@ -2908,7 +2908,7 @@
       display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
     }
     .bank-dash-info { flex: 1; }
-    .bank-dash-eyebrow { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: #ffffff; text-transform: none; }
+    .bank-dash-eyebrow { font-size: .67rem; font-weight: 600; color: var(--t-3); text-transform: uppercase; letter-spacing: .06em; }
     .bank-dash-count { font-size: .9rem; font-weight: 700; color: var(--t-1); margin-top: 2px; }
     .bank-dash-arrow { font-size: 1.3rem; color: var(--t-3); }
     .bank-dash-stats {
@@ -3350,7 +3350,7 @@
       <!-- Finances du mois -->
       <div class="section" id="financeSection">
         <div class="fin-dash" onclick="openFinances()" style="cursor:pointer">
-          <div class="fin-dash-title">💰 Finances — ce mois <span style="float:right;font-size:16px;color:var(--t-4)">›</span></div>
+          <div class="fin-dash-title" style="font-size:22px;font-weight:700;letter-spacing:-0.03em;color:#ffffff;text-transform:none">💰 Finances — ce mois <span style="float:right;font-size:16px;color:var(--t-4)">›</span></div>
           <div class="fin-dash-grid" id="finDashGrid">
             <div class="fin-dash-item"><div class="fdl">Total facturé</div><div class="fdv" id="fdTotalFacture">—</div></div>
             <div class="fin-dash-item"><div class="fdl">Total payé</div><div class="fdv ok" id="fdTotalPaye">—</div></div>
@@ -3387,7 +3387,7 @@
           <div class="bank-dash-head">
             <div class="bank-dash-icon">📋</div>
             <div class="bank-dash-info">
-              <div class="bank-dash-eyebrow">Banque de travaux</div>
+              <div class="bank-dash-eyebrow" style="font-size:22px;font-weight:700;letter-spacing:-0.03em;color:#ffffff;text-transform:none">Banque de travaux</div>
               <div class="bank-dash-count" id="btlCount">0 travaux en banque</div>
             </div>
             <span class="bank-dash-arrow">›</span>

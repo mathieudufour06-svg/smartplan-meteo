@@ -6684,6 +6684,7 @@ function _ocrFilesToBlocks(files) {
 }
 
 function _ocrWithClaudeVision(files, apiKey) {
+  console.log('[OCR] _ocrWithClaudeVision appelée, images:', files.length);
   _ocrSetScanLabel('Préparation…', 'Chargement des images');
   _ocrSetProgress(10);
 
@@ -6751,19 +6752,23 @@ function _ocrWithClaudeVision(files, apiKey) {
       _ocrRenderResults(_ocrResults);
       _ocrShowStep('results');
     }).catch(function(err) {
+      console.error('[OCR] Erreur Vision API:', err);
       _ocrShowStep('source');
       toast('⚠ Vision IA : ' + (err.message || 'erreur inconnue'));
     });
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[OCR] Erreur lecture images:', err);
     _ocrShowStep('source');
     toast('⚠ Impossible de lire les images');
   });
 }
 
 function ocrHandleFiles(files) {
+  console.log('[OCR] ocrHandleFiles appelée, fichiers:', files ? files.length : 0);
   if (!files || !files.length) return;
   var arr = Array.prototype.slice.call(files);
   var apiKey = _ocrGetKey();
+  console.log('[OCR] Clé API:', apiKey ? ('sk-ant-…' + apiKey.slice(-4)) : 'ABSENTE');
 
   _ocrShowStep('scan');
   _ocrSetProgress(5);

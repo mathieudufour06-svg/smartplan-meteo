@@ -3349,8 +3349,10 @@
 
       <!-- Finances du mois -->
       <div class="section" id="financeSection">
+        <div class="section-head">
+          <h2 class="section-title">Mes finances</h2>
+        </div>
         <div class="fin-dash" onclick="openFinances()" style="cursor:pointer">
-          <div class="fin-dash-title" style="font-size:22px;font-weight:700;letter-spacing:-0.03em;color:#ffffff;text-transform:none">💰 Finances — ce mois <span style="float:right;font-size:16px;color:var(--t-4)">›</span></div>
           <div class="fin-dash-grid" id="finDashGrid">
             <div class="fin-dash-item"><div class="fdl">Total facturé</div><div class="fdv" id="fdTotalFacture">—</div></div>
             <div class="fin-dash-item"><div class="fdl">Total payé</div><div class="fdv ok" id="fdTotalPaye">—</div></div>
@@ -3383,11 +3385,13 @@
 
       <!-- 3. BANQUE DE TRAVAUX -->
       <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Banque de travaux</h2>
+        </div>
         <div class="bank-dash-card" onclick="switchTab('bank')">
           <div class="bank-dash-head">
             <div class="bank-dash-icon">📋</div>
             <div class="bank-dash-info">
-              <div class="bank-dash-eyebrow" style="font-size:22px;font-weight:700;letter-spacing:-0.03em;color:#ffffff;text-transform:none">Banque de travaux</div>
               <div class="bank-dash-count" id="btlCount">0 travaux en banque</div>
             </div>
             <span class="bank-dash-arrow">›</span>

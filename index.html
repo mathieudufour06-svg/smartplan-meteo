@@ -1842,10 +1842,11 @@
     .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
     .fg-row .fg { margin-bottom: 0; }
     .fg label {
-      font-size: 12px; font-weight: 700;
+      font-size: 15px; font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--t-3);
+      color: #ffffff;
+      margin-bottom: 8px;
     }
     .fg-opt { font-size: 10px; font-weight: 500; color: var(--t-4); text-transform: none; letter-spacing: 0; margin-left: 3px; }
     .fg input, .fg select, .fg textarea {
@@ -4030,6 +4031,16 @@
     <h3>⚙ Mes métiers</h3>
     <div id="jobsList"></div>
     <div style="border-top:1px solid var(--hairline); margin: 14px 0 12px"></div>
+    <div style="border-top:1px solid var(--hairline);margin:14px 0 12px"></div>
+    <p style="font-size:.72rem;font-weight:700;color:var(--t-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">🔑 Clé API Claude (analyse photo)</p>
+    <p style="font-size:.8rem;color:var(--t-3);margin-bottom:10px">Sauvegardée sur ton appareil uniquement. Nécessaire pour l'analyse photo IA.</p>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input id="settingsApiKeyInput" type="password" placeholder="sk-ant-api03-…" style="flex:1;padding:8px 10px;background:var(--surface-2);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);font-size:13px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button type="button" onclick="saveApiKey()" style="padding:8px 14px;background:var(--tint,#3b82f6);color:#fff;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer">Sauvegarder</button>
+    </div>
+    <div id="settingsApiKeyStatus" style="font-size:12px;color:var(--t-3);margin-bottom:4px"></div>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="font-size:11px;color:var(--tint,#3b82f6)">Obtenir une clé API →</a>
+    <div style="border-top:1px solid var(--hairline);margin:14px 0 12px"></div>
     <p style="font-size:.72rem; font-weight:700; color:var(--t-3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px">💾 Sauvegarde des données</p>
     <p style="font-size:.8rem; color:var(--t-3); margin-bottom:12px">Exportez vos tâches, métiers et préférences dans un fichier JSON pour les sauvegarder ou les transférer.</p>
     <div class="mf" style="margin-bottom:0">
@@ -4370,6 +4381,7 @@ function openJobsModal() {
   resetJobForm();
   renderJobsList();
   openModal('jobsOverlay');
+  setTimeout(_initSettingsApiKey, 0);
 }
 
 function renderColorSwatches(selectedId) {
@@ -6493,19 +6505,21 @@ function ocrReparse() {
   var ta = document.getElementById('ocrRawText');
   var text = (ta ? ta.value : _ocrRawText).trim();
   if (!text) { toast('⚠ Texte vide — écrivez ou collez le contenu à analyser'); return; }
-  var segments = _ocrSegmentJobs(text);
-  var results = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
+  var oneLine = text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  var words = oneLine.match(/[a-zA-ZÀ-ÿ]{2,}/g) || [];
+  if (words.length < 3) { toast('⚠ Texte insuffisant — moins de 3 mots reconnus'); return; }
+  var parsed = parseSmartInput(oneLine);
+  parsed.name = (parsed.name || '').replace(/[=@€©\\<>°~|#+*%^&\[\]{}()]/g, ' ')
+    .replace(/\b\d{1,2}[h:]\d{2}\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+  if (!parsed.name || parsed.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length < 3)
+    parsed.name = oneLine.replace(/[=@€©\\<>°~|]/g,'').substring(0, 60).trim();
+  if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
   var list  = document.getElementById('ocrCardsList');
   var count = document.getElementById('ocrResultsCount');
-  if (!results.length) {
-    if (list) list.innerHTML = '<div style="text-align:center;padding:var(--s5);color:var(--t-3);font-size:.84rem">Aucun travail détecté — vérifiez les noms de travaux.</div>';
-    if (count) count.textContent = '0';
-    toast('⚠ Aucun travail trouvé dans ce texte');
-    return;
-  }
-  _ocrResults = results;
-  _ocrRenderResults(results);
-  toast('✓ ' + results.length + ' travail' + (results.length > 1 ? 's' : '') + ' détecté' + (results.length > 1 ? 's' : ''));
+  _ocrResults = [parsed];
+  _ocrRenderResults([parsed]);
+  if (count) count.textContent = '1';
+  toast('✓ 1 travail détecté');
 }
 
 function _ocrShowStep(name) {
@@ -6582,9 +6596,38 @@ function _ocrActivateKey() {
   toast('✓ Vision IA activée');
 }
 
+function saveApiKey() {
+  var input = document.getElementById('settingsApiKeyInput');
+  var key = input ? input.value.trim() : '';
+  var status = document.getElementById('settingsApiKeyStatus');
+  if (!key) {
+    // Clear key
+    localStorage.removeItem('smartplan_claude_key');
+    if (status) status.textContent = 'Clé supprimée.';
+    return;
+  }
+  if (!key.startsWith('sk-ant-')) {
+    toast('⚠ Clé invalide — elle doit commencer par sk-ant-');
+    return;
+  }
+  localStorage.setItem('smartplan_claude_key', key);
+  if (input) input.value = '';
+  if (status) status.textContent = '✓ Clé sauvegardée — analyse photo activée.';
+  _ocrRefreshKeyUI();
+  toast('✓ Clé API sauvegardée');
+}
+
+function _initSettingsApiKey() {
+  var status = document.getElementById('settingsApiKeyStatus');
+  if (!status) return;
+  var key = localStorage.getItem('smartplan_claude_key');
+  status.textContent = key ? '✓ Clé en place — analyse photo active.' : 'Aucune clé — analyse photo désactivée.';
+}
+
 var _OCR_VISION_PROMPT =
   'Tu es un expert en gestion de chantiers de construction québécois.\n\n'
-  + 'Analyse cette image (photo, soumission papier, notes manuscrites, PDF) et extrait TOUS les travaux visibles.\n\n'
+  + 'Analyse cette image (photo, soumission papier, notes manuscrites, PDF).\n\n'
+  + 'Cette photo décrit UN SEUL travail. Retourne TOUJOURS exactement un seul objet job, jamais plusieurs. Fusionne toutes les lignes de la photo en un seul travail.\n\n'
   + 'Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après.\n\n'
   + '{\n  "jobs": [\n    {\n'
   + '      "name": "titre court du travail (ex: Terrasse composite Tremblay)",\n'
@@ -6600,7 +6643,7 @@ var _OCR_VISION_PROMPT =
   + '      "notes": "autres informations utiles ou null"\n'
   + '    }\n  ]\n}\n\n'
   + 'Règles:\n'
-  + '- Crée plusieurs entrées si l\'image contient plusieurs travaux distincts\n'
+  + '- UN SEUL job par photo, toujours\n'
   + '- Déduis le type de travaux selon le contexte même si non explicite\n'
   + '- priority: délai immédiat=urgent, demandé bientôt=high, standard=medium, flexible=low\n'
   + '- Si champ absent ou illisible: utilise null (jamais de chaîne vide)\n'
@@ -6682,7 +6725,7 @@ function _ocrWithClaudeVision(files, apiKey) {
 
       _ocrResults = jobs.map(function(j) {
         return {
-          name:     (j.name     || '').trim(),
+          name:     _ocrCleanName((j.name || '').trim()),
           client:   j.client   || '',
           phone:    j.phone    || '',
           email:    j.email    || '',
@@ -6693,7 +6736,7 @@ function _ocrWithClaudeVision(files, apiKey) {
           priority: /^(urgent|high|medium|low)$/.test(j.priority) ? j.priority : 'medium',
           notes:    [j.notes, j.date ? '📅 ' + j.date : ''].filter(Boolean).join(' · ')
         };
-      }).filter(function(j) { return j.name.length > 0; });
+      }).filter(function(j) { return j.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length >= 5; });
 
       if (!_ocrResults.length) { _ocrShowStep('empty'); return; }
 
@@ -6727,23 +6770,19 @@ function ocrHandleFiles(files) {
     return;
   }
 
-  // Fallback: Tesseract
-  _ocrSetScanLabel('Chargement du module OCR…', 'Connexion internet requise');
-  var _loadTimeout = setTimeout(function() {
-    _ocrShowStep('source');
-    toast('⚠ Délai dépassé — vérifiez votre connexion');
-  }, 30000);
-  _loadTesseract().then(function(T) {
-    clearTimeout(_loadTimeout);
-    // Restore raw-text section for Tesseract mode
-    var rd = document.getElementById('ocrRawDetails');
-    if (rd) rd.style.display = '';
-    _ocrProcessFiles(arr, T);
-  }).catch(function() {
-    clearTimeout(_loadTimeout);
-    _ocrShowStep('source');
-    toast('⚠ Module OCR indisponible (connexion ?)');
-  });
+  // No API key — show inline prompt instead of Tesseract
+  _ocrShowStep('source');
+  var status = document.getElementById('ocrAiStatus');
+  if (status) status.innerHTML =
+    '<div style="background:var(--surface-2);border-radius:var(--r-md);padding:14px;margin-top:10px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:6px">🔑 Clé API requise pour analyser les photos</div>'
+    + '<div style="font-size:12px;color:var(--t-3);margin-bottom:10px">Colle ta clé Anthropic ci-dessous — elle est sauvegardée sur ton appareil uniquement.</div>'
+    + '<div style="display:flex;gap:8px">'
+    + '<input id="ocrKeyInput" type="password" placeholder="sk-ant-api03-…" style="flex:1;padding:8px 10px;background:var(--surface-3,#1a1a2e);border:1px solid var(--line-1);border-radius:var(--r-sm);color:var(--t-1);font-size:13px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+    + '<button type="button" onclick="_ocrActivateKey()" style="padding:8px 14px;background:var(--tint,#3b82f6);color:#fff;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer">Sauvegarder</button>'
+    + '</div>'
+    + '<a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="font-size:11px;color:var(--tint,#3b82f6);display:block;margin-top:8px">Obtenir une clé API →</a>'
+    + '</div>';
 }
 
 function _ocrSetScanLabel(label, sub) {
@@ -6879,8 +6918,24 @@ function _ocrProcessFiles(files, T) {
     if (rawArea)    rawArea.value = clean;
     if (rawDetails) rawDetails.removeAttribute('open');
     if (!clean) { _ocrShowStep('empty'); return; }
-    var segments = _ocrSegmentJobs(clean);
-    _ocrResults = segments.map(_ocrParseSegment).filter(function(j) { return j && j.name && j.name.length > 1; });
+
+    // Merge all lines into one block, pass directly to parseSmartInput — one job per photo
+    var oneLine = clean.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    // Require at least 3 alphabetic words before creating a job
+    var words = oneLine.match(/[a-zA-ZÀ-ÿ]{2,}/g) || [];
+    if (words.length < 3) { _ocrShowStep('empty'); return; }
+
+    var parsed = parseSmartInput(oneLine);
+    // Clean OCR artifacts from name
+    parsed.name = (parsed.name || '').replace(/[=@€©\\<>°~|#+*%^&\[\]{}()]/g, ' ')
+      .replace(/\b\d{1,2}[h:]\d{2}\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+    // Fallback name: first meaningful phrase from the raw line
+    if (!parsed.name || parsed.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length < 3) {
+      parsed.name = oneLine.replace(/[=@€©\\<>°~|]/g,'').substring(0, 60).trim();
+    }
+    if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
+
+    _ocrResults = [parsed];
     if (!_ocrResults.length) {
       // Still show results step with raw text editing (user can correct and reparse)
       var list = document.getElementById('ocrCardsList');
@@ -6898,64 +6953,66 @@ function _ocrProcessFiles(files, T) {
   next();
 }
 
-/* ─ Segment raw OCR into per-job chunks ─ */
+/* ─ Always return exactly ONE segment from raw OCR text ─ */
 function _ocrSegmentJobs(text) {
-  // Strategy 1: numbered list
+  // When multi-job structure is explicit (numbered/bulleted list with 2+ items), split.
+  // For everything else: merge into one block → one job per photo.
   var numbered = text.match(/(?:^|\n)\s*\d+[\.\)]\s+.+/g);
   if (numbered && numbered.length >= 2)
     return numbered.map(function(s) { return s.replace(/^\s*\d+[\.\)]\s+/, '').trim(); });
 
-  // Strategy 2: bullet list
   var bullets = text.match(/(?:^|\n)\s*[-•–*]\s+.+/g);
   if (bullets && bullets.length >= 2)
     return bullets.map(function(s) { return s.replace(/^\s*[-•–*]\s+/, '').trim(); });
 
-  // Strategy 3: paragraphs separated by blank line
-  var paras = text.split(/\n{2,}/).map(function(s) { return s.trim(); }).filter(Boolean);
-  if (paras.length >= 2) return paras;
-
-  // Strategy 4: merge short lines sensibly
-  var lines = text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 4; });
-  if (lines.length >= 2) {
-    var merged = [lines[0]];
-    for (var i = 1; i < lines.length; i++) {
-      var prev = merged[merged.length - 1];
-      // New job heuristic: new capitalized word after a sentence-end
-      if (/^[A-ZÀ-ÖÙ-Þ]/.test(lines[i]) && /[.!?:;]$/.test(prev)) {
-        merged.push(lines[i]);
-      } else {
-        merged[merged.length - 1] += ' ' + lines[i];
-      }
-    }
-    return merged.length >= 2 ? merged : [text];
-  }
-  return [text];
+  // All other cases: merge everything into a single block
+  var merged = (text || '').replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return [merged];
 }
 
-/* ─ Parse one segment into a job object ─ */
-function _ocrParseSegment(seg) {
-  var clean = (seg || '').replace(/\f/g, '\n').replace(/\r\n?/g, '\n').trim();
-  var parsed = parseSmartInput(clean);
+/* ─ Clean OCR artifacts from any string ─ */
+function _ocrCleanName(s) {
+  // Remove characters that are not letters, digits, spaces, hyphens, apostrophes, commas, dots
+  s = (s || '').replace(/[=@€©\\<>°~|#+*%^&[\]{}()]/g, ' ');
+  // Remove timestamps (17:32, 8h30…)
+  s = s.replace(/\b\d{1,2}[h:]\d{2}\b/gi, ' ');
+  // Collapse spaces, trim punctuation edges
+  s = s.replace(/\s{2,}/g, ' ').trim();
+  s = s.replace(/^[\s\-_.,;:!?]+|[\s\-_.,;:!?]+$/g, '').trim();
+  return s;
+}
 
-  // Strengthen name: parseSmartInput leftover can be garbage on messy OCR
-  var hasName = parsed.name && parsed.name.length > 2 && /[a-zA-ZÀ-ÿ]{2,}/.test(parsed.name);
+function _ocrParseSegment(seg) {
+  var raw = (seg || '').replace(/\f/g, ' ').replace(/\r\n?/g, ' ').trim();
+
+  // Strip lines that contain no alphabet characters (pure symbols / timestamps)
+  var letters = raw.replace(/[^a-zA-ZÀ-ÿ]/g, '');
+  if (letters.length < 5) return null; // not enough text to form a job
+
+  // Keep only lines that have at least 2 actual letters (remove OCR noise lines)
+  var cleanLines = raw.split(/\n/).filter(function(l) {
+    return (l.replace(/[^a-zA-ZÀ-ÿ]/g, '').length >= 2);
+  });
+  var cleanSeg = cleanLines.length ? cleanLines.join(' ') : raw;
+  cleanSeg = cleanSeg.replace(/\s{2,}/g, ' ').trim();
+
+  // Pass full text to parseSmartInput — same as voice dictation
+  var parsed = parseSmartInput(cleanSeg);
+
+  // Clean OCR artifacts from the name
+  if (parsed.name) parsed.name = _ocrCleanName(parsed.name);
+
+  // If name is still unusable, derive it from the cleaned segment
+  var hasName = parsed.name && /[a-zA-ZÀ-ÿ]{3,}/.test(parsed.name);
   if (!hasName) {
-    // Walk lines top-to-bottom, pick first one with >= 3 letters
-    var lines = clean.split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      var l = lines[i].replace(/^[-•–*\d.\)\s]+/, '').trim();
-      if (l.length > 2 && /[a-zA-ZÀ-ÿ]{2,}/.test(l)) {
-        parsed.name = l.substring(0, 60);
-        break;
-      }
-    }
-    // Last resort: first 60 chars of the whole segment
-    if (!parsed.name || parsed.name.length < 2) {
-      parsed.name = clean.replace(/\s+/g, ' ').substring(0, 60).trim();
-    }
+    // Take up to first 60 chars of cleanSeg, cleaned
+    parsed.name = _ocrCleanName(cleanSeg).substring(0, 60).trim();
   }
-  // Capitalise first letter
-  if (parsed.name) parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
+
+  // Final name cleanup and capitalisation
+  parsed.name = _ocrCleanName(parsed.name).substring(0, 60).trim();
+  if (!parsed.name || parsed.name.replace(/[^a-zA-ZÀ-ÿ]/g,'').length < 2) return null;
+  parsed.name = parsed.name.charAt(0).toUpperCase() + parsed.name.slice(1);
   return parsed;
 }
 
@@ -7015,8 +7072,10 @@ function _ocrRenderResults(jobs) {
   var count = document.getElementById('ocrResultsCount');
   if (!list) return;
   list.innerHTML = '';
-  jobs.forEach(function(job, i) { list.appendChild(_ocrBuildCard(job, i)); });
-  if (count) count.textContent = jobs.length;
+  // Always show only the first job — one photo = one card
+  var single = jobs.slice(0, 1);
+  single.forEach(function(job, i) { list.appendChild(_ocrBuildCard(job, i)); });
+  if (count) count.textContent = single.length;
 }
 
 function _ocrReadCard(card) {
@@ -9120,20 +9179,94 @@ function loadPhotoPreview(files) {
     var img = document.getElementById('photoPreview');
     img.src = _taskPhotoPreview;
     document.getElementById('photoPreviewContainer').style.display = 'block';
+    // Analyse with Claude Vision if API key available
+    parseJobFromImage(e.target.result, file.type || 'image/jpeg');
   };
   reader.readAsDataURL(file);
-  var parsed = parseJobFromImage(file);
-  if (parsed.name && !document.getElementById('photoName').value) document.getElementById('photoName').value = parsed.name;
-  buildPhotoTypeSelect(parsed.type);
-  document.getElementById('photoPrio').value = parsed.priority || 'medium';
 }
 
-function parseJobFromImage(imageFile) {
-  var name = imageFile.name ? imageFile.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ') : 'Travaux photo';
-  return {
-    name: name, client: '', location: '', duration: '', priority: 'medium',
-    type: Object.keys(getMergedJobTypes())[0] || 'general'
-  };
+function parseJobFromImage(dataURL, mimeType) {
+  var apiKey = _ocrGetKey();
+  var nameEl     = document.getElementById('photoName');
+  var clientEl   = document.getElementById('photoClient');
+  var locationEl = document.getElementById('photoLocation');
+  var durationEl = document.getElementById('photoDuration');
+  var prioEl     = document.getElementById('photoPrio');
+
+  if (!apiKey) {
+    // No key: set a neutral placeholder so user knows to fill manually
+    if (nameEl && !nameEl.value) nameEl.placeholder = 'Titre des travaux';
+    return;
+  }
+
+  // Show loading state
+  if (nameEl) { nameEl.value = ''; nameEl.placeholder = 'Analyse en cours…'; }
+
+  // Strip the data:...;base64, prefix
+  var base64 = dataURL.replace(/^data:[^;]+;base64,/, '');
+  var media  = (mimeType || 'image/jpeg').replace(/^data:/, '').split(';')[0] || 'image/jpeg';
+
+  var prompt = 'Tu analyses une photo de notes manuscrites ou imprimées décrivant UN seul travail de terrain. '
+    + 'Retourne UNIQUEMENT un objet JSON valide, sans texte autour, sans backticks markdown. '
+    + 'Clés exactes: titre, client, adresse, telephone, duree, date, priorite, type, montant. '
+    + 'Pour "type" choisis parmi: Émondage, Abattage, Asphalte, Pavage, Béton, Ciment, Carrelage, Montage lignes, Autre. '
+    + 'Pour "priorite" choisis parmi: Basse, Moyenne, Urgente. '
+    + 'Pour "date" format AAAA-MM-JJ, année 2026 si non précisée. '
+    + 'Pour "duree" en heures (ex: 6h). '
+    + 'Si une info est absente mets null. Ne jamais inventer de valeur.';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: media, data: base64 } },
+          { type: 'text', text: prompt }
+        ]
+      }]
+    })
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    console.log('[Vision] réponse API:', data);
+    var text = (data.content && data.content[0]) ? (data.content[0].text || '') : '';
+    text = text.replace(/```json|```/g, '').trim();
+    var j;
+    try { j = JSON.parse(text); } catch(e) { console.error('[Vision] JSON invalide:', text); throw new Error('JSON invalide'); }
+
+    if (nameEl)     nameEl.value     = j.titre    || '';
+    if (clientEl)   clientEl.value   = j.client   || '';
+    if (locationEl) locationEl.value = j.adresse  || '';
+    if (durationEl) durationEl.value = j.duree    || '';
+
+    // Priority mapping
+    var prioMap = { 'Urgente': 'urgent', 'Haute': 'high', 'Moyenne': 'medium', 'Basse': 'low' };
+    if (prioEl && j.priorite) prioEl.value = prioMap[j.priorite] || 'medium';
+
+    // Type: try to match against job types
+    if (j.type) {
+      var sel = document.getElementById('photoType');
+      if (sel) {
+        var opts = Array.prototype.slice.call(sel.options);
+        var match = opts.find(function(o) { return o.text.toLowerCase().includes(j.type.toLowerCase()) || (o.value && j.type.toLowerCase().includes(o.value.toLowerCase())); });
+        if (match) sel.value = match.value;
+      }
+    }
+
+    // Reset placeholder
+    if (nameEl) nameEl.placeholder = 'Titre des travaux';
+  }).catch(function(err) {
+    console.error('[Vision] erreur:', err);
+    if (nameEl) { nameEl.value = ''; nameEl.placeholder = 'Titre des travaux'; }
+    toast('⚠ Impossible d\'analyser la photo — entre les infos manuellement');
+  });
 }
 
 function createPhotoDraft() {

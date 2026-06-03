@@ -7587,6 +7587,10 @@ function parseSmartInput(originalText) {
   work = work.replace(/\bpour\s+(?=(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['']hui)\b)/gi, ' ');
 
   // ── Email ─────────────────────────────────────────────────────────────────
+  // Reconstruire les emails dictés oralement (iOS STT)
+  // "lapointe arobase gmail point com" / "lapointe at gmail dot com" / "lapointe gmail com"
+  work = work.replace(/\b([\w.\-+]+)\s+(?:commercial|arobase|at|@)\s+([\w.\-]+)\s+(?:point|dot|\.)\s+([a-z]{2,})\b/gi, '$1@$2.$3');
+  work = work.replace(/\b([\w.\-+]+)\s+((?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus)(?:\.(?:com|ca|fr|net|org))?)\s+(com|ca|fr|net|org)\b/gi, '$1@$2.$3');
   var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
   if (em) result.email = em[1];
 
@@ -7984,82 +7988,35 @@ function parseSmartInput(originalText) {
     }
   }
 
-  // ── Titre / Nom de la tâche (leftover) ───────────────────────────────────
-  // Retirer séquences de chiffres brutes ≥ 7 (numéros de téléphone mal découpés, etc.)
-  work = work.replace(/\b\d{7,}\b/g, ' ');
-  // Retirer marqueurs de discours parasites
-  work = work.replace(/\b(?:puis|et\s+puis|alors|donc|bon(?:\s+ben)?|ok)\b/gi, ' ');
-  work = work.replace(/\btype\b/gi, ' ');
-  work = work.replace(/\bde\s+(?:job|travail|boulot|ouvrage)\b/gi, ' ');
-  work = work.replace(/\bd['']une?\s+(?:dur[eé]e\s+(?:de\s+)?)?/gi, ' ');
-  work = work.replace(/\bde\s+dur[eé]e\b/gi, ' ');
-  work = work.replace(/\bpour\s+moyennement\b/gi, ' ');
-  // Supprimer prépositions isolées (À/à non capturées par le regex temps, Au résiduel d'adresse, etc.)
-  work = work.replace(/\s+[àÀ]\s+/g, ' ');
-  work = work.replace(/\s+au\s+/gi, ' ');
-  var leftover = work.replace(/\s+/g, ' ').trim();
-  leftover = leftover.replace(/^[\s,\.\-]+|[\s,\.\-]+$/g, '');
-  // Supprimer prépositions/articles en début ou fin (boucle pour en supprimer plusieurs d'affilée)
-  var _prevLeft;
-  do {
-    _prevLeft = leftover;
-    leftover = leftover.replace(/^(?:type|par|à|au|aux|pour|de|et|du|le|la|les|en|d[''])\s+/i, '');
-    leftover = leftover.replace(/\s+(?:à|de|et|du|le|la|les|au|aux|en|pour|d['']|toute?\s+la|toute?|urgent[e]?|urgente?|urgence|urge|rgente?|priorit[eé]|moyennement)$/i, '');
-  } while (leftover !== _prevLeft);
-  // Supprimer articles/prépositions isolés au milieu du titre
-  leftover = leftover.replace(/\s+\b(?:au|aux|le|la|les|un|une|pour|du)\b\s+/gi, ' ');
-  // Supprimer la ville en fin de titre si elle est déjà dans le lieu
-  if (result.location) {
-    var _locTail = result.location.split(/[\s,]+/).filter(Boolean).pop() || '';
-    if (_locTail.length > 2) leftover = leftover.replace(new RegExp('\\s+' + _locTail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i'), '');
-  }
-  // Supprimer tokens temps/durée résiduels (ex: "8h00", "6h", artefacts STT type "O3")
-  leftover = leftover.replace(/\b\d+h\d*\b/gi, ' ');
-  leftover = leftover.replace(/\s+[A-Z]\d+\b/g, ' ');
-  // Supprimer résidus de numéros de téléphone
-  leftover = leftover.replace(/\b(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}\b/g, ' ');
-  leftover = leftover.replace(/\b\d{3}[\s.\-]\d{4}\b/g, ' ');
-  // Couper le titre dès qu'un mot-clé de champ apparaît
-  leftover = leftover.replace(/\s+(?:adresse|courriel|email|e-mail|t[eé]l[eé]phone?|cell(?:ulaire)?|montant|dur[eé]e|priorit[eé]|urgent[e]?|urgence|meilleur|argent|pour\s+le|chez|job\s+de|\$|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre|janvier|f[eé]vrier|mars|avril|mai|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche).*/i, '');
-  // Retirer le nom du client (complet + prénom seul) s'il se retrouve dans le titre
-  if (result.client) {
-    leftover = leftover.replace(new RegExp('\\b' + result.client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
-    var _clientFirstName = result.client.split(/\s+/)[0];
-    if (_clientFirstName && _clientFirstName.length > 2) {
-      leftover = leftover.replace(new RegExp('\\b' + _clientFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+  // ── Titre / Nom de la tâche (généré automatiquement) ─────────────────────
+  (function() {
+    var _jbT = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
+    var _typeDisplayFb = { pave:'Pavé uni', asphaltage:'Asphaltage', hauteur:'Travaux en hauteur', abattage:'Abattage d\'arbres', emondage:'Émondage', carrelage:'Carrelage', montage:'Montage', maconnerie:'Maçonnerie' };
+    var _typeLbl = result.type
+      ? ((_jbT[result.type] && (_jbT[result.type].name || _jbT[result.type].short)) || _typeDisplayFb[result.type] || (result.type.charAt(0).toUpperCase() + result.type.slice(1)))
+      : null;
+    var _suffix = '';
+    if (result.client) {
+      _suffix = result.client;
+    } else if (result.date) {
+      var _moisFr = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      var _dp = new Date(result.date + 'T12:00:00');
+      _suffix = _dp.getDate() + ' ' + _moisFr[_dp.getMonth()];
+    } else if (result.dayIndex === 0) {
+      _suffix = "aujourd'hui";
+    } else if (result.dayIndex === 1) {
+      _suffix = 'demain';
     }
-  }
-  // Retirer le mot "Job" isolé
-  leftover = leftover.replace(/\bJob\b/gi, ' ');
-  // Retirer le nom du type de travaux du titre s'il est déjà dans TYPE
-  if (result.type) {
-    var _typeNames = [];
-    var _jbForTitle = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
-    var _typeDisplayFallbackTitle = { pave:'Pavé uni', asphaltage:'Asphaltage', hauteur:'Travaux en hauteur', abattage:'Abattage d\'arbres', emondage:'Émondage', carrelage:'Carrelage', montage:'Montage', maconnerie:'Maçonnerie' };
-    var _tn = (_jbForTitle[result.type] && (_jbForTitle[result.type].name || _jbForTitle[result.type].short)) || _typeDisplayFallbackTitle[result.type];
-    if (_tn) _typeNames.push(_tn);
-    _typeNames.push(result.type);
-    _typeNames.forEach(function(tn) {
-      leftover = leftover.replace(new RegExp('\\b' + tn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
-    });
-  }
-  // Retirer chiffres isolés, a.m./p.m., marqueurs orphelins en fin de titre
-  leftover = leftover.replace(/\b\d{7,}\b/g, ' ');
-  leftover = leftover.replace(/\b\d{1,2}\b(?!\s*h\b)/g, ' ');
-  leftover = leftover.replace(/\b(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi, ' ');
-  leftover = leftover.replace(/\s+(?:puis|et\s+puis|alors|pour|et)\s*$/i, '');
-  leftover = leftover.replace(/\s{2,}/g, ' ').trim();
-  if (!leftover || leftover.length < 2) {
-    if (result.type) {
-      var _jb = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
-      leftover = (_jb[result.type] && (_jb[result.type].name || _jb[result.type].short)) || result.type;
+    if (_typeLbl && _suffix) {
+      result.name = _typeLbl + ' — ' + _suffix;
+    } else if (_typeLbl) {
+      result.name = _typeLbl;
+    } else if (_suffix) {
+      result.name = _suffix;
     } else {
-      var seg0 = (text.split(/[,;]/)[0] || text).trim();
-      leftover = (result.client && seg0.toLowerCase() === result.client.toLowerCase()) ? text : seg0;
+      result.name = (text.split(/[,;]/)[0] || text).trim().slice(0, 60);
     }
-  }
-  if (leftover) leftover = leftover.charAt(0).toUpperCase() + leftover.slice(1);
-  result.name = leftover;
+  })();
   return result;
 }
 

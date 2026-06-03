@@ -2098,6 +2098,22 @@
     }
     .btn-cancel:active, .btn-primary:active, .btn-secondary:active, .btn-del:active, .btn-del-no:active, .btn-del-yes:active, .btn-geo:active { transform: scale(0.97); }
 
+    /* Maps modal */
+    .maps-modal-title { font-size: 14px; color: var(--t-3); text-align: center; margin-bottom: var(--s4); padding: 0 var(--s3); word-break: break-word; }
+    .btn-map {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; padding: 14px 18px; margin-bottom: 10px;
+      background: var(--surface-2); border: 1px solid var(--line-1);
+      border-radius: var(--r-lg); color: var(--t-1);
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: background var(--t-fast);
+    }
+    .btn-map:active { transform: scale(0.97); background: var(--surface-3); }
+    .btn-map .map-icon { font-size: 24px; flex-shrink: 0; }
+    .btn-map .map-label { flex: 1; text-align: left; }
+    .job-loc-link { cursor: pointer; color: var(--t-3); transition: color var(--t-fast); display: inline-flex; align-items: center; gap: 3px; }
+    .job-loc-link:hover { color: var(--tint); }
+
     .del-confirm {
       display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap;
       padding: var(--s3); margin-top: var(--s3);
@@ -3821,6 +3837,24 @@
 </div>
 
 <!-- TOAST -->
+<!-- MAPS MODAL -->
+<div class="overlay" id="mapsOverlay" onclick="overlayClick(event,'mapsOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('mapsOverlay')" aria-label="Fermer">✕</button>
+    <h3>Ouvrir dans…</h3>
+    <p class="maps-modal-title" id="mapsModalAddr"></p>
+    <button type="button" class="btn-map" onclick="openInMaps('google')">
+      <span class="map-icon">🗺️</span><span class="map-label">Google Maps</span>
+    </button>
+    <button type="button" class="btn-map" onclick="openInMaps('apple')">
+      <span class="map-icon">🍎</span><span class="map-label">Apple Plans</span>
+    </button>
+    <button type="button" class="btn-map" onclick="openInMaps('waze')">
+      <span class="map-icon">🚗</span><span class="map-label">Waze</span>
+    </button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -5065,7 +5099,13 @@ function buildJobCard(task, w, jobsDef, opts) {
     meta.push('<span style="color:#4ade80;font-weight:600">' + esc(_cardAmt) + '</span>');
   }
   meta.push('<span>' + esc(jd.short || jd.name) + '</span>');
-  if (task.location) meta.push('<span>' + esc(task.location) + '</span>');
+  if (task.location) {
+    if (task.geoLat && task.geoLon) {
+      meta.push('<span class="job-loc-link" onclick="event.stopPropagation();openMapsModal(' + task.geoLat + ',' + task.geoLon + ',' + JSON.stringify(task.location) + ')">🗺️ ' + esc(task.location) + '</span>');
+    } else {
+      meta.push('<span>' + esc(task.location) + '</span>');
+    }
+  }
   var durLabel = task.duration ? esc(task.duration) : 'Durée non définie';
   var durCls = task.duration ? '' : ' meta-soft';
   meta.push('<span class="meta-duration' + durCls + '">⏱ ' + durLabel + '</span>');
@@ -7349,7 +7389,11 @@ function _vpGeocode(loc) {
     if (geo) {
       _voiceParsedResult.geoLat = geo.lat;
       _voiceParsedResult.geoLon = geo.lon;
-      if (el) { el.textContent = '📍 Adresse confirmée'; el.style.color = 'var(--green,#4caf50)'; }
+      if (el) {
+        var _loc = (_voiceParsedResult && _voiceParsedResult.location) || '';
+        el.innerHTML = '📍 Adresse confirmée &nbsp;<button type="button" style="background:rgba(118,150,255,0.15);border:1px solid rgba(118,150,255,0.35);border-radius:6px;color:var(--tint);font-size:12px;padding:2px 8px;cursor:pointer" onclick="openMapsModal(' + geo.lat + ',' + geo.lon + ',' + JSON.stringify(_loc) + ')">🗺️ Ouvrir</button>';
+        el.style.color = 'var(--green,#4caf50)';
+      }
       if (inp) inp.style.borderColor = 'var(--green,#4caf50)';
     } else {
       _voiceParsedResult.geoLat = null;
@@ -9071,6 +9115,29 @@ function closeModal(id) {
   }, { passive: false });
 })();
 function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
+
+/* ════════════════════════════════════════════════════════════════
+   MAPS MODAL
+════════════════════════════════════════════════════════════════ */
+var _mapsCoords = null;
+
+function openMapsModal(lat, lon, label) {
+  _mapsCoords = { lat: lat, lon: lon };
+  var addrEl = document.getElementById('mapsModalAddr');
+  if (addrEl) addrEl.textContent = label || '';
+  openModal('mapsOverlay');
+}
+
+function openInMaps(app) {
+  if (!_mapsCoords) return;
+  var lat = _mapsCoords.lat, lon = _mapsCoords.lon;
+  var url;
+  if (app === 'google') url = 'https://maps.google.com/?q=' + lat + ',' + lon;
+  else if (app === 'apple') url = 'maps://maps.apple.com/?ll=' + lat + ',' + lon;
+  else if (app === 'waze') url = 'https://waze.com/ul?ll=' + lat + ',' + lon;
+  if (url) window.open(url, '_blank');
+  closeModal('mapsOverlay');
+}
 
 var _sheetDate = null;
 var _sheetMode = 'schedule'; // 'schedule' | 'bank'

@@ -7527,10 +7527,10 @@ function _buildVoicePreviewHTML(parsed) {
     var _amtFmt = formatAmount(parsed.amount) || parsed.amount;
     html += row('Montant', _amtFmt);
   }
-  if (parsed.priority && parsed.priority !== 'medium') {
-    var prioLabel = {urgent:'Urgente', high:'Haute', low:'Basse'};
-    html += row('Priorité', prioLabel[parsed.priority] || parsed.priority);
-  }
+  (function() {
+    var prioLabel = { urgent:'Urgente', high:'Haute', medium:'Normale', low:'Basse' };
+    html += row('Priorité', prioLabel[parsed.priority] || 'Normale');
+  })();
   return html;
 }
 
@@ -7587,7 +7587,7 @@ function parseSmartInput(originalText) {
   work = work.replace(/\bpour\s+(?=(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['']hui)\b)/gi, ' ');
 
   // ── Email ─────────────────────────────────────────────────────────────────
-  var em = clip(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
+  var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
   if (em) result.email = em[1];
 
   // ── Téléphone ─────────────────────────────────────────────────────────────
@@ -8021,9 +8021,27 @@ function parseSmartInput(originalText) {
   leftover = leftover.replace(/\b\d{3}[\s.\-]\d{4}\b/g, ' ');
   // Couper le titre dès qu'un mot-clé de champ apparaît
   leftover = leftover.replace(/\s+(?:adresse|courriel|email|e-mail|t[eé]l[eé]phone?|cell(?:ulaire)?|montant|dur[eé]e|priorit[eé]|urgent[e]?|urgence|meilleur|argent|pour\s+le|chez|job\s+de|\$|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre|janvier|f[eé]vrier|mars|avril|mai|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche).*/i, '');
-  // Retirer le nom du client s'il se retrouve dans le titre
+  // Retirer le nom du client (complet + prénom seul) s'il se retrouve dans le titre
   if (result.client) {
-    leftover = leftover.replace(new RegExp('\\s+' + result.client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b.*$', 'i'), '');
+    leftover = leftover.replace(new RegExp('\\b' + result.client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+    var _clientFirstName = result.client.split(/\s+/)[0];
+    if (_clientFirstName && _clientFirstName.length > 2) {
+      leftover = leftover.replace(new RegExp('\\b' + _clientFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+    }
+  }
+  // Retirer le mot "Job" isolé
+  leftover = leftover.replace(/\bJob\b/gi, ' ');
+  // Retirer le nom du type de travaux du titre s'il est déjà dans TYPE
+  if (result.type) {
+    var _typeNames = [];
+    var _jbForTitle = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
+    var _typeDisplayFallbackTitle = { pave:'Pavé uni', asphaltage:'Asphaltage', hauteur:'Travaux en hauteur', abattage:'Abattage d\'arbres', emondage:'Émondage', carrelage:'Carrelage', montage:'Montage', maconnerie:'Maçonnerie' };
+    var _tn = (_jbForTitle[result.type] && (_jbForTitle[result.type].name || _jbForTitle[result.type].short)) || _typeDisplayFallbackTitle[result.type];
+    if (_tn) _typeNames.push(_tn);
+    _typeNames.push(result.type);
+    _typeNames.forEach(function(tn) {
+      leftover = leftover.replace(new RegExp('\\b' + tn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), ' ');
+    });
   }
   // Retirer chiffres isolés, a.m./p.m., marqueurs orphelins en fin de titre
   leftover = leftover.replace(/\b\d{7,}\b/g, ' ');

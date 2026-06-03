@@ -3665,7 +3665,7 @@
     <button type="button" class="modal-close" onclick="closeModal('voiceOverlay')" aria-label="Fermer">✕</button>
     <h3>🎙 Dicter des travaux</h3>
     <p style="font-size:.84rem;color:var(--t3);margin-bottom:12px">Ex : <em>"Asphaltage chez Tremblay samedi à 8h priorité haute"</em></p>
-    <div class="mic-wrap">
+    <div class="mic-wrap" id="voiceMicWrap">
       <button type="button" class="mic-btn" id="voiceStatus" onclick="toggleMic()" aria-label="Démarrer la dictée">🎤</button>
       <div class="mic-label" id="voiceLabel">Toucher pour parler</div>
     </div>
@@ -4425,31 +4425,31 @@ var _geocodeCache = {};
 
 function normaliserAdresse(adresse) {
   var a = adresse.trim();
-  // Abréviations
-  a = a.replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-');
-  a = a.replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-');
-  // Villes québécoises avec tirets obligatoires
-  a = a.replace(/saint[\s-]jean[\s-]sur[\s-]le[\s-]richelieu/gi, 'Saint-Jean-sur-Richelieu');
-  a = a.replace(/saint[\s-]jean[\s-]sur[\s-]richelieu/gi, 'Saint-Jean-sur-Richelieu');
-  a = a.replace(/saint[\s-]jean[\s-]richelieu/gi, 'Saint-Jean-sur-Richelieu');
-  a = a.replace(/\bSaint-Jean(?:\s+Richelieu|\s+sur\s+Richelieu)?\b(?!-sur-Richelieu)/gi, 'Saint-Jean-sur-Richelieu');
-  a = a.replace(/trois[\s-]rivi[eè]res/gi, 'Trois-Rivières');
-  a = a.replace(/sainte[\s-]julie/gi, 'Sainte-Julie');
-  a = a.replace(/saint[\s-]lambert/gi, 'Saint-Lambert');
-  a = a.replace(/mont[\s-]saint[\s-]hilaire/gi, 'Mont-Saint-Hilaire');
-  a = a.replace(/sainte[\s-]th[eé]r[eè]se/gi, 'Sainte-Thérèse');
-  a = a.replace(/saint[\s-]hyacinthe/gi, 'Saint-Hyacinthe');
-  a = a.replace(/saint[\s-]j[eé]r[oô]me/gi, 'Saint-Jérôme');
+  // RÈGLE PRIORITAIRE : toutes les variantes de Saint-Jean-sur-Richelieu
+  a = a.replace(/saint[\s\-]*jean[\s\-]*sur[\s\-]*le[\s\-]*richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/saint[\s\-]*jean[\s\-]*sur[\s\-]*richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/saint[\s\-]*jean[\s\-]*richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  // Autres villes QC courantes
+  a = a.replace(/trois[\s\-]*rivi[eè]res/gi, 'Trois-Rivières');
+  a = a.replace(/mont[\s\-]*saint[\s\-]*hilaire/gi, 'Mont-Saint-Hilaire');
+  a = a.replace(/saint[\s\-]*hyacinthe/gi, 'Saint-Hyacinthe');
+  a = a.replace(/saint[\s\-]*j[eé]r[oô]me/gi, 'Saint-Jérôme');
+  a = a.replace(/sainte[\s\-]*julie/gi, 'Sainte-Julie');
+  a = a.replace(/sainte[\s\-]*th[eé]r[eè]se/gi, 'Sainte-Thérèse');
+  a = a.replace(/saint[\s\-]*lambert/gi, 'Saint-Lambert');
   a = a.replace(/\bbrossard\b/gi, 'Brossard');
   a = a.replace(/\blongueuil\b/gi, 'Longueuil');
-  // Rues mal transcrites
-  a = a.replace(/\bde la salle\b/gi, 'De La Salle');
+  // Noms de rues mal transcrits
+  a = a.replace(/\bde\s+la\s+salle\b/gi, 'De La Salle');
   a = a.replace(/\blasalle\b/gi, 'LaSalle');
+  // Abréviations St- / Ste-
+  a = a.replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-');
+  a = a.replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-');
   // Séparateurs → virgule
   a = a.replace(/\s+[ÀAàa][Uu]?\s+/g, ', ');
   a = a.replace(/\s{2,}/g, ' ').trim();
   // Ajouter QC Canada si absent
-  if (!/\b(?:QC|Québec|Canada)\b/i.test(a)) a = a + ', QC, Canada';
+  if (!/\bQC\b/i.test(a) && !/canada/i.test(a)) a = a + ', QC, Canada';
   return a;
 }
 
@@ -6676,6 +6676,8 @@ function openVoice() {
   _voiceParsedResult = null;
   var ps = document.getElementById('voicePreviewSection');
   if (ps) ps.style.display = 'none';
+  var mw = document.getElementById('voiceMicWrap');
+  if (mw) mw.style.display = '';
   var ts = document.getElementById('voiceTextSection');
   if (ts) ts.style.display = '';
   var bA = document.getElementById('voiceBtnAnalyze');      if (bA) bA.style.display = '';
@@ -7311,10 +7313,12 @@ function analyzeVoicePreview() {
   }
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = 'none';
-  document.getElementById('voiceBtnAnalyze').style.display     = 'none';
-  document.getElementById('voiceBtnBack').style.display        = '';
+  var micWrap = document.getElementById('voiceMicWrap');
+  if (micWrap) micWrap.style.display = 'none';
+  document.getElementById('voiceBtnAnalyze').style.display      = 'none';
+  document.getElementById('voiceBtnBack').style.display         = '';
   document.getElementById('voiceBtnEditDictation').style.display = '';
-  document.getElementById('voiceBtnConfirm').style.display     = '';
+  document.getElementById('voiceBtnConfirm').style.display      = '';
 }
 
 function vpEditLoc() {
@@ -7388,6 +7392,8 @@ function voicePreviewBack() {
     return;
   }
   document.getElementById('voicePreviewSection').style.display = 'none';
+  var micWrap2 = document.getElementById('voiceMicWrap');
+  if (micWrap2) micWrap2.style.display = '';
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = '';
   document.getElementById('voiceBtnAnalyze').style.display      = '';
@@ -7397,17 +7403,17 @@ function voicePreviewBack() {
 }
 
 function voiceBackToDictation() {
-  // Retour au textarea de dictée sans effacer le texte
   _voiceParsedResult = null;
-  var textSection = document.getElementById('voiceTextSection');
-  if (textSection) textSection.style.display = '';
   var previewSection = document.getElementById('voicePreviewSection');
   if (previewSection) previewSection.style.display = 'none';
+  var micWrap3 = document.getElementById('voiceMicWrap');
+  if (micWrap3) micWrap3.style.display = '';
+  var textSection = document.getElementById('voiceTextSection');
+  if (textSection) textSection.style.display = '';
   document.getElementById('voiceBtnAnalyze').style.display      = '';
   document.getElementById('voiceBtnBack').style.display         = 'none';
   document.getElementById('voiceBtnEditDictation').style.display = 'none';
   document.getElementById('voiceBtnConfirm').style.display      = 'none';
-  // Micro inactif, texte brut conservé dans le textarea
   _micUserEdited = false;
   setMicState('idle', 'Toucher pour dicter');
 }
@@ -7923,8 +7929,8 @@ function parseSmartInput(originalText) {
   // Supprimer résidus de numéros de téléphone
   leftover = leftover.replace(/\b(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}\b/g, ' ');
   leftover = leftover.replace(/\b\d{3}[\s.\-]\d{4}\b/g, ' ');
-  // Couper le titre dès qu'un mot-clé de champ apparaît (évite contamination courriel/client/etc.)
-  leftover = leftover.replace(/\s+(?:courriel|email|e-mail|t[eé]l[eé]phone?|cell(?:ulaire)?|chez\s|pour\s+le\s|priorit[eé]|montant|\$).*/i, '');
+  // Couper le titre dès qu'un mot-clé de champ apparaît
+  leftover = leftover.replace(/\s+(?:adresse|courriel|email|e-mail|t[eé]l[eé]phone?|cell(?:ulaire)?|montant|dur[eé]e|priorit[eé]|urgent[e]?|urgence|meilleur|argent|pour\s+le|chez|job\s+de|\$|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre|janvier|f[eé]vrier|mars|avril|mai|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche).*/i, '');
   // Retirer le nom du client s'il se retrouve dans le titre
   if (result.client) {
     leftover = leftover.replace(new RegExp('\\s+' + result.client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b.*$', 'i'), '');

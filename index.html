@@ -4422,37 +4422,59 @@ async function fetchCurrentConditions(lat, lon) {
    GEOCODING — Nominatim (OpenStreetMap, free, no API key)
 ════════════════════════════════════════════════════════════════ */
 var _geocodeCache = {};
+
+function normaliserAdresse(adresse) {
+  var a = adresse.trim();
+  // Abréviations
+  a = a.replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-');
+  a = a.replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-');
+  // Villes québécoises avec tirets obligatoires
+  a = a.replace(/saint[\s-]jean[\s-]sur[\s-]le[\s-]richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/saint[\s-]jean[\s-]sur[\s-]richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/saint[\s-]jean[\s-]richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/\bSaint-Jean(?:\s+Richelieu|\s+sur\s+Richelieu)?\b(?!-sur-Richelieu)/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/trois[\s-]rivi[eè]res/gi, 'Trois-Rivières');
+  a = a.replace(/sainte[\s-]julie/gi, 'Sainte-Julie');
+  a = a.replace(/saint[\s-]lambert/gi, 'Saint-Lambert');
+  a = a.replace(/mont[\s-]saint[\s-]hilaire/gi, 'Mont-Saint-Hilaire');
+  a = a.replace(/sainte[\s-]th[eé]r[eè]se/gi, 'Sainte-Thérèse');
+  a = a.replace(/saint[\s-]hyacinthe/gi, 'Saint-Hyacinthe');
+  a = a.replace(/saint[\s-]j[eé]r[oô]me/gi, 'Saint-Jérôme');
+  a = a.replace(/\bbrossard\b/gi, 'Brossard');
+  a = a.replace(/\blongueuil\b/gi, 'Longueuil');
+  // Rues mal transcrites
+  a = a.replace(/\bde la salle\b/gi, 'De La Salle');
+  a = a.replace(/\blasalle\b/gi, 'LaSalle');
+  // Séparateurs → virgule
+  a = a.replace(/\s+[ÀAàa][Uu]?\s+/g, ', ');
+  a = a.replace(/\s{2,}/g, ' ').trim();
+  // Ajouter QC Canada si absent
+  if (!/\b(?:QC|Québec|Canada)\b/i.test(a)) a = a + ', QC, Canada';
+  return a;
+}
+
+async function _nominatimFetch(q) {
+  var url = 'https://nominatim.openstreetmap.org/search'
+    + '?q=' + encodeURIComponent(q)
+    + '&format=json&limit=1&countrycodes=ca&addressdetails=0';
+  var res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
+  var data = await res.json();
+  return (data && data[0]) ? { lat: +data[0].lat, lon: +data[0].lon } : null;
+}
+
 async function geocodeAddress(address) {
   if (!address) return null;
-  // Nettoyage avant Nominatim
-  var addr = address.trim()
-    .replace(/\s+[ÀAàa][Uu]?\s+/g, ', ')          // À / à / Au / au isolés → virgule
-    .replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-')       // St- → Saint-
-    .replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-')     // Ste- → Sainte-
-    // Saint-Jean-sur-Richelieu avec ou sans tirets
-    .replace(/\bsaint[\s-]jean[\s-]sur[\s-]richelieu\b/gi, 'Saint-Jean-sur-Richelieu')
-    .replace(/\bsaint[\s-]jean\s+richelieu\b/gi, 'Saint-Jean-sur-Richelieu')
-    .replace(/\bSaint-Jean(?:\s+Richelieu|\s+sur\s+Richelieu)?\b(?!-sur-Richelieu)/gi, 'Saint-Jean-sur-Richelieu')
-    // Capitaliser chaque mot
-    .replace(/\b([a-zàâäéèêëîïôöùûüç])([a-zàâäéèêëîïôöùûüç]*)/gi, function(_, f, r) {
-      return f.toUpperCase() + r;
-    })
-    .replace(/\s{2,}/g, ' ').trim();
-  // Ajouter ", QC, Canada" si absent
-  if (!/\b(?:QC|Québec|Canada)\b/i.test(addr)) addr = addr + ', QC, Canada';
+  var addr = normaliserAdresse(address);
   var key = addr.toLowerCase();
   if (_geocodeCache[key]) return _geocodeCache[key];
   try {
-    var url = 'https://nominatim.openstreetmap.org/search'
-      + '?q=' + encodeURIComponent(addr)
-      + '&format=json&limit=1&countrycodes=ca&addressdetails=0';
-    var res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
-    var data = await res.json();
-    if (data && data[0]) {
-      var r = { lat: +data[0].lat, lon: +data[0].lon };
-      _geocodeCache[key] = r;
-      return r;
+    var r = await _nominatimFetch(addr);
+    if (!r) {
+      // Fallback : numéro civique + ville seulement (retire le nom de la rue)
+      var fallback = addr.replace(/^(\d+)\s+\S.*?([\w-]+(?:[\s-][\w-]+)*,\s*QC.*)$/i, '$1 $2');
+      if (fallback !== addr) r = await _nominatimFetch(fallback);
     }
+    if (r) { _geocodeCache[key] = r; return r; }
   } catch(e) {}
   return null;
 }

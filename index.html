@@ -2765,6 +2765,7 @@
     .dj-list .dj-i { flex-shrink: 0; font-size: 13px; line-height: 1.4; width: 16px; text-align: center; }
     .dj-link { color: var(--tint); text-decoration: none; border-bottom: 1px dashed rgba(118,150,255,0.4); }
     .dj-link:active { opacity: 0.7; }
+    .dj-email-link { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: min(240px, 70vw); }
     .dj-notes { color: var(--t-2); font-style: normal; }
 
     .dj-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
@@ -6541,15 +6542,21 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   var prioMap = { urgent:{lbl:'Urgente',cls:'prio-urgent'}, high:{lbl:'Haute',cls:'prio-high'}, medium:{lbl:'Moyenne',cls:'prio-medium'}, low:{lbl:'Basse',cls:'prio-low'} };
   var p = prioMap[t.priority] || prioMap.medium;
   var photos = Array.isArray(t.gallery) && t.gallery.length ? t.gallery : (t.photoPreview ? [t.photoPreview] : []);
-  // Extract phone/email from description (planifier flow stores them there)
+  // Use dedicated fields first; fall back to extracting from description for old tasks
   var desc = t.description || '';
-  var phone = '', email = '';
-  var pm = desc.match(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
-  if (pm) phone = pm[1] + '-' + pm[2] + '-' + pm[3];
-  var em = desc.match(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
-  if (em) email = em[1];
-  // Notes = description minus contact lines
+  var phone = t.phone || '';
+  var email = t.email || '';
+  if (!phone) {
+    var pm = desc.match(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+    if (pm) phone = pm[1] + '-' + pm[2] + '-' + pm[3];
+  }
+  if (!email) {
+    var em = desc.match(/\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b/i);
+    if (em) email = em[1];
+  }
+  // Notes = description minus any embedded contact lines (legacy data)
   var notes = desc
+    .replace(/\b[\w.\-+]+@[\w.\-]+\.[a-z]{2,}\b/gi, '')
     .replace(/[📞✉][^\n]*\n?/g, '')
     .replace(/^\s*[\-•·]\s*/gm, '')
     .replace(/\s{2,}/g, ' ')
@@ -6573,7 +6580,7 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   var clientItems = [];
   if (t.client)   clientItems.push('<li><span class="dj-i">👤</span>' + esc(t.client) + '</li>');
   if (phone)      clientItems.push('<li><span class="dj-i">📞</span><a class="dj-link" href="tel:' + esc(phone.replace(/\D+/g,'')) + '">' + esc(phone) + '</a></li>');
-  if (email)      clientItems.push('<li><span class="dj-i">✉</span><a class="dj-link" href="mailto:' + esc(email) + '">' + esc(email) + '</a></li>');
+  if (email)      clientItems.push('<li><span class="dj-i">✉</span><a class="dj-link dj-email-link" href="mailto:' + esc(email) + '">' + esc(email) + '</a></li>');
   if (t.location) clientItems.push('<li><span class="dj-i">📍</span>' + esc(t.location) + '<span id="dj-wx-' + esc(t.id) + '"></span></li>');
   if (clientItems.length) {
     html += '<section class="dj-sec"><h5 class="dj-sec-t">Client</h5><ul class="dj-list">' + clientItems.join('') + '</ul></section>';
@@ -6607,7 +6614,7 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   // Actions
   html += '<div class="dj-actions">'
        +    '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier →</button>'
-       +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">↩ Banque</button>'
+       +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">💼 Dossier client</button>'
        +    '<button type="button" class="dj-to-bank" data-del-task="' + esc(t.id) + '" style="color:var(--red,#f55)" title="Supprimer">🗑</button>'
        +  '</div>';
 

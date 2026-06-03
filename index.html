@@ -3683,6 +3683,7 @@
     <div class="mf">
       <button class="btn-cancel" id="voiceBtnCancel" onclick="closeModal('voiceOverlay')">Annuler</button>
       <button class="btn-secondary" id="voiceBtnBack" onclick="voicePreviewBack()" style="display:none">✏ Modifier</button>
+      <button class="btn-secondary" id="voiceBtnEditDictation" onclick="voiceBackToDictation()" style="display:none">← Modifier la dictée</button>
       <button class="btn-primary" id="voiceBtnAnalyze" onclick="analyzeVoicePreview()">Analyser →</button>
       <button class="btn-primary" id="voiceBtnConfirm" onclick="confirmVoiceCreate()" style="display:none">Créer →</button>
     </div>
@@ -4428,13 +4429,22 @@ async function geocodeAddress(address) {
     .replace(/\s+[ÀAàa][Uu]?\s+/g, ', ')          // À / à / Au / au isolés → virgule
     .replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-')       // St- → Saint-
     .replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-')     // Ste- → Sainte-
+    // Saint-Jean-sur-Richelieu avec ou sans tirets
+    .replace(/\bsaint[\s-]jean[\s-]sur[\s-]richelieu\b/gi, 'Saint-Jean-sur-Richelieu')
+    .replace(/\bsaint[\s-]jean\s+richelieu\b/gi, 'Saint-Jean-sur-Richelieu')
     .replace(/\bSaint-Jean(?:\s+Richelieu|\s+sur\s+Richelieu)?\b(?!-sur-Richelieu)/gi, 'Saint-Jean-sur-Richelieu')
+    // Capitaliser chaque mot
+    .replace(/\b([a-zàâäéèêëîïôöùûüç])([a-zàâäéèêëîïôöùûüç]*)/gi, function(_, f, r) {
+      return f.toUpperCase() + r;
+    })
     .replace(/\s{2,}/g, ' ').trim();
+  // Ajouter ", QC, Canada" si absent
+  if (!/\b(?:QC|Québec|Canada)\b/i.test(addr)) addr = addr + ', QC, Canada';
   var key = addr.toLowerCase();
   if (_geocodeCache[key]) return _geocodeCache[key];
   try {
     var url = 'https://nominatim.openstreetmap.org/search'
-      + '?q=' + encodeURIComponent(addr + ', Québec, Canada')
+      + '?q=' + encodeURIComponent(addr)
       + '&format=json&limit=1&countrycodes=ca&addressdetails=0';
     var res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
     var data = await res.json();
@@ -6646,9 +6656,10 @@ function openVoice() {
   if (ps) ps.style.display = 'none';
   var ts = document.getElementById('voiceTextSection');
   if (ts) ts.style.display = '';
-  var bA = document.getElementById('voiceBtnAnalyze'); if (bA) bA.style.display = '';
-  var bB = document.getElementById('voiceBtnBack');    if (bB) bB.style.display = 'none';
-  var bC = document.getElementById('voiceBtnConfirm'); if (bC) bC.style.display = 'none';
+  var bA = document.getElementById('voiceBtnAnalyze');      if (bA) bA.style.display = '';
+  var bB = document.getElementById('voiceBtnBack');         if (bB) bB.style.display = 'none';
+  var bC = document.getElementById('voiceBtnConfirm');      if (bC) bC.style.display = 'none';
+  var bD = document.getElementById('voiceBtnEditDictation');if (bD) bD.style.display = 'none';
   var ta = document.getElementById('voiceText');
   if (ta) { ta.value = _sttBackup || ''; _sttBackup = ''; }
   var isBank = _sheetMode === 'bank';
@@ -7278,9 +7289,10 @@ function analyzeVoicePreview() {
   }
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = 'none';
-  document.getElementById('voiceBtnAnalyze').style.display = 'none';
-  document.getElementById('voiceBtnBack').style.display    = '';
-  document.getElementById('voiceBtnConfirm').style.display = '';
+  document.getElementById('voiceBtnAnalyze').style.display     = 'none';
+  document.getElementById('voiceBtnBack').style.display        = '';
+  document.getElementById('voiceBtnEditDictation').style.display = '';
+  document.getElementById('voiceBtnConfirm').style.display     = '';
 }
 
 function vpEditLoc() {
@@ -7356,9 +7368,26 @@ function voicePreviewBack() {
   document.getElementById('voicePreviewSection').style.display = 'none';
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = '';
-  document.getElementById('voiceBtnAnalyze').style.display = '';
-  document.getElementById('voiceBtnBack').style.display    = 'none';
-  document.getElementById('voiceBtnConfirm').style.display = 'none';
+  document.getElementById('voiceBtnAnalyze').style.display      = '';
+  document.getElementById('voiceBtnBack').style.display         = 'none';
+  document.getElementById('voiceBtnEditDictation').style.display = 'none';
+  document.getElementById('voiceBtnConfirm').style.display      = 'none';
+}
+
+function voiceBackToDictation() {
+  // Retour au textarea de dictée sans effacer le texte
+  _voiceParsedResult = null;
+  var textSection = document.getElementById('voiceTextSection');
+  if (textSection) textSection.style.display = '';
+  var previewSection = document.getElementById('voicePreviewSection');
+  if (previewSection) previewSection.style.display = 'none';
+  document.getElementById('voiceBtnAnalyze').style.display      = '';
+  document.getElementById('voiceBtnBack').style.display         = 'none';
+  document.getElementById('voiceBtnEditDictation').style.display = 'none';
+  document.getElementById('voiceBtnConfirm').style.display      = 'none';
+  // Micro inactif, texte brut conservé dans le textarea
+  _micUserEdited = false;
+  setMicState('idle', 'Toucher pour dicter');
 }
 
 function confirmVoiceCreate() {
@@ -7371,9 +7400,10 @@ function confirmVoiceCreate() {
   if (ps) ps.style.display = 'none';
   var ts = document.getElementById('voiceTextSection');
   if (ts) ts.style.display = '';
-  document.getElementById('voiceBtnAnalyze').style.display = '';
-  document.getElementById('voiceBtnBack').style.display    = 'none';
-  document.getElementById('voiceBtnConfirm').style.display = 'none';
+  document.getElementById('voiceBtnAnalyze').style.display      = '';
+  document.getElementById('voiceBtnBack').style.display         = 'none';
+  document.getElementById('voiceBtnEditDictation').style.display = 'none';
+  document.getElementById('voiceBtnConfirm').style.display      = 'none';
   // Route to the correct destination based on sheet context
   if (_sheetMode === 'bank') {
     openWorkBankForm(null);
@@ -7871,6 +7901,12 @@ function parseSmartInput(originalText) {
   // Supprimer résidus de numéros de téléphone
   leftover = leftover.replace(/\b(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}\b/g, ' ');
   leftover = leftover.replace(/\b\d{3}[\s.\-]\d{4}\b/g, ' ');
+  // Couper le titre dès qu'un mot-clé de champ apparaît (évite contamination courriel/client/etc.)
+  leftover = leftover.replace(/\s+(?:courriel|email|e-mail|t[eé]l[eé]phone?|cell(?:ulaire)?|chez\s|pour\s+le\s|priorit[eé]|montant|\$).*/i, '');
+  // Retirer le nom du client s'il se retrouve dans le titre
+  if (result.client) {
+    leftover = leftover.replace(new RegExp('\\s+' + result.client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b.*$', 'i'), '');
+  }
   leftover = leftover.replace(/\s{2,}/g, ' ').trim();
   if (!leftover || leftover.length < 2) {
     if (result.type) {

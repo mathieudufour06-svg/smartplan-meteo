@@ -192,6 +192,8 @@
 
     button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     input, select, textarea { font: inherit; color: inherit; }
+    input, textarea { caret-color: #facc15 !important; }
+    input.lieu-error { caret-color: #facc15 !important; color: #ffffff !important; }
 
     /* ════════════════════════════════════════════════════════════════
        APP SHELL
@@ -4454,12 +4456,31 @@ function normaliserAdresse(adresse) {
 }
 
 async function _nominatimFetch(q) {
+  // Normalisation forcée avant chaque appel
+  var a = q;
+  a = a.replace(/saint[\s\-]*jean[\s\-]*sur[\s\-]*le[\s\-]*richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/saint[\s\-]*jean[\s\-]*sur[\s\-]*richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/saint[\s\-]*jean[\s\-]*richelieu/gi, 'Saint-Jean-sur-Richelieu');
+  a = a.replace(/trois[\s\-]*rivi[eè]res/gi, 'Trois-Rivières');
+  a = a.replace(/mont[\s\-]*saint[\s\-]*hilaire/gi, 'Mont-Saint-Hilaire');
+  a = a.replace(/saint[\s\-]*hyacinthe/gi, 'Saint-Hyacinthe');
+  a = a.replace(/saint[\s\-]*j[eé]r[oô]me/gi, 'Saint-Jérôme');
+  a = a.replace(/\bde\s+la\s+salle\b/gi, 'De La Salle');
+  if (!/\bQC\b/i.test(a) && !/canada/i.test(a)) a = a.trim() + ', QC, Canada';
   var url = 'https://nominatim.openstreetmap.org/search'
-    + '?q=' + encodeURIComponent(q)
+    + '?q=' + encodeURIComponent(a)
     + '&format=json&limit=1&countrycodes=ca&addressdetails=0';
   var res = await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
   var data = await res.json();
-  return (data && data[0]) ? { lat: +data[0].lat, lon: +data[0].lon } : null;
+  if (data && data[0]) return { lat: +data[0].lat, lon: +data[0].lon };
+  // Fallback : retire le nom de rue, garde numéro + ville
+  var fallback = a.replace(/^(\d+)\s+(?:rue|avenue|boul(?:evard)?|ch(?:emin)?|pl(?:ace)?)\s+[\w\s]+?\s+(Saint|Montréal|Laval|Longueuil|Brossard|Gatineau|Québec|[\w-]+,\s*QC)/i, '$1 $2');
+  if (fallback !== a) {
+    var res2 = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(fallback) + '&format=json&limit=1&countrycodes=ca&addressdetails=0', { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } });
+    var data2 = await res2.json();
+    if (data2 && data2[0]) return { lat: +data2[0].lat, lon: +data2[0].lon };
+  }
+  return null;
 }
 
 async function geocodeAddress(address) {
@@ -7304,21 +7325,7 @@ function analyzeVoicePreview() {
   }
   // Géocodage async pour la preview
   if (_voiceParsedResult && _voiceParsedResult.location) {
-    (function(loc) {
-      geocodeAddress(loc).then(function(geo) {
-        if (!_voiceParsedResult) return;
-        var el = document.getElementById('vp-geo-status');
-        if (geo) {
-          _voiceParsedResult.geoLat = geo.lat;
-          _voiceParsedResult.geoLon = geo.lon;
-          if (el) { el.textContent = '📍 Adresse confirmée'; el.style.color = 'var(--green, #4caf50)'; }
-        } else {
-          var locRow = document.getElementById('vp-loc-row');
-          if (locRow) { locRow.style.cssText += ';border:1px solid #f55;background:rgba(255,85,102,0.1);border-radius:8px;padding:6px 4px'; }
-          if (el) { el.innerHTML = '<button type="button" onclick="vpEditLoc()" style="color:#f55;font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:13px">⚠️ Adresse non trouvée — Modifier</button>'; }
-        }
-      });
-    })(_voiceParsedResult.location);
+    _vpGeocode(_voiceParsedResult.location);
   }
   var textSection = document.getElementById('voiceTextSection');
   if (textSection) textSection.style.display = 'none';
@@ -7330,24 +7337,50 @@ function analyzeVoicePreview() {
   document.getElementById('voiceBtnConfirm').style.display      = '';
 }
 
-function vpEditLoc() {
-  var valEl = document.getElementById('vp-loc-val');
-  if (!valEl) return;
-  var currentLoc = _voiceParsedResult ? (_voiceParsedResult.location || '') : '';
-  valEl.innerHTML = '<div style="position:relative">'
-    + '<input id="vp-loc-input" type="text" value="' + esc(currentLoc) + '" autocomplete="off"'
-    + ' style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--tint);border-radius:8px;background:var(--surface-2);color:var(--t-1);font-size:14px">'
-    + '<div id="vp-loc-sugg" style="position:absolute;top:100%;left:0;right:0;background:var(--surface-1);border:1px solid var(--hairline);border-radius:8px;z-index:200;max-height:200px;overflow-y:auto;display:none"></div>'
-    + '</div>';
-  var input = document.getElementById('vp-loc-input');
-  var _vpTimer = null;
-  input.addEventListener('input', function() {
-    clearTimeout(_vpTimer);
-    var q = input.value.trim();
-    if (q.length < 3) { var s = document.getElementById('vp-loc-sugg'); if (s) s.style.display = 'none'; return; }
-    _vpTimer = setTimeout(function() { vpFetchSuggestions(q); }, 350);
+function _vpGeocode(loc) {
+  var el = document.getElementById('vp-geo-status');
+  var inp = document.getElementById('vp-loc-input');
+  var locRow = document.getElementById('vp-loc-row');
+  if (el) { el.textContent = '📍 Vérification…'; el.style.color = 'var(--t-4)'; }
+  if (locRow) { locRow.style.border = ''; locRow.style.background = ''; }
+  if (inp) inp.style.borderColor = '';
+  geocodeAddress(loc).then(function(geo) {
+    if (!_voiceParsedResult) return;
+    if (geo) {
+      _voiceParsedResult.geoLat = geo.lat;
+      _voiceParsedResult.geoLon = geo.lon;
+      if (el) { el.textContent = '📍 Adresse confirmée'; el.style.color = 'var(--green,#4caf50)'; }
+      if (inp) inp.style.borderColor = 'var(--green,#4caf50)';
+    } else {
+      _voiceParsedResult.geoLat = null;
+      _voiceParsedResult.geoLon = null;
+      if (el) { el.textContent = '⚠️ Adresse non trouvée — corrige ci-dessus'; el.style.color = '#f55'; }
+      if (inp) { inp.style.borderColor = '#f55'; inp.classList.add('lieu-error'); }
+    }
   });
-  input.focus();
+}
+
+var _vpLocTimer = null;
+function vpLocInput(inp) {
+  clearTimeout(_vpLocTimer);
+  var q = inp.value.trim();
+  if (q.length < 3) { var s = document.getElementById('vp-loc-sugg'); if (s) s.style.display = 'none'; return; }
+  if (_voiceParsedResult) _voiceParsedResult.location = q;
+  _vpLocTimer = setTimeout(function() { vpFetchSuggestions(q); }, 350);
+}
+
+function vpLocBlur(inp) {
+  var q = inp.value.trim();
+  if (!q) return;
+  if (_voiceParsedResult) _voiceParsedResult.location = q;
+  var sugg = document.getElementById('vp-loc-sugg');
+  if (sugg) sugg.style.display = 'none';
+  _vpGeocode(q);
+}
+
+function vpEditLoc() {
+  var inp = document.getElementById('vp-loc-input');
+  if (inp) inp.focus();
 }
 
 async function vpFetchSuggestions(q) {
@@ -7356,7 +7389,8 @@ async function vpFetchSuggestions(q) {
   sugg.style.display = 'block';
   sugg.innerHTML = '<div style="padding:8px;color:var(--t-3);font-size:13px">Recherche…</div>';
   try {
-    var url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q + ', Québec, Canada')
+    var _qn = (typeof normaliserAdresse === 'function') ? normaliserAdresse(q) : q + ', QC, Canada';
+    var url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(_qn)
       + '&countrycodes=ca&format=json&limit=5&addressdetails=1';
     var data = await (await fetch(url, { headers: { 'Accept-Language': 'fr', 'User-Agent': 'SmartPlanMeteo/1.0' } })).json();
     if (!data || !data.length) {
@@ -7477,7 +7511,13 @@ function _buildVoicePreviewHTML(parsed) {
   if (parsed.time)     html += row('Heure',     parsed.time);
   if (parsed.duration) html += row('Durée',     parsed.duration);
   if (parsed.location) {
-    html += '<div class="vp-row" id="vp-loc-row"><span class="vp-lbl">Lieu</span><span class="vp-val" id="vp-loc-val">' + esc(String(parsed.location)) + '</span></div>';
+    html += '<div class="vp-row" id="vp-loc-row"><span class="vp-lbl">Lieu</span>'
+      + '<div style="flex:1;position:relative">'
+      + '<input id="vp-loc-input" type="text" value="' + esc(String(parsed.location)) + '" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"'
+      + ' style="width:100%;box-sizing:border-box;padding:5px 8px;border:1px solid var(--line-1);border-radius:6px;background:var(--surface-2);color:var(--t-1);font-size:13px;caret-color:#facc15"'
+      + ' oninput="vpLocInput(this)" onblur="vpLocBlur(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}">'
+      + '<div id="vp-loc-sugg" style="position:absolute;top:100%;left:0;right:0;background:var(--surface-1);border:1px solid var(--hairline);border-radius:8px;z-index:200;max-height:200px;overflow-y:auto;display:none"></div>'
+      + '</div></div>';
     html += '<div class="vp-row"><span class="vp-lbl">Coordonnées</span><span id="vp-geo-status" class="vp-val" style="color:var(--t-4)">📍 Vérification…</span></div>';
   }
   if (parsed.phone)    html += row('Téléphone', parsed.phone);

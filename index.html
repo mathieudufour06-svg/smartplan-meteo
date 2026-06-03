@@ -7587,10 +7587,14 @@ function parseSmartInput(originalText) {
   work = work.replace(/\bpour\s+(?=(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['']hui)\b)/gi, ' ');
 
   // ── Email ─────────────────────────────────────────────────────────────────
-  // Reconstruire les emails dictés oralement (iOS STT)
-  // "lapointe arobase gmail point com" / "lapointe at gmail dot com" / "lapointe gmail com"
-  work = work.replace(/\b([\w.\-+]+)\s+(?:commercial|arobase|at|@)\s+([\w.\-]+)\s+(?:point|dot|\.)\s+([a-z]{2,})\b/gi, '$1@$2.$3');
-  work = work.replace(/\b([\w.\-+]+)\s+((?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus)(?:\.(?:com|ca|fr|net|org))?)\s+(com|ca|fr|net|org)\b/gi, '$1@$2.$3');
+  // ÉTAPE 1 — Reconstruire les emails oraux avant toute extraction
+  // Pattern 2 mots : "Sylvain Lapointe commercial gmail point com" → "sylvain.lapointe@gmail.com"
+  work = work.replace(/\b(\w+)\s+(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1.$2@$3.$4');
+  // Pattern 1 mot : "lapointe commercial gmail point com" → "lapointe@gmail.com"
+  work = work.replace(/\b(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1@$2.$3');
+  // Pattern domaine connu sans séparateur : "lapointe gmail com"
+  work = work.replace(/\b([\w.\-+]+)\s+((?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus))\s+(com|ca|fr|net|org)\b/gi, '$1@$2.$3');
+  // ÉTAPE 2 — Extraire l'email reconstruit ou direct
   var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
   if (em) result.email = em[1];
 

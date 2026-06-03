@@ -7389,9 +7389,10 @@ function _vpGeocode(loc) {
     if (geo) {
       _voiceParsedResult.geoLat = geo.lat;
       _voiceParsedResult.geoLon = geo.lon;
+      window._jobLat = geo.lat;
+      window._jobLon = geo.lon;
       if (el) {
-        var _loc = (_voiceParsedResult && _voiceParsedResult.location) || '';
-        el.innerHTML = '📍 Adresse confirmée &nbsp;<button type="button" style="background:rgba(118,150,255,0.15);border:1px solid rgba(118,150,255,0.35);border-radius:6px;color:var(--tint);font-size:12px;padding:2px 8px;cursor:pointer" onclick="openMapsModal(' + geo.lat + ',' + geo.lon + ',' + JSON.stringify(_loc) + ')">🗺️ Ouvrir</button>';
+        el.innerHTML = '📍 Adresse confirmée &nbsp;<button type="button" style="background:rgba(118,150,255,0.15);border:1px solid rgba(118,150,255,0.35);border-radius:6px;color:var(--tint);font-size:12px;padding:2px 8px;cursor:pointer" onclick="openMapsFromPreview()">🗺️ Ouvrir</button>';
         el.style.color = 'var(--green,#4caf50)';
       }
       if (inp) inp.style.borderColor = 'var(--green,#4caf50)';
@@ -7631,16 +7632,28 @@ function parseSmartInput(originalText) {
   work = work.replace(/\bpour\s+(?=(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['']hui)\b)/gi, ' ');
 
   // ── Email ─────────────────────────────────────────────────────────────────
-  // ÉTAPE 1 — Reconstruire les emails oraux avant toute extraction
-  // Pattern 2 mots : "Sylvain Lapointe commercial gmail point com" → "sylvain.lapointe@gmail.com"
-  work = work.replace(/\b(\w+)\s+(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1.$2@$3.$4');
-  // Pattern 1 mot : "lapointe commercial gmail point com" → "lapointe@gmail.com"
-  work = work.replace(/\b(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1@$2.$3');
-  // Pattern domaine connu sans séparateur : "lapointe gmail com"
-  work = work.replace(/\b([\w.\-+]+)\s+((?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus))\s+(com|ca|fr|net|org)\b/gi, '$1@$2.$3');
-  // ÉTAPE 2 — Extraire l'email reconstruit ou direct
-  var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
-  if (em) result.email = em[1];
+  // ÉTAPE 1 — Normaliser les accents (email addresses n'en contiennent pas)
+  var _workEmail = work.normalize ? work.normalize('NFD').replace(/[̀-ͯ]/g, '') : work;
+  // Pattern 2 mots : "Sylvain Lecuyer commercial gmail point com" → "sylvain.lecuyer@gmail.com"
+  _workEmail = _workEmail.replace(/\b(\w+)\s+(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1.$2@$3.$4');
+  // Pattern 1 mot : "lecuyer commercial gmail point com" → "lecuyer@gmail.com"
+  _workEmail = _workEmail.replace(/\b(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1@$2.$3');
+  // Pattern domaine connu sans séparateur : "lecuyer gmail com"
+  _workEmail = _workEmail.replace(/\b([\w.\-+]+)\s+((?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus))\s+(com|ca|fr|net|org)\b/gi, '$1@$2.$3');
+  // ÉTAPE 2 — Extraire depuis la version normalisée (sans accents)
+  var _emM = _workEmail.match(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
+  if (_emM) {
+    result.email = _emM[1].toLowerCase();
+    // Retirer le pattern oral original de work (accepte les caractères accentués)
+    work = work.replace(/\b[\wÀ-ÿ]+\s+[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
+    work = work.replace(/\b[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
+    work = work.replace(/\b[\wÀ-ÿ.\-+]+\s+(?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus)\s+(?:com|ca|fr|net|org)\b/gi, ' ');
+    work = work.replace(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/gi, ' ');
+  } else {
+    // Email direct sans reconstruction orale
+    var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
+    if (em) result.email = em[1];
+  }
 
   // ── Téléphone ─────────────────────────────────────────────────────────────
   // Retirer "pas" devant un numéro de téléphone (artefact STT)
@@ -9122,21 +9135,35 @@ function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
 var _mapsCoords = null;
 
 function openMapsModal(lat, lon, label) {
+  lat = lat || window._jobLat;
+  lon = lon || window._jobLon;
+  if (!lat || !lon) { toast('⚠ Adresse non confirmée — impossible d\'ouvrir la carte'); return; }
   _mapsCoords = { lat: lat, lon: lon };
+  window._jobLat = lat;
+  window._jobLon = lon;
   var addrEl = document.getElementById('mapsModalAddr');
   if (addrEl) addrEl.textContent = label || '';
   openModal('mapsOverlay');
 }
 
+function openMapsFromPreview() {
+  var lat = window._jobLat, lon = window._jobLon;
+  var label = (_voiceParsedResult && _voiceParsedResult.location) || '';
+  openMapsModal(lat, lon, label);
+}
+
 function openInMaps(app) {
-  if (!_mapsCoords) return;
-  var lat = _mapsCoords.lat, lon = _mapsCoords.lon;
-  var url;
-  if (app === 'google') url = 'https://maps.google.com/?q=' + lat + ',' + lon;
-  else if (app === 'apple') url = 'maps://maps.apple.com/?ll=' + lat + ',' + lon;
-  else if (app === 'waze') url = 'https://waze.com/ul?ll=' + lat + ',' + lon;
-  if (url) window.open(url, '_blank');
+  var lat = (_mapsCoords && _mapsCoords.lat) || window._jobLat;
+  var lon = (_mapsCoords && _mapsCoords.lon) || window._jobLon;
+  if (!lat || !lon) return;
   closeModal('mapsOverlay');
+  if (app === 'google') {
+    window.open('https://maps.google.com/?q=' + lat + ',' + lon, '_blank');
+  } else if (app === 'apple') {
+    window.location.href = 'maps://maps.apple.com/?ll=' + lat + ',' + lon;
+  } else if (app === 'waze') {
+    window.location.href = 'https://waze.com/ul?ll=' + lat + ',' + lon + '&navigate=yes';
+  }
 }
 
 var _sheetDate = null;

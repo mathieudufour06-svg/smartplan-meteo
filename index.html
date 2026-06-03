@@ -7486,7 +7486,8 @@ function confirmVoiceCreate() {
 
 function _buildVoicePreviewHTML(parsed) {
   var jobs = (typeof getMergedJobTypes === 'function') ? getMergedJobTypes() : {};
-  var typeName = parsed.type ? ((jobs[parsed.type] && (jobs[parsed.type].name || jobs[parsed.type].short)) || parsed.type) : null;
+  var _typeDisplayFallback = { pave:'Pavé uni', asphaltage:'Asphaltage', hauteur:'Travaux en hauteur', abattage:'Abattage d\'arbres', emondage:'Émondage', carrelage:'Carrelage', montage:'Montage', maconnerie:'Maçonnerie' };
+  var typeName = parsed.type ? ((jobs[parsed.type] && (jobs[parsed.type].name || jobs[parsed.type].short)) || _typeDisplayFallback[parsed.type] || (parsed.type.charAt(0).toUpperCase() + parsed.type.slice(1))) : null;
   var dateStr = '';
   if (parsed.date) {
     var d = new Date(parsed.date + 'T12:00:00');
@@ -7520,7 +7521,7 @@ function _buildVoicePreviewHTML(parsed) {
       + '</div></div>';
     html += '<div class="vp-row"><span class="vp-lbl">Coordonnées</span><span id="vp-geo-status" class="vp-val" style="color:var(--t-4)">📍 Vérification…</span></div>';
   }
-  if (parsed.phone)    html += row('Téléphone', parsed.phone);
+  if (parsed.phone)    html += row('Téléphone', (typeof normalizePhone === 'function' ? normalizePhone(parsed.phone) : null) || parsed.phone);
   if (parsed.email)    html += row('Email',     parsed.email);
   if (parsed.amount) {
     var _amtFmt = formatAmount(parsed.amount) || parsed.amount;
@@ -7817,7 +7818,7 @@ function parseSmartInput(originalText) {
     var dHM = clip(/\b(\d+)\s*h\s*([0-5]\d)\b/i);
     if (dHM) {
       var _hh = parseInt(dHM[1], 10), _mm = parseInt(dHM[2], 10);
-      result.duration = _mm === 0 ? _hh + 'h' : _hh + 'h' + ('0' + _mm).slice(-2);
+      result.duration = (_mm === 0 || _mm <= 10) ? _hh + 'h' : _hh + 'h' + ('0' + _mm).slice(-2);
     }
   }
   var d1 = !result.duration && clip(/\b(\d+(?:[.,]\d+)?)\s*(?:h(?:eure)?s?|hrs?)\b/i);
@@ -7984,6 +7985,10 @@ function parseSmartInput(originalText) {
   }
 
   // ── Titre / Nom de la tâche (leftover) ───────────────────────────────────
+  // Retirer séquences de chiffres brutes ≥ 7 (numéros de téléphone mal découpés, etc.)
+  work = work.replace(/\b\d{7,}\b/g, ' ');
+  // Retirer marqueurs de discours parasites
+  work = work.replace(/\b(?:puis|et\s+puis|alors|donc|bon(?:\s+ben)?|ok)\b/gi, ' ');
   work = work.replace(/\btype\b/gi, ' ');
   work = work.replace(/\bde\s+(?:job|travail|boulot|ouvrage)\b/gi, ' ');
   work = work.replace(/\bd['']une?\s+(?:dur[eé]e\s+(?:de\s+)?)?/gi, ' ');
@@ -8020,6 +8025,11 @@ function parseSmartInput(originalText) {
   if (result.client) {
     leftover = leftover.replace(new RegExp('\\s+' + result.client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b.*$', 'i'), '');
   }
+  // Retirer chiffres isolés, a.m./p.m., marqueurs orphelins en fin de titre
+  leftover = leftover.replace(/\b\d{7,}\b/g, ' ');
+  leftover = leftover.replace(/\b\d{1,2}\b(?!\s*h\b)/g, ' ');
+  leftover = leftover.replace(/\b(?:a\.?m\.?|p\.?m\.?|am|pm)\b/gi, ' ');
+  leftover = leftover.replace(/\s+(?:puis|et\s+puis|alors|pour|et)\s*$/i, '');
   leftover = leftover.replace(/\s{2,}/g, ' ').trim();
   if (!leftover || leftover.length < 2) {
     if (result.type) {

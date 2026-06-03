@@ -2022,12 +2022,18 @@
     .mic-btn:active { transform: scale(0.96); }
     .mic-btn[disabled], .mic-btn.is-disabled { opacity: 0.55; cursor: not-allowed; }
     .mic-btn.is-listening {
-      background: linear-gradient(160deg, rgba(212,175,55,0.22) 0%, rgba(212,175,55,0.08) 100%);
-      border-color: rgba(212,175,55,0.55);
-      color: #f4d469;
-      box-shadow: 0 0 0 0 rgba(212,175,55,0.45), 0 8px 24px -10px rgba(212,175,55,0.45);
+      background: rgba(239,68,68,0.15);
+      border-color: rgba(239,68,68,0.55);
+      color: #ef4444;
+      box-shadow: 0 0 0 0 rgba(239,68,68,0.45), 0 8px 24px -10px rgba(239,68,68,0.35);
       animation: micPulse 1.6s ease-in-out infinite;
     }
+    .mic-btn.is-paused {
+      background: rgba(59,130,246,0.12);
+      border-color: rgba(59,130,246,0.45);
+      color: #3b82f6;
+    }
+    .mic-label.is-paused { color: #3b82f6; }
     .mic-btn.is-processing {
       background: rgba(118,150,255,0.10);
       border-color: rgba(118,150,255,0.35);
@@ -2051,7 +2057,7 @@
       transition: color var(--t-fast) var(--ease);
     }
     .mic-label.is-error { color: var(--red); }
-    .mic-label.is-listening { color: #f4d469; }
+    .mic-label.is-listening { color: #ef4444; }
     .mic-label.is-processing { color: #a9c0ff; }
 
     /* Inline mic (in task overlay) */
@@ -6658,10 +6664,10 @@ function openVoice() {
   _micSilentRestarts = 0;
   _micLangIdx = 0;
   _micRetryScheduled = false;
-  setMicState('idle', 'Toucher pour parler');
+  var ta = document.getElementById('voiceText');
+  if (ta) ta.value = '';
+  setMicState('idle', 'Toucher pour dicter');
   openModal('voiceOverlay');
-  // Auto-start on all platforms — 300ms delay to let iOS settle the permission gesture
-  setTimeout(function() { startMic(); }, 300);
 }
 
 function voiceTextElement() {
@@ -6702,17 +6708,35 @@ function setMicState(state, labelText, icon) {
   var btn = document.getElementById('voiceStatus');
   var lbl = voiceLabelElement();
   if (btn) {
-    btn.classList.remove('is-idle','is-listening','is-processing','is-error');
-    if (state === 'listening')  { btn.classList.add('is-listening');  btn.textContent = icon || '🔴'; btn.title = 'Toucher pour arrêter'; }
-    else if (state === 'processing') { btn.classList.add('is-processing'); btn.textContent = icon || '✨'; btn.title = 'Transcription en cours'; }
-    else if (state === 'error') { btn.classList.add('is-error'); btn.textContent = icon || '⚠'; btn.title = 'Toucher pour réessayer'; }
-    else                         { btn.textContent = icon || '🎤'; btn.title = 'Toucher pour parler'; }
+    btn.classList.remove('is-idle','is-listening','is-paused','is-processing','is-error');
+    if (state === 'listening') {
+      btn.classList.add('is-listening');
+      btn.textContent = icon || '🔴';
+      btn.style.background = '';  // handled by CSS .is-listening
+      btn.title = 'En écoute — toucher pour pause';
+    } else if (state === 'paused') {
+      btn.classList.add('is-paused');
+      btn.textContent = icon || '🎤';
+      btn.title = 'Toucher pour continuer';
+    } else if (state === 'processing') {
+      btn.classList.add('is-processing');
+      btn.textContent = icon || '✨';
+      btn.title = 'Transcription en cours';
+    } else if (state === 'error') {
+      btn.classList.add('is-error');
+      btn.textContent = icon || '⚠';
+      btn.title = 'Toucher pour réessayer';
+    } else {
+      btn.textContent = icon || '🎤';
+      btn.title = 'Toucher pour dicter';
+    }
   }
   if (lbl) {
-    lbl.classList.remove('is-listening','is-processing','is-error');
-    if (state === 'listening')   lbl.classList.add('is-listening');
+    lbl.classList.remove('is-listening','is-paused','is-processing','is-error');
+    if (state === 'listening')      lbl.classList.add('is-listening');
+    else if (state === 'paused')    lbl.classList.add('is-paused');
     else if (state === 'processing') lbl.classList.add('is-processing');
-    else if (state === 'error')  lbl.classList.add('is-error');
+    else if (state === 'error')     lbl.classList.add('is-error');
     if (labelText != null) lbl.textContent = labelText;
   }
 }
@@ -6760,6 +6784,9 @@ function toggleMic() {
   if (_micActive) {
     _micClearPermBtn();
     if (_silenceTimer) { clearTimeout(_silenceTimer); _silenceTimer = null; }
+    // Sauvegarder le texte courant avant de stopper (pour la reprise)
+    var _ta = voiceTextElement();
+    if (_ta) _micFinalAccum = _ta.value;
     _micUserStopped = true;
     _micStopping = true;
     if (_micRec) { try { _micRec.stop(); } catch(e) {} }
@@ -6799,15 +6826,8 @@ function startMic() {
     return;
   }
   micCheckHTTPS();
-  if (!_micRetryScheduled) {
-    _micFinalAccum    = '';
-    _micLatestInterim = '';
-    _micUserEdited    = false;
-    _micUserStopped   = false;
-    _micSilentRestarts = 0;
-    var textEl = voiceTextElement();
-    if (textEl && !_micUserEdited) textEl.value = '';
-  }
+  // Ne reset PAS _micFinalAccum — permet la reprise sans effacement
+  _micUserStopped = false;
   _micRetryScheduled = false;
   _micAttemptStart();
 }
@@ -6831,17 +6851,16 @@ function _micAttemptStart() {
   _micRec.interimResults = true;
   _micRec.maxAlternatives = 1;
 
-  var _processedCount = 0; // per-session counter — avoids reprocessing final results
   var _autoStop = null;
 
-  setMicState('listening', 'Je t\'écoute…', '🎙');
+  setMicState('listening', 'En écoute… (toucher pour pause)', '🔴');
 
   _micRec.onstart = function() {
     _micStarting = false;
     _micActive = true;
     clearMicStartFallback();
     micLog('onstart');
-    setMicState('listening', 'Parlez…', '🔴');
+    setMicState('listening', 'En écoute… (toucher pour pause)', '🔴');
     _autoStop = setTimeout(function() {
       if (_micActive && !_micUserStopped) {
         micLog('auto-stop 120s');
@@ -6852,30 +6871,26 @@ function _micAttemptStart() {
   };
 
   _micRec.onresult = function(e) {
-    if (_micUserEdited) return;
     var newFinal = '';
     var interim  = '';
-    for (var i = _processedCount; i < e.results.length; i++) {
-      var res = e.results[i];
-      if (!res || !res[0]) continue;
-      var t = (res[0].transcript || '').trim();
-      if (!t) continue;
-      if (res.isFinal) { newFinal += t + ' '; _processedCount++; }
-      else interim = t;
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      var t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) { newFinal += t + ' '; }
+      else { interim = t; }
     }
-    newFinal = newFinal.trim();
-    interim  = interim.trim();
-    if (newFinal) {
-      _micFinalAccum = (_micFinalAccum + ' ' + newFinal).replace(/\s+/g, ' ').trim();
-      _micSilentRestarts = 0;
-    }
-    _micLatestInterim = interim;
+    if (newFinal) { _micFinalAccum += newFinal; _micSilentRestarts = 0; }
     var textEl = voiceTextElement();
     if (textEl) {
-      textEl.value = _micFinalAccum + (interim ? ' ' + interim : '');
+      if (!_micUserEdited) {
+        textEl.value = _micFinalAccum + interim;
+      } else if (newFinal) {
+        textEl.value = textEl.value.replace(/\s+$/, '') + ' ' + newFinal.trim();
+        _micFinalAccum = textEl.value + ' ';
+        _micUserEdited = false;
+      }
     }
     micLog('final=' + JSON.stringify(_micFinalAccum) + ' interim=' + JSON.stringify(interim));
-    if (newFinal || interim) setMicState('listening', 'Parlez…', '🔴');
+    if (newFinal || interim) setMicState('listening', 'En écoute… (toucher pour pause)', '🔴');
   };
 
   _micRec.onerror = function(e) {
@@ -6927,7 +6942,11 @@ function _micAttemptStart() {
 
     if (_micUserStopped || _micStopping) {
       _micStopping = false; _micUserStopped = false;
-      setMicState('idle', _micFinalAccum ? 'Toucher pour reprendre' : 'Toucher pour parler');
+      if (_micFinalAccum.trim()) {
+        setMicState('paused', 'Toucher pour continuer');
+      } else {
+        setMicState('idle', 'Toucher pour dicter');
+      }
       return;
     }
     if (_micRetryScheduled) {
@@ -6940,7 +6959,7 @@ function _micAttemptStart() {
     if (_micSilentRestarts < 8) {
       _micSilentRestarts++;
       micLog('silent restart ' + _micSilentRestarts + '/8');
-      setMicState('listening', 'Je t\'écoute…', '🎙');
+      setMicState('listening', 'En écoute… (toucher pour pause)', '🔴');
       setTimeout(function() { _micAttemptStart(); }, 300);
       return;
     }

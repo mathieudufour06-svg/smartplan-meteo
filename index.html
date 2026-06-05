@@ -2854,12 +2854,8 @@
     .loc-ac-empty { padding: 10px 13px; font-size: 12px; color: var(--t-4); }
     .dj-actions {
       display: flex; gap: 8px;
-      position: sticky; bottom: 0;
       padding: 12px 0 4px;
-      background: var(--surface-1);
-      border-top: 1px solid var(--line-1);
       margin-top: 4px;
-      z-index: 4;
     }
     .dj-edit {
       flex: 1; padding: 11px 14px;
@@ -7001,7 +6997,7 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
       // Update section title with city if available
       if (_cv && chip.parentElement) {
         var secTitle = chip.parentElement.querySelector('.dj-sec-t');
-        if (secTitle) secTitle.textContent = 'Météo · ' + _cv;
+        if (secTitle) secTitle.textContent = 'Météo ' + (_cv.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ') + _cv;
       }
     }
   }
@@ -7192,8 +7188,7 @@ function _ddBuildJobDossier(t, day, jobsDef) {
     + 'data-loc="' + esc(t.location) + '" '
     + (t.geoLat ? 'data-lat="' + t.geoLat + '" data-lon="' + t.geoLon + '" ' : '')
     + 'onclick="openMapsFromJob(this.dataset.loc,this.dataset.lat,this.dataset.lon)">'
-    + esc(t.location) + ' <span class="dj-addr-arrow">🗺️</span></button>'
-    + '<span id="dj-wx-' + esc(t.id) + '"></span></li>');
+    + esc(t.location) + ' <span class="dj-addr-arrow">🗺️</span></button></li>');
   if (clientItems.length) {
     html += '<section class="dj-sec"><h5 class="dj-sec-t">Client</h5><ul class="dj-list">' + clientItems.join('') + '</ul></section>';
   }
@@ -7228,7 +7223,9 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   // Compact weather chip for the job (id allows async update with local weather)
   var _chipVille = t.geoLat ? extraireVille(t.location || '') : '';
   var _chipLabel = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
-  var _secTitle = _chipVille ? 'Météo · ' + _chipVille : 'Météo';
+  var _secTitle = _chipVille
+    ? 'Météo ' + (_chipVille.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ') + _chipVille
+    : 'Météo du chantier';
   html += '<section class="dj-sec">'
        +    '<h5 class="dj-sec-t">' + esc(_secTitle) + '</h5>'
        +    '<div id="dj-chip-' + esc(t.id) + '" class="dj-w-chip ' + resLevel + '">'
@@ -7240,7 +7237,7 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   // Timer section
   html += buildTimerSection(t);
 
-  // Actions — sticky bar at bottom of card
+  // Actions
   html += '<div class="dj-actions">'
        +    '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier →</button>'
        +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">📥 Banque</button>'

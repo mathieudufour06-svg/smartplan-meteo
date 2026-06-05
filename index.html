@@ -2776,8 +2776,12 @@
     .dj-notes { color: var(--t-2); font-style: normal; }
 
     .dj-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
-    .dj-photo { display: block; aspect-ratio: 1/1; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line-1); }
+    .dj-photo { display: block; aspect-ratio: 1/1; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line-1); cursor: pointer; }
     .dj-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dj-hero-photo { width: 100%; height: 180px; object-fit: cover; display: block; border-radius: 8px 8px 0 0; cursor: pointer; margin-bottom: 0; }
+    .dj-lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; }
+    .dj-lightbox img { max-width: 100vw; max-height: 100vh; object-fit: contain; display: block; }
+    .dj-lightbox-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
     .dj-w-chip {
       display: inline-flex; align-items: center; gap: 6px;
@@ -6666,8 +6670,14 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   var resIcon  = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
   var flexible = t.weather && t.weather.maxRain >= 50 && t.weather.maxWind >= 80;
 
-  var html = '<article class="dj-card">'
-    + '<header class="dj-head">'
+  var html = '<article class="dj-card">';
+
+  // Hero photo banner — first photo displayed before all sections
+  if (photos.length) {
+    html += '<img class="dj-hero-photo" src="' + esc(photos[0]) + '" alt="" onclick="openPhotoLightbox(' + JSON.stringify(photos) + ',0)">';
+  }
+
+  html += '<header class="dj-head">'
     +   '<div class="dj-title-row">'
     +     '<h4 class="dj-title">' + esc(t.name || 'Sans titre') + '</h4>'
     +     '<span class="dj-prio ' + p.cls + '">' + p.lbl + '</span>'
@@ -6708,11 +6718,12 @@ function _ddBuildJobDossier(t, day, jobsDef) {
     html += '<section class="dj-sec"><h5 class="dj-sec-t">Détails</h5><ul class="dj-list">' + jobItems.join('') + '</ul></section>';
   }
 
-  // Photos
+  // Photos — thumbnails (hero already shown above)
   if (photos.length) {
+    var _pJson = JSON.stringify(photos);
     html += '<section class="dj-sec"><h5 class="dj-sec-t">Photos</h5><div class="dj-photos">';
-    photos.forEach(function(src) {
-      html += '<a class="dj-photo" href="' + esc(src) + '" target="_blank" rel="noopener"><img src="' + esc(src) + '" alt=""></a>';
+    photos.forEach(function(src, pi) {
+      html += '<div class="dj-photo" onclick="openPhotoLightbox(' + _pJson + ',' + pi + ')"><img src="' + esc(src) + '" alt=""></div>';
     });
     html += '</div></section>';
   }
@@ -9246,6 +9257,20 @@ function overlayClick(e, id) { if (e.target.id === id) closeModal(id); }
    MAPS MODAL
 ════════════════════════════════════════════════════════════════ */
 var _mapsCoords = null;
+
+function openPhotoLightbox(photos, startIdx) {
+  var idx = startIdx || 0;
+  var lb = document.createElement('div');
+  lb.className = 'dj-lightbox';
+  function render() {
+    lb.innerHTML = '<img src="' + esc(photos[idx]) + '" alt="">'
+      + '<button class="dj-lightbox-close" aria-label="Fermer">✕</button>';
+    lb.querySelector('.dj-lightbox-close').onclick = function(e) { e.stopPropagation(); document.body.removeChild(lb); };
+  }
+  render();
+  lb.onclick = function() { document.body.removeChild(lb); };
+  document.body.appendChild(lb);
+}
 
 var _mapsAddr = '';
 function openMapsModal(lat, lon, label) {

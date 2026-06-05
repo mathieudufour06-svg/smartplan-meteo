@@ -3381,17 +3381,24 @@
       <div class="fin-kpi-val" id="finEcart"></div>
     </div>
 
+    <!-- ── PHOTOS DES TRAVAUX ── -->
+    <div class="fg">
+      <label>📸 Photos des travaux</label>
+      <div class="gallery-zone" id="galleryZone">
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(this.files)">
+        <button type="button" class="gallery-add" onclick="document.getElementById('galleryInput').click()">
+          <span class="ga-icon">📷</span>
+          <span class="ga-label">Ajouter des photos</span>
+          <span class="ga-hint">Glissez-déposez ou cliquez · plusieurs photos</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ── FACTURATION ── -->
     <details class="fin-section" id="finFactSection">
       <summary>💰 Facturation</summary>
-      <!-- Mode tabs: Manuel | Photo -->
-      <div style="display:flex;gap:6px;margin-top:10px;margin-bottom:12px">
-        <button type="button" id="factBtnManuel" class="mode-btn sel" style="flex:1" onclick="setFactMode('manuel')">Manuel</button>
-        <button type="button" id="factBtnPhoto" class="mode-btn" style="flex:1" onclick="setFactMode('photo')">📷 Photo de facture</button>
-      </div>
-      <!-- Manuel fields -->
-      <div id="factManuelSection">
-      <div class="fg-row">
+      <div class="fg-row" style="margin-top:10px">
         <div class="fg">
           <label>Montant facturé</label>
           <input type="text" id="tBilled" placeholder="ex : 2 500 $" maxlength="30" autocomplete="off" oninput="updateFinKpi()">
@@ -3429,9 +3436,9 @@
         <div class="fin-kpi"><div class="fin-kpi-label">Taux horaire effectif</div><div class="fin-kpi-val" id="finTauxH">—</div></div>
         <div class="fin-kpi"><div class="fin-kpi-label">Rentabilité</div><div class="fin-kpi-val" id="finRentab">—</div></div>
       </div>
-      </div><!-- /factManuelSection -->
-      <!-- Photo section -->
-      <div id="factPhotoSection" style="display:none">
+      <!-- Photo de facture -->
+      <div class="fg" style="margin-top:8px">
+        <label>🧾 Photo de facture / soumission</label>
         <input type="file" id="invoicePhotoFile" accept="image/*" capture="environment" style="display:none" onchange="loadInvoicePhoto(this.files)">
         <button type="button" class="btn-secondary" style="width:100%" onclick="document.getElementById('invoicePhotoFile').click()">📷 Prendre ou importer une photo</button>
         <div id="invoicePhotoPreviewContainer" style="display:none;margin-top:8px">
@@ -3439,18 +3446,6 @@
         </div>
       </div>
     </details>
-    <div class="fg">
-      <label>Photos des travaux</label>
-      <div class="gallery-zone" id="galleryZone">
-        <div class="gallery-grid" id="galleryGrid"></div>
-        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(this.files)">
-        <button type="button" class="gallery-add" onclick="document.getElementById('galleryInput').click()">
-          <span class="ga-icon">📷</span>
-          <span class="ga-label">Ajouter des photos</span>
-          <span class="ga-hint">Glissez-déposez ou cliquez · plusieurs photos</span>
-        </button>
-      </div>
-    </div>
     <div class="fg">
       <label>Priorité</label>
       <select id="tPrio">
@@ -8263,13 +8258,7 @@ function loadTaskPhoto(files) {
   reader.readAsDataURL(file);
 }
 
-function setFactMode(mode) {
-  document.getElementById('factManuelSection').style.display = mode === 'manuel' ? '' : 'none';
-  document.getElementById('factPhotoSection').style.display  = mode === 'photo'  ? '' : 'none';
-  var bm = document.getElementById('factBtnManuel'), bp = document.getElementById('factBtnPhoto');
-  if (bm) bm.classList.toggle('sel', mode === 'manuel');
-  if (bp) bp.classList.toggle('sel', mode === 'photo');
-}
+function setFactMode() { /* tabs removed — billing fields always visible */ }
 
 function loadInvoicePhoto(files) {
   if (!files || !files[0]) return;

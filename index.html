@@ -1797,6 +1797,7 @@
       animation: shIn var(--t-slow) var(--ease);
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      scroll-behavior: auto;
       scroll-padding-bottom: 80px;
     }
     /* Slide-up animation: uses transform but only during the brief open gesture
@@ -3579,6 +3580,10 @@
     <div class="fg">
       <label>Type de métier</label>
       <select id="wbType"></select>
+    </div>
+    <div class="fg">
+      <label>Montant estimé <span class="fg-opt">(optionnel)</span></label>
+      <input type="text" id="wbAmount" placeholder="Ex: 1 200 $" maxlength="20" inputmode="decimal" />
     </div>
     <div class="fg">
       <label>Durée estimée</label>
@@ -5524,6 +5529,7 @@ function openWorkBankForm(id) {
     emailEl.value  = item.email || '';
     if (addrEl) addrEl.value = item.address || '';
     typeEl.value   = item.type && jobsDef[item.type] ? item.type : (keys[0] || '');
+    var amtEl = document.getElementById('wbAmount'); if (amtEl) amtEl.value = item.amount || '';
     durEl.value    = item.duration || '';
     prioEl.value   = item.priority || 'medium';
     notesEl.value  = item.notes || '';
@@ -5538,6 +5544,7 @@ function openWorkBankForm(id) {
     nameEl.value = ''; clientEl.value = ''; phoneEl.value = ''; emailEl.value = '';
     if (addrEl) addrEl.value = '';
     typeEl.value = keys[0] || '';
+    var amtEl2 = document.getElementById('wbAmount'); if (amtEl2) amtEl2.value = '';
     durEl.value = ''; prioEl.value = 'medium'; notesEl.value = '';
     flexEl.checked = false;
     _wbCurrentIndoor = null;
@@ -5744,6 +5751,7 @@ function saveWorkBankItem() {
     email:    (document.getElementById('wbEmail').value    || '').trim(),
     address:  ((document.getElementById('wbAddress') || {}).value || '').trim(),
     type:     (document.getElementById('wbType')  || {value:''}).value || '',
+    amount:   ((document.getElementById('wbAmount') || {}).value || '').trim(),
     duration: (document.getElementById('wbDuration').value || '').trim(),
     priority: (document.getElementById('wbPrio')  || {value:'medium'}).value || 'medium',
     notes:    (document.getElementById('wbNotes').value    || '').trim(),
@@ -8675,6 +8683,7 @@ function taskToBank(id) {
     type:     task.type     || '',
     duration: task.duration || '',
     priority: task.priority || 'medium',
+    amount:   task.amount   || '',
     notes:    task.description || '',
     flexible: false,
     indoor:   null,
@@ -9157,13 +9166,6 @@ function closeModal(id) {
     document.querySelectorAll('.overlay.open .modal').forEach(function(m) {
       m.style.height = h;
     });
-    // Scroll focused input into view after modal shrinks (keyboard opened)
-    var active = document.activeElement;
-    if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) {
-      setTimeout(function() {
-        try { active.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e) {}
-      }, 80);
-    }
   }
 
   function syncWithDelay() {

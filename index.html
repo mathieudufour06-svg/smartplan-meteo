@@ -8019,6 +8019,7 @@ function parseSmartInput(originalText) {
   // Nettoyer le lieu : supprimer "numéro" et tout ce qui suit, et les noms de mois/jours résiduels
   if (result.location) {
     result.location = result.location
+      .replace(/\s*(adresse\s*(?:courriel|email|[eé]lectronique)?|courriel|email|t[eé]l[eé]phone|t[eé]l|montant|priorit[eé]|dur[eé]e|pour\s+le|chez|job|soumission|\$)\b.*/gi, '')
       .replace(/\s*\bnum[eé]ro\b.*/i, '')
       .replace(/\b(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b.*/gi, '')
       .replace(/\b(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\b.*/gi, '')

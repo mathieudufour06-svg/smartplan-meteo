@@ -5516,6 +5516,8 @@ function openWorkBankForm(id) {
   if (_wbEditingId) {
     var item = _workBank.find(function(w) { return w.id === _wbEditingId; }) || {};
     titleEl.textContent = 'Modifier travail';
+    var vBlock = document.querySelector('.wb-voice-block');
+    if (vBlock) vBlock.style.display = 'none';
     nameEl.value   = item.name || '';
     clientEl.value = item.client || '';
     phoneEl.value  = normalizePhone(item.phone) || item.phone || '';
@@ -5531,6 +5533,8 @@ function openWorkBankForm(id) {
     if (delBtn) delBtn.style.display = '';
   } else {
     titleEl.textContent = 'Nouveau travail';
+    var vBlock = document.querySelector('.wb-voice-block');
+    if (vBlock) vBlock.style.display = '';
     nameEl.value = ''; clientEl.value = ''; phoneEl.value = ''; emailEl.value = '';
     if (addrEl) addrEl.value = '';
     typeEl.value = keys[0] || '';

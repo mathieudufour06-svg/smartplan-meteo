@@ -5338,19 +5338,37 @@ function renderHero() {
   /* Hero card retiré — météo détaillée déplacée dans le modal openDayDetail() */
 }
 
+// ── Utilitaires date sans bug timezone ──────────────────────────────────────
+function dateVersISO(dateStr) {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr; // déjà YYYY-MM-DD → pas de parsing
+  var d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+function jourVersISO(offset) {
+  var d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+
 function renderDayStrip() {
   var strip = document.getElementById('dayStrip');
   if (!strip) return;
   strip.innerHTML = '';
   var fc = (ST.forecast && ST.forecast.length) ? ST.forecast : mockForecast();
   var jobsDef = getMergedJobTypes();
-  var today = new Date(); today.setHours(12, 0, 0, 0);
-  var todayIso = isoDate(today);
 
   for (var idx = 0; idx < 7; idx++) {
-    var dayDate = new Date(today); dayDate.setDate(today.getDate() + idx);
-    var dIso = isoDate(dayDate);
+    var dIso = jourVersISO(idx); // YYYY-MM-DD sans bug timezone
     var isToday = idx === 0;
+
+    // Date object only for display (day name, date string) — not for comparison
+    var dayDate = new Date(dIso + 'T12:00:00');
 
     // Find matching forecast entry — by date first, then by index position
     var fcDay = null;
@@ -5360,17 +5378,10 @@ function renderDayStrip() {
     if (!fcDay && fc[idx]) fcDay = fc[idx]; // fallback: forecast starts from today
     var st = fcDay ? simpleStatus(fcDay) : { level: 'ok' };
 
-    // Tasks on this day — match by scheduledDate OR by dayIndex (for voice-created tasks)
-    // Parse scheduledDate with T12:00:00 to avoid UTC-midnight timezone shift (UTC-4/UTC-5)
+    // Tasks on this day — pure string comparison via dateVersISO (no Date parsing)
     var dayTasks = ST.tasks.filter(function(t) {
       if (t.status === 'backlog') return false;
-      if (t.scheduledDate) {
-        var _jd = new Date(t.scheduledDate + 'T12:00:00');
-        var _jIso = _jd.getFullYear() + '-'
-          + String(_jd.getMonth() + 1).padStart(2, '0') + '-'
-          + String(_jd.getDate()).padStart(2, '0');
-        return _jIso === dIso;
-      }
+      if (t.scheduledDate) return dateVersISO(t.scheduledDate) === dIso;
       if (t.dayIndex === idx) return true;
       return false;
     }).sort(function(a, b) {

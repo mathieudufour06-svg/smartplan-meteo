@@ -2852,7 +2852,15 @@
     .loc-ac-item:active, .loc-ac-item.hover { background: var(--surface-3); }
     .loc-ac-sub { font-size: 11px; color: var(--t-3); }
     .loc-ac-empty { padding: 10px 13px; font-size: 12px; color: var(--t-4); }
-    .dj-actions { display: flex; gap: 8px; }
+    .dj-actions {
+      display: flex; gap: 8px;
+      position: sticky; bottom: 0;
+      padding: 12px 0 4px;
+      background: var(--surface-1);
+      border-top: 1px solid var(--line-1);
+      margin-top: 4px;
+      z-index: 4;
+    }
     .dj-edit {
       flex: 1; padding: 11px 14px;
       background: var(--surface-2);
@@ -2873,6 +2881,7 @@
       transition: background var(--t-fast) var(--ease);
     }
     .dj-to-bank:active { background: var(--surface-3); }
+    .dj-del { flex: 0 0 48px; color: var(--red, #f55) !important; font-size: 16px; }
 
     /* Compact weather */
     .dd-w-pill { padding: 5px 11px; font-size: 11px; }
@@ -4483,6 +4492,23 @@ function loadST() {
             .replace(/\s+[A-ZÀ-Ÿ][a-zà-ÿç]{1,4}\.?\s*$/, '')
             .replace(/\s+/g, ' ').trim();
         }
+        // Migration: extraire téléphone/courriel enfouis dans description
+        if (task.description) {
+          if (!task.phone) {
+            var _pm = task.description.match(/\b(?:\+?1[\s.\-]?)?\(?(\d{3})\)?[\s.\-]?(\d{3})[\s.\-]?(\d{4})\b/);
+            if (_pm) {
+              task.phone = _pm[1] + '-' + _pm[2] + '-' + _pm[3];
+              task.description = task.description.replace(_pm[0], '').replace(/\s{2,}/g,' ').trim();
+            }
+          }
+          if (!task.email) {
+            var _em = task.description.match(/\b([\w.\-+]+@[\w.\-]+\.[a-z]{2,})\b/i);
+            if (_em) {
+              task.email = _em[1].toLowerCase();
+              task.description = task.description.replace(_em[0], '').replace(/\s{2,}/g,' ').trim();
+            }
+          }
+        }
         return task;
       });
     }
@@ -4809,7 +4835,7 @@ function buildTimerSection(task) {
 
   if (state === 'idle') {
     html += '<div class="dj-timer-btns">'
-      + '<button type="button" class="dj-timer-btn start" onclick="timerStart(' + JSON.stringify(task.id) + ')">▶ Démarrer le job</button>'
+      + '<button type="button" class="dj-timer-btn start">▶ Démarrer le job</button>'
       + '</div>';
 
   } else if (state === 'running') {
@@ -4818,8 +4844,8 @@ function buildTimerSection(task) {
     html += _timerSessionsHtml(task.sessions);
     html += _timerCompareHtml(task);
     html += '<div class="dj-timer-btns">'
-      + '<button type="button" class="dj-timer-btn pause" onclick="timerPause(' + JSON.stringify(task.id) + ')">⏸ Pause</button>'
-      + '<button type="button" class="dj-timer-btn finish" onclick="timerFinish(' + JSON.stringify(task.id) + ')">🏁 Terminer</button>'
+      + '<button type="button" class="dj-timer-btn pause">⏸ Pause</button>'
+      + '<button type="button" class="dj-timer-btn finish">🏁 Terminer</button>'
       + '</div>';
 
   } else if (state === 'paused') {
@@ -4828,8 +4854,8 @@ function buildTimerSection(task) {
     html += _timerSessionsHtml(task.sessions);
     html += _timerCompareHtml(task);
     html += '<div class="dj-timer-btns">'
-      + '<button type="button" class="dj-timer-btn resume" onclick="timerResume(' + JSON.stringify(task.id) + ')">▶ Reprendre</button>'
-      + '<button type="button" class="dj-timer-btn finish" onclick="timerFinish(' + JSON.stringify(task.id) + ')">🏁 Terminer</button>'
+      + '<button type="button" class="dj-timer-btn resume">▶ Reprendre</button>'
+      + '<button type="button" class="dj-timer-btn finish">🏁 Terminer</button>'
       + '</div>';
 
   } else { // done
@@ -4840,7 +4866,7 @@ function buildTimerSection(task) {
     html += _timerSessionsHtml(task.sessions);
     html += _timerCompareHtml(task);
     html += '<div class="dj-timer-btns">'
-      + '<button type="button" class="dj-timer-btn reopen" onclick="timerReopen(' + JSON.stringify(task.id) + ')">Rouvrir le job</button>'
+      + '<button type="button" class="dj-timer-btn reopen">Rouvrir le job</button>'
       + '</div>';
   }
 
@@ -7214,11 +7240,11 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   // Timer section
   html += buildTimerSection(t);
 
-  // Actions
+  // Actions — sticky bar at bottom of card
   html += '<div class="dj-actions">'
        +    '<button type="button" class="dj-edit" data-edit-task="' + esc(t.id) + '">Modifier →</button>'
-       +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">📥 Banque de travaux</button>'
-       +    '<button type="button" class="dj-to-bank" data-del-task="' + esc(t.id) + '" style="color:var(--red,#f55)" title="Supprimer">🗑</button>'
+       +    '<button type="button" class="dj-to-bank" data-task-to-bank="' + esc(t.id) + '" title="Retirer du calendrier et remettre en banque">📥 Banque</button>'
+       +    '<button type="button" class="dj-to-bank dj-del" data-del-task="' + esc(t.id) + '" title="Supprimer">🗑</button>'
        +  '</div>';
 
   html += '</article>';
@@ -9221,20 +9247,28 @@ function taskToBank(id) {
   var task = ST.tasks.find(function(t) { return t.id === id; });
   if (!task) return;
   var rec = {
-    id: _wbNewId(),
-    name:     task.name     || task.title || '',
-    client:   task.client   || '',
-    phone:    task.phone    || '',
-    email:    task.email    || '',
-    address:  task.location || '',
-    type:     task.type     || '',
-    duration: task.duration || '',
-    priority: task.priority || 'medium',
-    amount:   task.amount   || '',
-    notes:    task.description || '',
-    flexible: false,
-    indoor:   null,
-    photos:   Array.isArray(task.gallery) ? task.gallery.slice() : []
+    id:               _wbNewId(),
+    name:             task.name             || task.title || '',
+    client:           task.client           || '',
+    phone:            task.phone            || '',
+    email:            task.email            || '',
+    address:          task.location         || '',
+    type:             task.type             || '',
+    duration:         task.duration         || '',
+    priority:         task.priority         || 'medium',
+    amount:           task.amount           || '',
+    notes:            task.description      || '',
+    flexible:         false,
+    indoor:           null,
+    photos:           Array.isArray(task.gallery) ? task.gallery.slice() : [],
+    geoLat:           task.geoLat           || null,
+    geoLon:           task.geoLon           || null,
+    sessions:         Array.isArray(task.sessions) ? task.sessions.slice() : [],
+    tempsTotal:       task.tempsTotal       || 0,
+    meteoChantierDate: task.meteoChantierDate || null,
+    time:             task.time             || '',
+    scheduledDate:    task.scheduledDate    || null,
+    weather:          task.weather          || null
   };
   _workBank.push(rec);
   _saveWorkBankSafe();
@@ -9971,6 +10005,23 @@ function isoDate(d) {
     setTimeout(initLocAutocomplete, 200);
   });
 })();
+
+// Delegated click handler for timer buttons (robust against innerHTML re-renders)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.dj-timer-btn');
+  if (!btn) return;
+  e.stopPropagation();
+  var cls = btn.classList;
+  // Extract task ID from nearest dj-timer ancestor
+  var timerEl = btn.closest('[id^="dj-timer-"]');
+  if (!timerEl) return;
+  var taskId = timerEl.id.replace('dj-timer-', '');
+  if (cls.contains('start'))  timerStart(taskId);
+  else if (cls.contains('pause'))  timerPause(taskId);
+  else if (cls.contains('resume')) timerResume(taskId);
+  else if (cls.contains('finish')) timerFinish(taskId);
+  else if (cls.contains('reopen')) timerReopen(taskId);
+});
 
 document.addEventListener('DOMContentLoaded', function() {
   loadST();

@@ -7661,6 +7661,24 @@ function parseSmartInput(originalText) {
     return m;
   }
 
+  // ── ÉTAPE 0 : Reconstruction email oral — AVANT tout autre traitement ────
+  // "Gilles Lefebvre commercial gmail point com" → "gilleslebvre@gmail.com"
+  // Opère sur le texte brut normalisé (sans accents) pour \w+
+  (function() {
+    var _raw = work.normalize ? work.normalize('NFD').replace(/[̀-ͯ]/g, '') : work;
+    var _m2 = _raw.match(/\b(\w+)\s+(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/i);
+    if (_m2) {
+      result.email = (_m2[1] + _m2[2] + '@' + _m2[3] + '.' + _m2[4]).toLowerCase();
+      work = work.replace(/\b[\wÀ-ÿ]+\s+[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
+      return;
+    }
+    var _m1 = _raw.match(/\b(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/i);
+    if (_m1) {
+      result.email = (_m1[1] + '@' + _m1[2] + '.' + _m1[3]).toLowerCase();
+      work = work.replace(/\b[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
+    }
+  })();
+
   // ── Fusion de fragments chiffres contigus → numéro de téléphone ─────────
   // STT peut fragmenter "514 226 9523" en segments séparés ou "cinq cinq quatre..."
   // Fusionner des séquences de tokens entièrement numériques contigus si leur total = 10 chiffres
@@ -7678,28 +7696,10 @@ function parseSmartInput(originalText) {
   // "pour" introduisant un jour nommé ou une date relative
   work = work.replace(/\bpour\s+(?=(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd['']hui)\b)/gi, ' ');
 
-  // ── Email ─────────────────────────────────────────────────────────────────
-  // ÉTAPE 1 — Normaliser les accents (email addresses n'en contiennent pas)
-  var _workEmail = work.normalize ? work.normalize('NFD').replace(/[̀-ͯ]/g, '') : work;
-  // Pattern 2 mots : "Sylvain Lecuyer commercial gmail point com" → "sylvain.lecuyer@gmail.com"
-  _workEmail = _workEmail.replace(/\b(\w+)\s+(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1.$2@$3.$4');
-  // Pattern 1 mot : "lecuyer commercial gmail point com" → "lecuyer@gmail.com"
-  _workEmail = _workEmail.replace(/\b(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/gi, '$1@$2.$3');
-  // Pattern domaine connu sans séparateur : "lecuyer gmail com"
-  _workEmail = _workEmail.replace(/\b([\w.\-+]+)\s+((?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus))\s+(com|ca|fr|net|org)\b/gi, '$1@$2.$3');
-  // ÉTAPE 2 — Extraire depuis la version normalisée (sans accents)
-  var _emM = _workEmail.match(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
-  if (_emM) {
-    result.email = _emM[1].toLowerCase();
-    // Retirer le pattern oral original de work (accepte les caractères accentués)
-    work = work.replace(/\b[\wÀ-ÿ]+\s+[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
-    work = work.replace(/\b[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
-    work = work.replace(/\b[\wÀ-ÿ.\-+]+\s+(?:gmail|yahoo|hotmail|outlook|icloud|live|me|videotron|bell|telus)\s+(?:com|ca|fr|net|org)\b/gi, ' ');
-    work = work.replace(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/gi, ' ');
-  } else {
-    // Email direct sans reconstruction orale
+  // ── Email : email littéral (@ réel) — oral déjà traité en étape 0 ─────────
+  if (!result.email) {
     var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
-    if (em) result.email = em[1];
+    if (em) result.email = em[1].toLowerCase();
   }
 
   // ── Téléphone ─────────────────────────────────────────────────────────────
@@ -8122,7 +8122,7 @@ function parseSmartInput(originalText) {
     } else if (_typeLbl) {
       result.name = _typeLbl;
     } else if (_suffix) {
-      result.name = _suffix;
+      result.name = 'Travaux — ' + _suffix;
     } else {
       result.name = (text.split(/[,;]/)[0] || text).trim().slice(0, 60);
     }

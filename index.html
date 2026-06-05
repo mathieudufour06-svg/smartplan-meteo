@@ -5325,11 +5325,12 @@ function renderDayStrip() {
     var dIso = isoDate(dayDate);
     var isToday = idx === 0;
 
-    // Find matching forecast entry for this day (may be absent if weather not yet loaded)
+    // Find matching forecast entry — by date first, then by index position
     var fcDay = null;
     for (var fi = 0; fi < fc.length; fi++) {
       if (isoDate(fc[fi].date) === dIso) { fcDay = fc[fi]; break; }
     }
+    if (!fcDay && fc[idx]) fcDay = fc[idx]; // fallback: forecast starts from today
     var st = fcDay ? simpleStatus(fcDay) : { level: 'ok' };
 
     // Tasks on this day — match by scheduledDate OR by dayIndex (for voice-created tasks)

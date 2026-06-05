@@ -4394,6 +4394,13 @@ function loadST() {
           var _tm = task.time.match(/^(\d{2}):(\d{2})$/);
           if (_tm && parseInt(_tm[2], 10) <= 10) task.time = _tm[1] + ':00';
         }
+        // Migration: nettoyer les résidus de mots-clés NLP collés à l'adresse
+        if (task.location) {
+          task.location = task.location
+            .replace(/\s*(adresse\s*(?:courriel|email|[eé]lectronique)?|courriel|email|t[eé]l[eé]phone|t[eé]l|montant|priorit[eé]|dur[eé]e|pour\s+le|chez|job|soumission|\$)\b.*/gi, '')
+            .replace(/\s+[A-ZÀ-Ÿ][a-zà-ÿç]{1,4}\.?\s*$/, '')
+            .replace(/\s+/g, ' ').trim();
+        }
         return task;
       });
     }
@@ -6676,6 +6683,13 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   var jobItems = [];
   if (t.time)     jobItems.push('<li><span class="dj-i">🕒</span>' + esc(t.time) + '</li>');
   if (t.duration) jobItems.push('<li><span class="dj-i">⏱</span>' + esc(t.duration) + '</li>');
+  if (t.amount) {
+    var _amt = parseFloat(String(t.amount).replace(/[^\d.]/g, ''));
+    if (_amt > 0) {
+      var _amtFmt = Math.round(_amt).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+      jobItems.push('<li><span class="dj-i">💰</span><span style="color:#4ade80">' + _amtFmt + ' $</span></li>');
+    }
+  }
   if (flexible)   jobItems.push('<li><span class="dj-i">☂</span>Flexible météo</li>');
   if (notes)      jobItems.push('<li class="dj-notes"><span class="dj-i">📝</span>' + esc(notes).replace(/\n/g, '<br>') + '</li>');
   if (jobItems.length) {

@@ -1827,23 +1827,34 @@
       z-index: 2;
     }
     .modal-close:active { transform: scale(0.92); background: var(--glass-3); }
+    /* Back button — flow-positioned inside .modal-header */
     .modal-back {
-      position: absolute;
-      top: calc(var(--safe-top) + var(--s5) - 8px); left: calc(var(--s5) - 8px);
+      align-self: flex-start;
       min-width: 44px; min-height: 44px;
       display: inline-flex; align-items: center; gap: 4px;
-      padding: 0 12px;
+      padding: 0 4px;
       border-radius: 22px;
       background: transparent; border: none;
-      color: var(--tint, #6e8cff);
-      font-size: 15px; font-weight: 600;
+      color: #60a5fa;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer;
+    }
+    /* Header row used in modals with a back button */
+    .modal-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+      padding-right: 44px; /* leave room for the absolute close button */
+    }
+    .modal-header-title {
+      font-size: 18px; font-weight: 700; color: var(--t-1);
+      margin: 0; padding: 0;
+    }
       cursor: pointer;
       z-index: 2;
       -webkit-tap-highlight-color: transparent;
     }
-    .modal-back:active { opacity: 0.6; }
-    .modal-back .back-arrow { font-size: 18px; line-height: 1; }
-
     /* Body scroll-lock when modal open.
        Must use position:fixed (not just overflow:hidden) on iOS Safari.
        overflow:hidden alone does NOT prevent iOS from panning the visual viewport
@@ -3389,9 +3400,11 @@
 <!-- TASK MODAL -->
 <div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
-    <button type="button" class="modal-back" onclick="closeModal('taskOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('taskOverlay')" aria-label="Fermer">✕</button>
-    <h3 id="taskModalTitle">Nouveaux travaux</h3>
+    <div class="modal-header">
+      <button type="button" class="modal-back" onclick="closeModal('taskOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
+      <h3 id="taskModalTitle" class="modal-header-title">Nouveaux travaux</h3>
+    </div>
     <div class="fg">
       <label>Type de travaux</label>
       <input type="text" id="tName" placeholder="ex : Terrasse Tremblay" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
@@ -3575,11 +3588,13 @@
 <!-- DAY DETAIL MODAL -->
 <div class="overlay" id="dayDetailOverlay" onclick="overlayClick(event,'dayDetailOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
-    <button type="button" class="modal-back" onclick="closeModal('dayDetailOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('dayDetailOverlay')" aria-label="Fermer">✕</button>
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; padding-right: 44px; padding-left: 44px">
-      <h3 id="ddTitle" style="margin:0; padding:0">Météo du jour</h3>
-      <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
+    <div class="modal-header">
+      <button type="button" class="modal-back" onclick="closeModal('dayDetailOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-right: 8px">
+        <h3 id="ddTitle" class="modal-header-title">Météo du jour</h3>
+        <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
+      </div>
     </div>
     <div id="ddContent"></div>
     <div class="mf" style="margin-top:16px">
@@ -3603,9 +3618,11 @@
 <!-- WORK BANK MODAL — create/edit reusable templates -->
 <div class="overlay" id="workBankOverlay" onclick="overlayClick(event,'workBankOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
-    <button type="button" class="modal-back" onclick="closeModal('workBankOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('workBankOverlay')" aria-label="Fermer">✕</button>
-    <h3 id="wbModalTitle">Nouveau travail</h3>
+    <div class="modal-header">
+      <button type="button" class="modal-back" onclick="closeModal('workBankOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
+      <h3 id="wbModalTitle" class="modal-header-title">Nouveau travail</h3>
+    </div>
 
     <!-- Voice pre-fill block -->
     <div class="fg wb-voice-block">
@@ -3823,8 +3840,10 @@
 <!-- ══ NOTIFICATIONS OVERLAY ══ -->
 <div class="overlay" id="notifOverlay" onclick="overlayClick(event,'notifOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
-    <button type="button" class="modal-back" onclick="closeModal('notifOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('notifOverlay')" aria-label="Fermer">✕</button>
+    <div class="modal-header">
+      <button type="button" class="modal-back" onclick="closeModal('notifOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
+    </div>
     <div id="notifModalContent"></div>
   </div>
 </div>

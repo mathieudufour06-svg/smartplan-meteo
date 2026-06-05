@@ -6943,7 +6943,7 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
         + ' · 💨' + w.windspeed + ' km/h'
         + '</span>';
     }
-    // Re-assess risk using local weather and update chip
+    // Re-assess risk using local weather and update chip + section title
     var chip = document.getElementById('dj-chip-' + t.id);
     if (chip) {
       var res = assess(t.type, w, t.weather);
@@ -6951,9 +6951,13 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
       var ico = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
       var _cv = extraireVille(t.location || '');
       var _cl = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
-      if (_cv) _cl = 'Météo à ' + _cv + ' · ' + _cl;
       chip.className = 'dj-w-chip ' + lvl;
       chip.innerHTML = '<span class="dj-w-chip-i">' + ico + '</span><span>' + esc(_cl) + '</span>';
+      // Update section title with city if available
+      if (_cv && chip.parentElement) {
+        var secTitle = chip.parentElement.querySelector('.dj-sec-t');
+        if (secTitle) secTitle.textContent = 'Météo · ' + _cv;
+      }
     }
   }
 }
@@ -7179,11 +7183,14 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   // Compact weather chip for the job (id allows async update with local weather)
   var _chipVille = t.geoLat ? extraireVille(t.location || '') : '';
   var _chipLabel = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
-  if (_chipVille) _chipLabel = 'Météo à ' + _chipVille + ' · ' + _chipLabel;
-  html += '<div id="dj-chip-' + esc(t.id) + '" class="dj-w-chip ' + resLevel + '">'
-       +    '<span class="dj-w-chip-i">' + resIcon + '</span>'
-       +    '<span>' + esc(_chipLabel) + '</span>'
-       +  '</div>';
+  var _secTitle = _chipVille ? 'Météo · ' + _chipVille : 'Météo';
+  html += '<section class="dj-sec">'
+       +    '<h5 class="dj-sec-t">' + esc(_secTitle) + '</h5>'
+       +    '<div id="dj-chip-' + esc(t.id) + '" class="dj-w-chip ' + resLevel + '">'
+       +      '<span class="dj-w-chip-i">' + resIcon + '</span>'
+       +      '<span>' + esc(_chipLabel) + '</span>'
+       +    '</div>'
+       +  '</section>';
 
   // Timer section
   html += buildTimerSection(t);

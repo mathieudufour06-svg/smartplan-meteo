@@ -5338,11 +5338,11 @@ function renderDayStrip() {
     var isToday = dIso === todayIso;
     var st = simpleStatus(d);
 
-    // Tasks on this day — match by scheduledDate, also include dayIndex=0 for today
+    // Tasks on this day — match by scheduledDate OR by dayIndex (for voice-created tasks)
     var dayTasks = ST.tasks.filter(function(t) {
       if (t.status === 'backlog') return false;
       if (t.scheduledDate === dIso) return true;
-      if (isToday && t.dayIndex === 0 && !t.scheduledDate) return true;
+      if (t.dayIndex === idx && !t.scheduledDate) return true;
       return false;
     }).sort(function(a, b) {
       if (a.time && b.time) return a.time.localeCompare(b.time);

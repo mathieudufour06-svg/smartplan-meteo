@@ -5315,23 +5315,22 @@ function renderDayStrip() {
   var strip = document.getElementById('dayStrip');
   if (!strip) return;
   strip.innerHTML = '';
-  var fc = ST.forecast;
-  if (!fc || !fc.length) {
-    for (var i = 0; i < 5; i++) {
-      var sk = document.createElement('div');
-      sk.className = 'wt-day';
-      sk.innerHTML = '<div class="wt-day-head"><div class="skel" style="width:80px;height:13px"></div><div class="skel" style="width:100px;height:13px"></div></div>'
-                   + '<div class="skel" style="width:100%;height:32px;margin-top:8px;border-radius:8px"></div>';
-      strip.appendChild(sk);
-    }
-    return;
-  }
+  var fc = ST.forecast || [];
   var jobsDef = getMergedJobTypes();
-  var todayIso = isoDate(new Date());
-  fc.slice(0, 7).forEach(function(d, idx) {
-    var dIso = isoDate(d.date);
-    var isToday = dIso === todayIso;
-    var st = simpleStatus(d);
+  var today = new Date(); today.setHours(12, 0, 0, 0);
+  var todayIso = isoDate(today);
+
+  for (var idx = 0; idx < 7; idx++) {
+    var dayDate = new Date(today); dayDate.setDate(today.getDate() + idx);
+    var dIso = isoDate(dayDate);
+    var isToday = idx === 0;
+
+    // Find matching forecast entry for this day (may be absent if weather not yet loaded)
+    var fcDay = null;
+    for (var fi = 0; fi < fc.length; fi++) {
+      if (isoDate(fc[fi].date) === dIso) { fcDay = fc[fi]; break; }
+    }
+    var st = fcDay ? simpleStatus(fcDay) : { level: 'ok' };
 
     // Tasks on this day — match by scheduledDate OR by dayIndex (for voice-created tasks)
     var dayTasks = ST.tasks.filter(function(t) {
@@ -5344,19 +5343,25 @@ function renderDayStrip() {
       if (a.time) return -1; if (b.time) return 1; return 0;
     });
 
-    // Rich weather display
-    var wxMeteoIcon = wIcon(d.weathercode);
-    var wxMeteoLabel = wLabel(d.weathercode);
-    var wxTempStr = Math.round(d.temp_max) + '° / ' + Math.round(d.temp_min) + '°';
-    var wxSub = '';
-    if (d.weathercode >= 95)       wxSub = '⚡ Orage';
-    else if (d.precipitation > 5)  wxSub = '🌧 ' + Math.round(d.precipitation) + ' mm';
-    else if (d.windspeed > 40)     wxSub = '💨 ' + Math.round(d.windspeed) + ' km/h';
-    else if (d.temp_min < 0)       wxSub = '🧊 Gel ' + Math.round(d.temp_min) + '°';
-    else if (d.precipitation > 0)  wxSub = '💧 ' + Math.round(d.precipitation) + ' mm';
+    // Weather display — placeholder when forecast unavailable
+    var wxMeteoIcon, wxMeteoLabel, wxTempStr, wxSub = '';
+    if (fcDay) {
+      wxMeteoIcon  = wIcon(fcDay.weathercode);
+      wxMeteoLabel = wLabel(fcDay.weathercode);
+      wxTempStr    = Math.round(fcDay.temp_max) + '° / ' + Math.round(fcDay.temp_min) + '°';
+      if (fcDay.weathercode >= 95)        wxSub = '⚡ Orage';
+      else if (fcDay.precipitation > 5)   wxSub = '🌧 ' + Math.round(fcDay.precipitation) + ' mm';
+      else if (fcDay.windspeed > 40)      wxSub = '💨 ' + Math.round(fcDay.windspeed) + ' km/h';
+      else if (fcDay.temp_min < 0)        wxSub = '🧊 Gel ' + Math.round(fcDay.temp_min) + '°';
+      else if (fcDay.precipitation > 0)   wxSub = '💧 ' + Math.round(fcDay.precipitation) + ' mm';
+    } else {
+      wxMeteoIcon  = '⏳';
+      wxMeteoLabel = 'Météo…';
+      wxTempStr    = '— / —';
+    }
 
-    var dayName = isToday ? "Aujourd'hui" : DAYS_L[d.date.getDay()];
-    var dateStr = d.date.getDate() + ' ' + MONTHS[d.date.getMonth()];
+    var dayName = isToday ? "Aujourd'hui" : DAYS_L[dayDate.getDay()];
+    var dateStr = dayDate.getDate() + ' ' + MONTHS[dayDate.getMonth()];
 
     var levelCls = st.level !== 'ok' ? ' wt-' + st.level : '';
     var todayCls = isToday ? ' wt-today' : '';
@@ -5383,7 +5388,7 @@ function renderDayStrip() {
           '<div class="wt-today-header">'
         +   '<div>'
         +     '<div class="wt-today-label">Aujourd\'hui</div>'
-        +     '<div class="wt-today-date">' + DAYS_L[d.date.getDay()] + ' ' + d.date.getDate() + ' ' + MONTHS_FULL[d.date.getMonth()] + '</div>'
+        +     '<div class="wt-today-date">' + DAYS_L[dayDate.getDay()] + ' ' + dayDate.getDate() + ' ' + MONTHS_FULL[dayDate.getMonth()] + '</div>'
         +   '</div>'
         +   '<div class="wt-today-wx">'
         +     '<span class="wt-today-wx-icon">' + wxMeteoIcon + '</span>'
@@ -5416,7 +5421,7 @@ function renderDayStrip() {
 
     entry.onclick = (function(i) { return function() { openDayDetail(i); }; })(idx);
     strip.appendChild(entry);
-  });
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════

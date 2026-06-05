@@ -1080,6 +1080,7 @@
       transition: background var(--t-fast) var(--ease);
       position: relative; overflow: hidden;
       text-align: left; width: 100%;
+      color: var(--t-1);
     }
     .wt-day:active { background: var(--surface-2); }
     .wt-day.wt-warn { border-color: rgba(255,159,67,0.25); }
@@ -1121,8 +1122,9 @@
     .wt-today-jobs .wt-job-pill {
       font-size: 15px; font-weight: 700;
       padding: 10px 14px;
-      background: rgba(118,150,255,0.12);
-      border: 1px solid rgba(118,150,255,0.20);
+      background: rgba(118,150,255,0.14);
+      border: 1px solid rgba(118,150,255,0.28);
+      color: var(--t-1);
     }
     .wt-today-jobs .wt-no-jobs {
       font-size: 13px; color: var(--t-4); font-style: italic;
@@ -1155,18 +1157,19 @@
     .wt-jobs { display: flex; flex-direction: column; gap: 4px; }
     .wt-job-pill {
       display: flex; align-items: center; gap: 7px;
-      font-size: 13px; font-weight: 600; color: var(--t-2);
+      font-size: 13px; font-weight: 600; color: var(--t-1);
       padding: 6px 10px;
-      background: var(--glass-2);
+      background: var(--surface-2);
+      border: 1px solid var(--line-2);
       border-radius: var(--r-md);
       letter-spacing: -0.01em;
     }
     .wt-pill-time {
       margin-left: auto;
       font-size: 11px; font-weight: 700;
-      color: var(--t-4); font-variant-numeric: tabular-nums;
+      color: var(--t-3); font-variant-numeric: tabular-nums;
     }
-    .wt-no-jobs { font-size: 12px; color: var(--t-5); font-style: italic; padding: 2px 4px; }
+    .wt-no-jobs { font-size: 12px; color: var(--t-3); font-style: italic; padding: 4px 2px; }
 
     /* ════════════════════════════════════════════════════════════════
        BANQUE DE TRAVAUX — liste backlog
@@ -5294,10 +5297,9 @@ function renderDayStrip() {
     var isToday = dIso === todayIso;
     var st = simpleStatus(d);
 
-    // Tasks on this day
+    // Tasks on this day — match by scheduledDate (ISO string) only
     var dayTasks = ST.tasks.filter(function(t) {
-      return (t.scheduledDate === dIso) ||
-             (t.dayIndex === idx && !t.scheduledDate && t.status !== 'backlog');
+      return t.scheduledDate === dIso && t.status !== 'backlog';
     }).sort(function(a, b) {
       if (a.time && b.time) return a.time.localeCompare(b.time);
       if (a.time) return -1; if (b.time) return 1; return 0;
@@ -5331,7 +5333,7 @@ function renderDayStrip() {
         return '<div class="wt-job-pill">' + jd.icon + ' ' + esc(t.name) + timeStr + '</div>';
       }).join('');
     } else {
-      jobsHtml = '<div class="wt-no-jobs">Aucun travaux planifié</div>';
+      jobsHtml = '<div class="wt-no-jobs">Aucun travail ce jour</div>';
     }
 
     var wxCls = st.level !== 'ok' ? ' wt-wx-' + st.level : '';

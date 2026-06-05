@@ -4534,8 +4534,9 @@ function normaliserAdresse(adresse) {
   // Abréviations St- / Ste-
   a = a.replace(/\bSt-(?=[A-ZÀ-Ö])/g, 'Saint-');
   a = a.replace(/\bSte-(?=[A-ZÀ-Ö])/g, 'Sainte-');
-  // Séparateurs → virgule
-  a = a.replace(/\s+[ÀAàa][Uu]?\s+/g, ', ');
+  // Séparateurs → virgule : "au/Au" only; bare "à/À" may be part of the address
+  a = a.replace(/\s+[Aa][Uu]\s+/g, ', ');
+  a = a.replace(/\s+[àÀ]\s+(?=\d)/g, ', '); // "à 123 rue..." → only when followed by a civic number
   a = a.replace(/\s{2,}/g, ' ').trim();
   // Ajouter QC Canada si absent
   if (!/\bQC\b/i.test(a) && !/canada/i.test(a)) a = a + ', QC, Canada';
@@ -7500,7 +7501,11 @@ function _vpGeocode(loc) {
       _voiceParsedResult.geoLat = null;
       _voiceParsedResult.geoLon = null;
       if (el) { el.textContent = '⚠️ Adresse non trouvée — corrige ci-dessus'; el.style.color = '#f55'; }
-      if (inp) { inp.style.borderColor = '#f55'; inp.classList.add('lieu-error'); }
+      if (inp) {
+        if (!inp.value && loc) inp.value = loc; // preserve address even when geocoding fails
+        inp.style.borderColor = '#f55';
+        inp.classList.add('lieu-error');
+      }
     }
   });
 }
@@ -7733,7 +7738,7 @@ function parseSmartInput(originalText) {
       return;
     }
     var _m1 = _raw.match(/\b(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/i);
-    if (_m1) {
+    if (_m1 && _m1[1].length >= 3) {
       result.email = (_m1[1] + '@' + _m1[2] + '.' + _m1[3]).toLowerCase();
       work = work.replace(/\b[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
     }
@@ -7759,7 +7764,7 @@ function parseSmartInput(originalText) {
   // ── Email : email littéral (@ réel) — oral déjà traité en étape 0 ─────────
   if (!result.email) {
     var em = clip(/([\w.\-+]+@[\w.\-]+\.[a-z]{2,})/i);
-    if (em) result.email = em[1].toLowerCase();
+    if (em && em[1].split('@')[0].replace(/[.\-+]/g, '').length >= 3) result.email = em[1].toLowerCase();
   }
 
   // ── Téléphone ─────────────────────────────────────────────────────────────
@@ -8039,7 +8044,6 @@ function parseSmartInput(originalText) {
       .replace(/\b(?:janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\b.*/gi, '')
       .replace(/\s+\bpour\b.*/i, '')
       .replace(/\s+[AÀà]\s+po\w{0,3}$/i, '')
-      .replace(/\s+[ÀA]\s+([A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\-']{3,})\s*$/i, ', $1')
       .replace(/\s+(?:au|à|en|de|du|dans|sur|chez)\s*$/i, '')
       .replace(/\s+\bune?\b\s*\S{0,5}$/i, '')
       .replace(/\s+\bmoyenn\w*\b\s*$/i, '')

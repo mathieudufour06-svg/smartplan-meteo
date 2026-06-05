@@ -3881,6 +3881,36 @@ var JOB_TYPES = {
 
 var RISK_RULES = {};
 
+// Catégories météo par type de travaux
+var _JOB_CATEGORY = {
+  emondage:'hauteur', toiture:'hauteur', gouttières:'hauteur', electrique:'hauteur', hauteur:'hauteur',
+  pave:'beton_pave', pavage:'beton_pave', asphaltage:'beton_pave', beton:'beton_pave',
+  maconnerie:'general', paysagisme:'general', terrasse:'general', excavation:'general',
+  renovation:'general', entretien:'general', peinture:'general', commercial:'general',
+  plomberie:'general', carrelage:'general', montage:'general', abattage:'general',
+};
+
+var _CATEGORY_RULES = {
+  hauteur: [
+    { t:function(w){ return w.weathercode>=95; }, l:'danger', m:'⛈ Orage — travaux en hauteur interdits' },
+    { t:function(w){ return w.windspeed>30; },    l:'danger', m:'💨 Vent >30 km/h — danger en hauteur' },
+    { t:function(w){ return w.precipitation>3; }, l:'danger', m:'🌧 Pluie forte — surfaces glissantes' },
+    { t:function(w){ return w.precipitation>1; }, l:'risk',   m:'🌦 Pluie — surfaces glissantes' },
+  ],
+  beton_pave: [
+    { t:function(w){ return w.weathercode>=95; }, l:'danger', m:'⛈ Orage — arrêt travaux' },
+    { t:function(w){ return w.precipitation>5; }, l:'danger', m:'🌧 Pluie forte — béton/pavé compromis' },
+    { t:function(w){ return w.precipitation>2; }, l:'risk',   m:'🌦 Pluie — prise compromise' },
+    { t:function(w){ return w.temp_min<5; },      l:'risk',   m:'🥶 Froid — prise compromise' },
+  ],
+  general: [
+    { t:function(w){ return w.weathercode>=95; }, l:'danger', m:'⛈ Orage — arrêt travaux' },
+    { t:function(w){ return w.precipitation>10; },l:'danger', m:'🌧 Pluie forte — arrêt travaux' },
+    { t:function(w){ return w.precipitation>5; }, l:'risk',   m:'🌦 Pluie modérée' },
+    { t:function(w){ return w.windspeed>40; },    l:'risk',   m:'💨 Vent fort' },
+  ],
+};
+
 var WMO = {
   0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
   45:'🌫️', 48:'🌫️',
@@ -4356,6 +4386,11 @@ function loadST() {
         if (!task.name && task.title) task.name = task.title;
         if (!task.title) task.title = task.name || '';
         if (!task.priority) task.priority = 'medium';
+        // Migration: arrondir les minutes parasites (≤10) dans l'heure de début
+        if (task.time) {
+          var _tm = task.time.match(/^(\d{2}):(\d{2})$/);
+          if (_tm && parseInt(_tm[2], 10) <= 10) task.time = _tm[1] + ':00';
+        }
         return task;
       });
     }
@@ -4658,7 +4693,13 @@ function assess(jobType, w, taskOverride) {
     var ovRes = assessOverride(taskOverride, w);
     if (ovRes) return ovRes;
   }
-  var rules = RISK_RULES[jobType] || [];
+  // Category rules take priority for built-in types; RISK_RULES used for custom user types
+  var rules;
+  if (_JOB_CATEGORY[jobType]) {
+    rules = _CATEGORY_RULES[_JOB_CATEGORY[jobType]] || [];
+  } else {
+    rules = RISK_RULES[jobType] || [];
+  }
   var level = 'ok', msg = '✓ Conditions favorables';
   for (var i = 0; i < rules.length; i++) {
     var r = rules[i];
@@ -7850,11 +7891,13 @@ function parseSmartInput(originalText) {
   if (_pmM) {
     var _pmH = parseInt(_pmM[1], 10), _pmMin = _pmM[2] ? parseInt(_pmM[2], 10) : 0;
     if (_pmH < 12) _pmH += 12;
+    if (_pmMin <= 10) _pmMin = 0;
     result.time = ('0' + _pmH).slice(-2) + ':' + ('0' + _pmMin).slice(-2);
   }
   var tm = !result.time && clip(/\b(?:à\s*)?(2[0-3]|[01]?\d)\s*[h:]\s*([0-5]\d)?\b/i);
   if (tm) {
     var hh = parseInt(tm[1], 10), mm2 = tm[2] ? parseInt(tm[2], 10) : 0;
+    if (mm2 <= 10) mm2 = 0;
     result.time = ('0' + hh).slice(-2) + ':' + ('0' + mm2).slice(-2);
   }
   if (!result.time) {

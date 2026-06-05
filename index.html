@@ -1165,11 +1165,13 @@
       letter-spacing: -0.01em;
     }
     .wt-pill-time {
-      margin-left: auto;
       font-size: 11px; font-weight: 700;
       color: var(--t-3); font-variant-numeric: tabular-nums;
     }
-    .wt-pill-wx { font-size: 12px; opacity: 0.85; margin-left: auto; }
+    .wt-pill-loc-wx { display: flex; align-items: center; gap: 3px; margin-left: auto; font-size: 11px; color: var(--t-3); white-space: nowrap; flex-shrink: 0; }
+    .wt-job-pill.wx-ok     { border-left: 3px solid #4ade80; padding-left: 7px; }
+    .wt-job-pill.wx-risk   { border-left: 3px solid #f97316; padding-left: 7px; }
+    .wt-job-pill.wx-danger { border-left: 3px solid #ef4444; padding-left: 7px; }
     .wt-no-jobs { font-size: 12px; color: var(--t-3); font-style: italic; padding: 4px 2px; }
 
     /* ════════════════════════════════════════════════════════════════
@@ -3170,15 +3172,6 @@
           <span id="wxOrb" data-level="idle" style="display:none"></span>
         </div>
       </button>
-
-      <!-- 1. JOBS AUJOURD'HUI -->
-      <div class="section">
-        <div class="section-head">
-          <h2 class="section-title">Aujourd'hui</h2>
-          <span class="section-count" id="todayCount">—</span>
-        </div>
-        <div class="today-list" id="todayList"></div>
-      </div>
 
       <!-- 2. JOBS DE LA SEMAINE -->
       <div class="section">
@@ -5646,7 +5639,6 @@ function renderHome() {
   renderMiniWeather();
   renderVueChantier();
   renderHero();
-  renderTodayJobs();
   renderDayStrip();
   renderFinanceDash();
   renderBanqueTravaux();
@@ -5831,15 +5823,43 @@ function renderDayStrip() {
     if (dayTasks.length) {
       jobsHtml = dayTasks.map(function(t) {
         var jd = jobsDef[t.type] || { icon: '🔧' };
-        var timeStr = t.time ? ' <span class="wt-pill-time">' + esc(t.time) + '</span>' : '';
+        var timeStr = t.time ? '<span class="wt-pill-time">' + esc(t.time) + '</span>' : '';
         var localW = _getLocalWeatherDay(t, dIso);
-        var pillWxHtml = '';
+        var wxCls = '', locWxHtml = '';
+        var ville = extraireVille(t.location || '');
+        var pillId = 'wt-pill-' + esc(t.id) + '-' + dIso;
         if (localW) {
           var pillRes = assess(t.type, localW, t.weather);
-          var pillWxIcon = pillRes.level === 'ok' ? '' : (pillRes.level === 'risk' ? ' ⚠️' : ' 🚫');
-          pillWxHtml = '<span class="wt-pill-wx">' + wIcon(localW.weathercode) + pillWxIcon + '</span>';
+          wxCls = pillRes.level === 'ok' ? ' wx-ok' : (pillRes.level === 'risk' ? ' wx-risk' : ' wx-danger');
+          var riskBadge = pillRes.level === 'ok' ? '' : (pillRes.level === 'risk' ? ' ⚠️' : ' 🚫');
+          locWxHtml = '<span class="wt-pill-loc-wx">' + wIcon(localW.weathercode) + riskBadge + (ville ? ' <span>' + esc(ville) + '</span>' : '') + '</span>';
+        } else if (t.geoLat && t.geoLon) {
+          // Coords cached — trigger background fetch for this day
+          (function(task, iso) {
+            fetchMeteoJob(task.geoLat, task.geoLon, iso).then(function(w) {
+              if (!w) return;
+              var el = document.getElementById('wt-pill-' + task.id + '-' + iso);
+              if (!el) return;
+              var r = assess(task.type, w, task.weather);
+              var cls = r.level === 'ok' ? 'wx-ok' : (r.level === 'risk' ? 'wx-risk' : 'wx-danger');
+              el.classList.add(cls);
+              var rb = r.level === 'ok' ? '' : (r.level === 'risk' ? ' ⚠️' : ' 🚫');
+              var v = extraireVille(task.location || '');
+              var span = el.querySelector('.wt-pill-loc-wx');
+              if (!span) {
+                span = document.createElement('span');
+                span.className = 'wt-pill-loc-wx';
+                el.appendChild(span);
+              }
+              span.innerHTML = wIcon(w.weathercode) + rb + (v ? ' <span>' + esc(v) + '</span>' : '');
+            });
+          })(t, dIso);
         }
-        return '<div class="wt-job-pill">' + jd.icon + ' ' + esc(t.name) + timeStr + (pillWxHtml ? ' ' + pillWxHtml : '') + '</div>';
+        return '<div class="wt-job-pill' + wxCls + '" id="' + pillId + '">'
+          + jd.icon + ' ' + esc(t.name)
+          + (timeStr ? ' ' + timeStr : '')
+          + (locWxHtml ? ' ' + locWxHtml : '')
+          + '</div>';
       }).join('');
     } else {
       jobsHtml = '<div class="wt-no-jobs">Aucun travail ce jour</div>';

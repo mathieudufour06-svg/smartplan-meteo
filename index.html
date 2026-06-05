@@ -1169,6 +1169,7 @@
       font-size: 11px; font-weight: 700;
       color: var(--t-3); font-variant-numeric: tabular-nums;
     }
+    .wt-pill-wx { font-size: 12px; opacity: 0.85; margin-left: auto; }
     .wt-no-jobs { font-size: 12px; color: var(--t-3); font-style: italic; padding: 4px 2px; }
 
     /* ════════════════════════════════════════════════════════════════
@@ -4635,6 +4636,53 @@ function _prefetchLocalWeather(tasks, onDone) {
   if (fetched === 0 && onDone) onDone();
 }
 
+// Extract city name from civic address ("123 Rue Foo, Ville, QC" → "Ville")
+function extraireVille(adresse) {
+  if (!adresse) return '';
+  var parts = adresse.split(',');
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var p = parts[i].trim().replace(/\s*(QC|Québec|Quebec|Canada)\s*$/i, '').replace(/\s+[A-Z]\d[A-Z]\s*\d[A-Z]\d\s*$/i, '').trim();
+    if (p && !/\d/.test(p) && p.length > 2) return p;
+  }
+  return '';
+}
+
+// Returns the forecast day for a specific lat/lon/dateISO
+async function fetchMeteoJob(lat, lon, dateISO) {
+  var days = await fetchWeatherForLoc(lat, lon);
+  if (!days) return null;
+  for (var i = 0; i < days.length; i++) {
+    var d = days[i];
+    if (!d || !d.date) continue;
+    var dIso = (d.date instanceof Date) ? isoDate(d.date) : String(d.date).slice(0, 10);
+    if (dIso === dateISO) return d;
+  }
+  return days[0] || null;
+}
+
+// Prefetch local weather for all jobs that have an address (batch, parallel, cached per day)
+async function chargerMeteoTousLesJobs(jobs) {
+  var today = jourVersISO(0);
+  var toFetch = [];
+  (jobs || ST.tasks).forEach(function(t) {
+    if (!t.location) return;
+    if (t.meteoChantierDate === today && t.geoLat && t.geoLon) return; // already fresh
+    if (toFetch.length < 14) toFetch.push(t);
+  });
+  if (!toFetch.length) return;
+  var pending = toFetch.map(async function(t) {
+    try {
+      var geo = (t.geoLat && t.geoLon) ? { lat: t.geoLat, lon: t.geoLon } : await geocodeAddress(t.location);
+      if (!geo) return;
+      if (!t.geoLat) { t.geoLat = geo.lat; t.geoLon = geo.lon; }
+      await fetchWeatherForLoc(geo.lat, geo.lon);
+      t.meteoChantierDate = today;
+    } catch(e) {}
+  });
+  await Promise.race([Promise.all(pending), new Promise(function(res) { setTimeout(res, 5000); })]);
+  saveST();
+}
+
 var _locWxCache = {};
 async function fetchWeatherForLoc(lat, lon) {
   var key = lat.toFixed(3) + ',' + lon.toFixed(3);
@@ -5458,7 +5506,14 @@ function renderDayStrip() {
       jobsHtml = dayTasks.map(function(t) {
         var jd = jobsDef[t.type] || { icon: '🔧' };
         var timeStr = t.time ? ' <span class="wt-pill-time">' + esc(t.time) + '</span>' : '';
-        return '<div class="wt-job-pill">' + jd.icon + ' ' + esc(t.name) + timeStr + '</div>';
+        var localW = _getLocalWeatherDay(t, dIso);
+        var pillWxHtml = '';
+        if (localW) {
+          var pillRes = assess(t.type, localW, t.weather);
+          var pillWxIcon = pillRes.level === 'ok' ? '' : (pillRes.level === 'risk' ? ' ⚠️' : ' 🚫');
+          pillWxHtml = '<span class="wt-pill-wx">' + wIcon(localW.weathercode) + pillWxIcon + '</span>';
+        }
+        return '<div class="wt-job-pill">' + jd.icon + ' ' + esc(t.name) + timeStr + (pillWxHtml ? ' ' + pillWxHtml : '') + '</div>';
       }).join('');
     } else {
       jobsHtml = '<div class="wt-no-jobs">Aucun travail ce jour</div>';
@@ -6538,8 +6593,11 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
       var res = assess(t.type, w, t.weather);
       var lvl = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
       var ico = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
+      var _cv = extraireVille(t.location || '');
+      var _cl = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
+      if (_cv) _cl = 'Météo à ' + _cv + ' · ' + _cl;
       chip.className = 'dj-w-chip ' + lvl;
-      chip.innerHTML = '<span class="dj-w-chip-i">' + ico + '</span><span>' + esc(res.msg) + '</span>';
+      chip.innerHTML = '<span class="dj-w-chip-i">' + ico + '</span><span>' + esc(_cl) + '</span>';
     }
   }
 }
@@ -6763,9 +6821,12 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   }
 
   // Compact weather chip for the job (id allows async update with local weather)
+  var _chipVille = t.geoLat ? extraireVille(t.location || '') : '';
+  var _chipLabel = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
+  if (_chipVille) _chipLabel = 'Météo à ' + _chipVille + ' · ' + _chipLabel;
   html += '<div id="dj-chip-' + esc(t.id) + '" class="dj-w-chip ' + resLevel + '">'
        +    '<span class="dj-w-chip-i">' + resIcon + '</span>'
-       +    '<span>' + esc(res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller')) + '</span>'
+       +    '<span>' + esc(_chipLabel) + '</span>'
        +  '</div>';
 
   // Actions
@@ -9608,6 +9669,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   loadWeather();
+  // Prefetch local forecast for jobs with an address (async, non-blocking)
+  chargerMeteoTousLesJobs().then(function() { renderDayStrip(); });
 
   // ── Service Worker + Notifications ──
   initServiceWorker();

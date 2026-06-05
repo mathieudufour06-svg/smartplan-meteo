@@ -1599,7 +1599,7 @@
       max-width: var(--app-max);
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1fr 1fr 80px 1fr 1fr;
+      grid-template-columns: 1fr 1fr 80px 1fr;
       align-items: end;
       padding: 8px 6px calc(var(--safe-bot) + 8px);
       background: linear-gradient(180deg, rgba(8,8,13,0.0) 0%, rgba(8,8,13,0.85) 35%, rgba(8,8,13,0.96) 100%);
@@ -3082,6 +3082,40 @@
       from { transform: translateY(-16px); opacity: 0; }
       to   { transform: translateY(0);     opacity: 1; }
     }
+    /* ── Touch targets & form accessibility (WCAG 2.5.5) ── */
+    button:not(.nav-tab):not(.nav-fab):not(.modal-close):not(.modal-back):not(.wx-notif-close):not(.wt-day):not(.wb-main):not(.wb-plan):not(.dj-lightbox-close) {
+      min-height: 48px;
+      font-size: 16px;
+    }
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea, select {
+      min-height: 48px !important;
+      font-size: 16px !important;
+      padding: 12px !important;
+    }
+    label, .form-label, .fg > label {
+      font-size: 15px !important;
+      font-weight: 700 !important;
+    }
+
+    /* ── Job timer (chronomètre) ── */
+    .dj-timer { margin: 0 0 12px; padding: 14px; background: var(--surface-2); border-radius: var(--r-md); border: 1px solid var(--line-2); }
+    .dj-timer-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--t-3); margin-bottom: 10px; }
+    .dj-timer-display { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; color: #4ade80; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .dj-timer-display.paused { color: var(--t-2); }
+    .dj-timer-sessions { font-size: 11px; color: var(--t-3); margin-bottom: 10px; line-height: 1.6; }
+    .dj-timer-compare { font-size: 12px; margin-bottom: 10px; }
+    .dj-timer-compare .ahead { color: #4ade80; }
+    .dj-timer-compare .behind { color: var(--orange, #f97316); }
+    .dj-timer-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dj-timer-btn { flex: 1; min-height: 44px; border-radius: var(--r-md); border: none; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 12px; }
+    .dj-timer-btn.start  { background: #16a34a; color: #fff; }
+    .dj-timer-btn.pause  { background: #dc2626; color: #fff; }
+    .dj-timer-btn.resume { background: #16a34a; color: #fff; }
+    .dj-timer-btn.finish { background: #ea580c; color: #fff; }
+    .dj-timer-btn.reopen { background: var(--surface-3); color: var(--t-2); }
+    .dj-timer-done { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #4ade80; margin-bottom: 8px; }
+
   </style>
 </head>
 <body>
@@ -3288,22 +3322,6 @@
       <div class="btl-list bank-list" id="bankList"></div>
     </section>
 
-    <!-- ═══════════════════ FIELD (placeholder PR4) ═══════════════════ -->
-    <section class="view" id="viewField" data-view="field">
-      <div class="ph">
-        <div class="ph-icon">🦺</div>
-        <span class="ph-tag">Bientôt disponible</span>
-        <h1 class="ph-title">Mode terrain</h1>
-        <p class="ph-sub">Dashboard noir/vert ultra-contraste, énormes touch targets, utilisable au soleil et avec des gants.</p>
-        <ul class="ph-feat">
-          <li>Météo en très gros caractères</li>
-          <li>Bouton « démarrer le job » géant</li>
-          <li>Dictée et photo en un tap</li>
-          <li>Mode haute visibilité</li>
-        </ul>
-      </div>
-    </section>
-
   </main>
 
   <!-- BOTTOM NAVIGATION -->
@@ -3340,14 +3358,6 @@
         </svg>
       </span>
       <span class="nt-label">Banque</span>
-    </button>
-    <button class="nav-tab" data-tab="field" onclick="switchTab('field')">
-      <span class="nt-icon">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 18h16M5 18a7 7 0 0114 0M9 11.5V8a3 3 0 016 0v3.5"/>
-        </svg>
-      </span>
-      <span class="nt-label">Terrain</span>
     </button>
   </nav>
 
@@ -4716,6 +4726,196 @@ async function chargerMeteoTousLesJobs(jobs) {
   });
   await Promise.race([Promise.all(pending), new Promise(function(res) { setTimeout(res, 5000); })]);
   saveST();
+}
+
+/* ── CHRONOMÈTRE PAR JOB ─────────────────────────────────────────────── */
+
+var _timerInterval = null; // active setInterval ref
+
+function formatTemps(secondes) {
+  secondes = Math.max(0, Math.floor(secondes));
+  var h = Math.floor(secondes / 3600);
+  var m = Math.floor((secondes % 3600) / 60);
+  var s = secondes % 60;
+  if (h > 0) return h + 'h' + String(m).padStart(2, '0');
+  return m + 'm' + String(s).padStart(2, '0') + 's';
+}
+
+function _timerCalcTotal(task) {
+  var total = task.tempsTotal || 0;
+  var sessions = task.sessions || [];
+  var active = sessions.find(function(s) { return !s.fin; });
+  if (active) total += Math.floor((Date.now() - active.debut) / 1000);
+  return total;
+}
+
+function _timerState(task) {
+  var sessions = task.sessions || [];
+  if (task.status === 'done') return 'done';
+  var active = sessions.find(function(s) { return !s.fin; });
+  if (active) return 'running';
+  if (sessions.length > 0) return 'paused';
+  return 'idle';
+}
+
+function _timerCompareHtml(task) {
+  if (!task.duration) return '';
+  var estimSec = 0;
+  var m = String(task.duration).match(/(\d+(?:\.\d+)?)\s*h/i);
+  if (m) estimSec = Math.round(parseFloat(m[1]) * 3600);
+  var mn = String(task.duration).match(/(\d+)\s*m/i);
+  if (mn) estimSec += parseInt(mn[1], 10) * 60;
+  if (!estimSec) return '';
+  var realSec = _timerCalcTotal(task);
+  var diff = realSec - estimSec;
+  var absDiff = Math.abs(diff);
+  var cls = diff <= 0 ? 'ahead' : 'behind';
+  var sign = diff <= 0 ? '-' : '+';
+  var icon = diff <= 0 ? '✅' : '⚠️';
+  return '<div class="dj-timer-compare">'
+    + 'Estimé: <strong>' + formatTemps(estimSec) + '</strong>'
+    + ' · Réel: <strong>' + formatTemps(realSec) + '</strong>'
+    + ' · <span class="' + cls + '">' + sign + formatTemps(absDiff) + ' ' + icon + '</span>'
+    + '</div>';
+}
+
+function _timerSessionsHtml(sessions) {
+  if (!sessions || !sessions.length) return '';
+  var lines = sessions.map(function(s, i) {
+    if (!s.fin) return 'Session ' + (i + 1) + ' : en cours…';
+    var dur = Math.floor((s.fin - s.debut) / 1000);
+    return 'Session ' + (i + 1) + ' : ' + formatTemps(dur);
+  });
+  return '<div class="dj-timer-sessions">' + lines.join(' · ') + '</div>';
+}
+
+function buildTimerSection(task) {
+  var state = _timerState(task);
+  var id = esc(task.id);
+  var html = '<div class="dj-timer" id="dj-timer-' + id + '">'
+    + '<div class="dj-timer-head">⏱ Temps de travail</div>';
+
+  if (state === 'idle') {
+    html += '<div class="dj-timer-btns">'
+      + '<button type="button" class="dj-timer-btn start" onclick="timerStart(' + JSON.stringify(task.id) + ')">▶ Démarrer le job</button>'
+      + '</div>';
+
+  } else if (state === 'running') {
+    var total = _timerCalcTotal(task);
+    html += '<div class="dj-timer-display" id="dj-chrono-' + id + '">' + formatTemps(total) + '</div>';
+    html += _timerSessionsHtml(task.sessions);
+    html += _timerCompareHtml(task);
+    html += '<div class="dj-timer-btns">'
+      + '<button type="button" class="dj-timer-btn pause" onclick="timerPause(' + JSON.stringify(task.id) + ')">⏸ Pause</button>'
+      + '<button type="button" class="dj-timer-btn finish" onclick="timerFinish(' + JSON.stringify(task.id) + ')">🏁 Terminer</button>'
+      + '</div>';
+
+  } else if (state === 'paused') {
+    var total = _timerCalcTotal(task);
+    html += '<div class="dj-timer-display paused">' + formatTemps(total) + '</div>';
+    html += _timerSessionsHtml(task.sessions);
+    html += _timerCompareHtml(task);
+    html += '<div class="dj-timer-btns">'
+      + '<button type="button" class="dj-timer-btn resume" onclick="timerResume(' + JSON.stringify(task.id) + ')">▶ Reprendre</button>'
+      + '<button type="button" class="dj-timer-btn finish" onclick="timerFinish(' + JSON.stringify(task.id) + ')">🏁 Terminer</button>'
+      + '</div>';
+
+  } else { // done
+    var n = (task.sessions || []).length;
+    html += '<div class="dj-timer-done">✅ Job terminé</div>';
+    html += '<div class="dj-timer-display paused">' + formatTemps(task.tempsTotal || 0) + '</div>';
+    if (n > 0) html += '<div class="dj-timer-sessions">(' + n + ' session' + (n > 1 ? 's' : '') + ')</div>';
+    html += _timerSessionsHtml(task.sessions);
+    html += _timerCompareHtml(task);
+    html += '<div class="dj-timer-btns">'
+      + '<button type="button" class="dj-timer-btn reopen" onclick="timerReopen(' + JSON.stringify(task.id) + ')">Rouvrir le job</button>'
+      + '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function _timerFindTask(taskId) {
+  return ST.tasks.find(function(t) { return t.id === taskId; }) || null;
+}
+
+function _timerRefreshSection(taskId) {
+  var t = _timerFindTask(taskId);
+  if (!t) return;
+  var el = document.getElementById('dj-timer-' + taskId);
+  if (!el) return;
+  el.outerHTML = buildTimerSection(t);
+  // Re-attach live interval if running
+  _timerStartInterval(taskId);
+}
+
+function _timerStartInterval(taskId) {
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  var t = _timerFindTask(taskId);
+  if (!t || _timerState(t) !== 'running') return;
+  _timerInterval = setInterval(function() {
+    var chronoEl = document.getElementById('dj-chrono-' + taskId);
+    if (!chronoEl) { clearInterval(_timerInterval); _timerInterval = null; return; }
+    var tt = _timerFindTask(taskId);
+    if (!tt) return;
+    chronoEl.textContent = formatTemps(_timerCalcTotal(tt));
+  }, 1000);
+}
+
+function timerStart(taskId) {
+  var t = _timerFindTask(taskId);
+  if (!t) return;
+  if (!t.sessions) t.sessions = [];
+  t.sessions.push({ debut: Date.now(), fin: null });
+  saveST();
+  _timerRefreshSection(taskId);
+}
+
+function timerPause(taskId) {
+  var t = _timerFindTask(taskId);
+  if (!t) return;
+  var active = (t.sessions || []).find(function(s) { return !s.fin; });
+  if (active) {
+    active.fin = Date.now();
+    if (!t.tempsTotal) t.tempsTotal = 0;
+    t.tempsTotal += Math.floor((active.fin - active.debut) / 1000);
+  }
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  saveST();
+  _timerRefreshSection(taskId);
+}
+
+function timerResume(taskId) {
+  var t = _timerFindTask(taskId);
+  if (!t) return;
+  if (!t.sessions) t.sessions = [];
+  t.sessions.push({ debut: Date.now(), fin: null });
+  saveST();
+  _timerRefreshSection(taskId);
+}
+
+function timerFinish(taskId) {
+  var t = _timerFindTask(taskId);
+  if (!t) return;
+  var active = (t.sessions || []).find(function(s) { return !s.fin; });
+  if (active) {
+    active.fin = Date.now();
+    if (!t.tempsTotal) t.tempsTotal = 0;
+    t.tempsTotal += Math.floor((active.fin - active.debut) / 1000);
+  }
+  t.status = 'done';
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  saveST();
+  _timerRefreshSection(taskId);
+}
+
+function timerReopen(taskId) {
+  var t = _timerFindTask(taskId);
+  if (!t) return;
+  t.status = 'scheduled';
+  saveST();
+  _timerRefreshSection(taskId);
 }
 
 /* ── ALERTES MÉTÉO IN-APP ──────────────────────────────────────────────── */
@@ -6556,8 +6756,13 @@ function _openCalDaySheet(iso) {
   document.querySelectorAll('#ddContent [data-task-to-bank]').forEach(function(b) {
     b.addEventListener('click', function() { taskToBank(b.dataset.taskToBank); });
   });
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
   openModal('dayDetailOverlay');
   if (tasks.length && day) _enrichJobsWithLocalWeather(tasks, iso);
+  // Resume live timer if a task is currently running
+  tasks.forEach(function(t) {
+    if (_timerState(t) === 'running') _timerStartInterval(t.id);
+  });
 }
 
 function openDayDetail(di) {
@@ -6656,9 +6861,14 @@ function openDayDetail(di) {
   document.querySelectorAll('#ddContent [data-task-to-bank]').forEach(function(b) {
     b.addEventListener('click', function() { taskToBank(b.dataset.taskToBank); });
   });
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
   openModal('dayDetailOverlay');
   // Async: enrich each job card with weather at its own address
   _enrichJobsWithLocalWeather(tasks, dayIso);
+  // Resume live timer if a task is currently running
+  tasks.forEach(function(t) {
+    if (_timerState(t) === 'running') _timerStartInterval(t.id);
+  });
 }
 
 function openDayJobsOnly(iso) {
@@ -6954,6 +7164,9 @@ function _ddBuildJobDossier(t, day, jobsDef) {
        +    '<span class="dj-w-chip-i">' + resIcon + '</span>'
        +    '<span>' + esc(_chipLabel) + '</span>'
        +  '</div>';
+
+  // Timer section
+  html += buildTimerSection(t);
 
   // Actions
   html += '<div class="dj-actions">'

@@ -4510,6 +4510,17 @@ function normaliserAdresse(adresse) {
   a = a.replace(/saint[\s\-]*lambert/gi, 'Saint-Lambert');
   a = a.replace(/\bbrossard\b/gi, 'Brossard');
   a = a.replace(/\blongueuil\b/gi, 'Longueuil');
+  a = a.replace(/vaudreuil[\s\-]*dorion/gi, 'Vaudreuil-Dorion');
+  a = a.replace(/rivi[eè]re[\s\-]*rouge/gi, 'Rivière-Rouge');
+  a = a.replace(/rivi[eè]re[\s\-]*du[\s\-]*loup/gi, 'Rivière-du-Loup');
+  a = a.replace(/salaberry[\s\-]*de[\s\-]*valleyfield/gi, 'Salaberry-de-Valleyfield');
+  a = a.replace(/pointe[\s\-]*claire/gi, 'Pointe-Claire');
+  a = a.replace(/c[oô]te[\s\-]*saint[\s\-]*luc/gi, 'Côte-Saint-Luc');
+  a = a.replace(/saint[\s\-]*eustache/gi, 'Saint-Eustache');
+  a = a.replace(/saint[\s\-]*constant/gi, 'Saint-Constant');
+  a = a.replace(/saint[\s\-]*basile[\s\-]*le[\s\-]*grand/gi, 'Saint-Basile-le-Grand');
+  a = a.replace(/rouyn[\s\-]*noranda/gi, 'Rouyn-Noranda');
+  a = a.replace(/sept[\s\-]*[iî]les/gi, 'Sept-Îles');
   // Noms de rues mal transcrits
   a = a.replace(/\bde\s+la\s+salle\b/gi, 'De La Salle');
   a = a.replace(/\blasalle\b/gi, 'LaSalle');
@@ -7683,13 +7694,20 @@ function parseSmartInput(originalText) {
   }
 
   // ── ÉTAPE 0 : Reconstruction email oral — AVANT tout autre traitement ────
-  // "Gilles Lefebvre commercial gmail point com" → "gilleslebvre@gmail.com"
-  // Opère sur le texte brut normalisé (sans accents) pour \w+
+  // "François Lambert commercial gmail point com" → "francois.lambert@gmail.com"
+  // Normalise les accents/cédilles avant d'appliquer \w+ pour iOS STT
   (function() {
-    var _raw = work.normalize ? work.normalize('NFD').replace(/[̀-ͯ]/g, '') : work;
+    function _normEmail(s) {
+      return s
+        .replace(/[àâä]/g, 'a').replace(/[éèêë]/g, 'e').replace(/[îï]/g, 'i')
+        .replace(/[ôö]/g, 'o').replace(/[ùûü]/g, 'u').replace(/[ç]/g, 'c')
+        .replace(/[ÀÂÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÎÏ]/g, 'I')
+        .replace(/[ÔÖ]/g, 'O').replace(/[ÙÛÜ]/g, 'U').replace(/[Ç]/g, 'C');
+    }
+    var _raw = _normEmail(work.normalize ? work.normalize('NFD').replace(/[̀-ͯ]/g, '') : work);
     var _m2 = _raw.match(/\b(\w+)\s+(\w+)\s+(?:commercial|arobase|at)\s+(\w+)\s+(?:point|dot)\s+(\w+)\b/i);
     if (_m2) {
-      result.email = (_m2[1] + _m2[2] + '@' + _m2[3] + '.' + _m2[4]).toLowerCase();
+      result.email = (_m2[1] + '.' + _m2[2] + '@' + _m2[3] + '.' + _m2[4]).toLowerCase();
       work = work.replace(/\b[\wÀ-ÿ]+\s+[\wÀ-ÿ]+\s+(?:commercial|arobase|at)\s+[\wÀ-ÿ]+\s+(?:point|dot)\s+[\wÀ-ÿ]+\b/gi, ' ');
       return;
     }

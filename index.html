@@ -1807,7 +1807,7 @@
     .overlay .modal h3 {
       font-size: 22px; font-weight: 800; letter-spacing: -0.025em;
       margin-bottom: var(--s4);
-      padding-right: 44px;
+      padding-right: 44px; padding-left: 44px;
     }
     .modal-close {
       position: absolute;
@@ -1824,6 +1824,22 @@
       z-index: 2;
     }
     .modal-close:active { transform: scale(0.92); background: var(--glass-3); }
+    .modal-back {
+      position: absolute;
+      top: calc(var(--safe-top) + var(--s5) - 8px); left: calc(var(--s5) - 8px);
+      min-width: 44px; min-height: 44px;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 0 12px;
+      border-radius: 22px;
+      background: transparent; border: none;
+      color: var(--tint, #6e8cff);
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      z-index: 2;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .modal-back:active { opacity: 0.6; }
+    .modal-back .back-arrow { font-size: 18px; line-height: 1; }
 
     /* Body scroll-lock when modal open.
        Must use position:fixed (not just overflow:hidden) on iOS Safari.
@@ -3334,6 +3350,7 @@
 <!-- TASK MODAL -->
 <div class="overlay" id="taskOverlay" onclick="overlayClick(event,'taskOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-back" onclick="closeModal('taskOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('taskOverlay')" aria-label="Fermer">✕</button>
     <h3 id="taskModalTitle">Nouveaux travaux</h3>
     <div class="fg">
@@ -3519,9 +3536,10 @@
 <!-- DAY DETAIL MODAL -->
 <div class="overlay" id="dayDetailOverlay" onclick="overlayClick(event,'dayDetailOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-back" onclick="closeModal('dayDetailOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('dayDetailOverlay')" aria-label="Fermer">✕</button>
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; padding-right: 44px">
-      <h3 id="ddTitle" style="margin:0">Météo du jour</h3>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; padding-right: 44px; padding-left: 44px">
+      <h3 id="ddTitle" style="margin:0; padding:0">Météo du jour</h3>
       <input type="date" id="dateStart" class="date-picker" onchange="loadWeather()" aria-label="Date de départ de la prévision">
     </div>
     <div id="ddContent"></div>
@@ -3546,6 +3564,7 @@
 <!-- WORK BANK MODAL — create/edit reusable templates -->
 <div class="overlay" id="workBankOverlay" onclick="overlayClick(event,'workBankOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-back" onclick="closeModal('workBankOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('workBankOverlay')" aria-label="Fermer">✕</button>
     <h3 id="wbModalTitle">Nouveau travail</h3>
 
@@ -3765,6 +3784,7 @@
 <!-- ══ NOTIFICATIONS OVERLAY ══ -->
 <div class="overlay" id="notifOverlay" onclick="overlayClick(event,'notifOverlay')">
   <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-back" onclick="closeModal('notifOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     <button type="button" class="modal-close" onclick="closeModal('notifOverlay')" aria-label="Fermer">✕</button>
     <div id="notifModalContent"></div>
   </div>
@@ -4769,10 +4789,24 @@ function dayOverallRisk(w) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   VIEW ROUTER
+   VIEW ROUTER + NAV HISTORY
 ════════════════════════════════════════════════════════════════ */
-function switchTab(tabId) {
+var _navHistory = [];
+
+function goBack() {
+  // If a modal is open, close the topmost one
+  if (_openModals.length) {
+    closeModal(_openModals[_openModals.length - 1]);
+    return;
+  }
+  // Otherwise pop tab history
+  var prev = _navHistory.pop();
+  if (prev) switchTab(prev, true);
+}
+
+function switchTab(tabId, fromHistory) {
   if (_activeTab === tabId) return;
+  if (!fromHistory) _navHistory.push(_activeTab);
   _activeTab = tabId;
   document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
   var target = document.getElementById('view' + tabId.charAt(0).toUpperCase() + tabId.slice(1));

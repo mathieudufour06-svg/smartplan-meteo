@@ -5318,7 +5318,7 @@ function renderDayStrip() {
   var strip = document.getElementById('dayStrip');
   if (!strip) return;
   strip.innerHTML = '';
-  var fc = ST.forecast || [];
+  var fc = (ST.forecast && ST.forecast.length) ? ST.forecast : mockForecast();
   var jobsDef = getMergedJobTypes();
   var today = new Date(); today.setHours(12, 0, 0, 0);
   var todayIso = isoDate(today);
@@ -9045,7 +9045,8 @@ async function loadWeather() {
       fetchForecast(ST.loc.lat, ST.loc.lon, startDate),
       fetchCurrentConditions(ST.loc.lat, ST.loc.lon)
     ]);
-    ST.forecast = results[0].days;
+    var _days = results[0].days;
+    ST.forecast = (_days && _days.length) ? _days : mockForecast();
     ST.hourly   = results[0].hourly;
     ST.current  = results[1];
     setDot('ok');

@@ -1601,7 +1601,7 @@
       max-width: var(--app-max);
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1fr 1fr 80px 1fr;
+      grid-template-columns: 1fr 1fr auto 1fr;
       align-items: center;
       justify-items: center;
       padding: 8px 6px calc(var(--safe-bot) + 8px);
@@ -1640,15 +1640,13 @@
     .nav-tab.active .nt-icon svg.filled { fill: currentColor; }
 
     .nav-fab-wrap {
-      position: relative;
       display: flex; align-items: center; justify-content: center;
-      width: 80px;
+      padding: 0 10px;
     }
     .nav-fab {
-      position: absolute;
-      top: -22px;
-      width: 60px; height: 60px;
-      border-radius: 20px;
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      transform: translateY(-8px);
       background: linear-gradient(135deg, var(--tint) 0%, var(--violet) 100%);
       display: grid; place-items: center;
       color: #fff;
@@ -1664,7 +1662,7 @@
     .nav-fab::before {
       content: '';
       position: absolute; inset: -6px;
-      border-radius: 26px;
+      border-radius: 50%;
       background: radial-gradient(50% 50% at 50% 60%, rgba(118,150,255,0.38) 0%, transparent 70%);
       filter: blur(10px);
       z-index: -1;
@@ -1673,12 +1671,12 @@
     .nav-fab::after {
       content: '';
       position: absolute; inset: 1px;
-      border-radius: 19px;
+      border-radius: 50%;
       background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 50%);
       pointer-events: none;
     }
     .nav-fab:active {
-      transform: scale(0.92);
+      transform: translateY(-8px) scale(0.92);
       box-shadow: 0 6px 16px var(--tint-glow), 0 2px 8px rgba(0,0,0,0.6);
     }
 
@@ -2825,6 +2823,7 @@
     .dj-w-chip.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--orange); }
     .dj-w-chip.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--red); }
     .dj-w-chip-i { font-size: 11px; }
+    .dj-wx-source { font-size: 13px; color: #9ca3af; margin: 0 0 8px; }
     .dj-wx-loc-badge {
       display: inline-flex; align-items: center; gap: 4px;
       margin-left: 8px;
@@ -6995,10 +6994,13 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
       var _cl = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
       chip.className = 'dj-w-chip ' + lvl;
       chip.innerHTML = '<span class="dj-w-chip-i">' + ico + '</span><span>' + esc(_cl) + '</span>';
-      // Update section title with city if available
+      // Update section title and source label with resolved city
       if (_cv && chip.parentElement) {
+        var _prep = _cv.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ';
         var secTitle = chip.parentElement.querySelector('.dj-sec-t');
-        if (secTitle) secTitle.textContent = 'Météo ' + (_cv.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ') + _cv;
+        if (secTitle) secTitle.textContent = 'Météo ' + _prep + _cv;
+        var srcLabel = chip.parentElement.querySelector('.dj-wx-source');
+        if (srcLabel) srcLabel.textContent = '📍 Météo ' + _prep + _cv;
       }
     }
   }
@@ -7227,8 +7229,17 @@ function _ddBuildJobDossier(t, day, jobsDef) {
   var _secTitle = _chipVille
     ? 'Météo ' + (_chipVille.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ') + _chipVille
     : 'Météo du chantier';
+  // Source label: chantier city, or fallback to user's home location
+  var _wxSourceLabel;
+  if (_chipVille) {
+    _wxSourceLabel = '📍 Météo ' + (_chipVille.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ') + _chipVille;
+  } else {
+    var _homeName = (ST.loc && ST.loc.name) ? ST.loc.name : 'votre position';
+    _wxSourceLabel = '📍 Météo locale (' + _homeName + ')';
+  }
   html += '<section class="dj-sec">'
        +    '<h5 class="dj-sec-t">' + esc(_secTitle) + '</h5>'
+       +    '<p id="dj-wx-src-' + esc(t.id) + '" class="dj-wx-source">' + esc(_wxSourceLabel) + '</p>'
        +    '<div id="dj-chip-' + esc(t.id) + '" class="dj-w-chip ' + resLevel + '">'
        +      '<span class="dj-w-chip-i">' + resIcon + '</span>'
        +      '<span>' + esc(_chipLabel) + '</span>'

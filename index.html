@@ -4747,6 +4747,21 @@ async function fetchMeteoJob(lat, lon, dateISO) {
   return days[0] || null;
 }
 
+// Geocode tasks that have an address but no stored coordinates (migration)
+async function migrerCoordonneesManquantes() {
+  var sans = ST.tasks.filter(function(t) { return t.location && (!t.geoLat || !t.geoLon); });
+  if (!sans.length) return;
+  var changed = false;
+  var pending = sans.map(async function(t) {
+    try {
+      var geo = await geocodeAddress(t.location);
+      if (geo) { t.geoLat = geo.lat; t.geoLon = geo.lon; t.meteoChantierDate = null; changed = true; }
+    } catch(e) {}
+  });
+  await Promise.race([Promise.all(pending), new Promise(function(r) { setTimeout(r, 8000); })]);
+  if (changed) saveST();
+}
+
 // Prefetch local weather for all jobs that have an address (batch, parallel, cached per day)
 async function chargerMeteoTousLesJobs(jobs) {
   var today = jourVersISO(0);
@@ -9455,13 +9470,17 @@ function saveTask() {
   if (location && _savedTaskId) {
     if (_acLat && _acLon) {
       var task = ST.tasks.find(function(t) { return t.id === _savedTaskId; });
-      if (task) { task.geoLat = _acLat; task.geoLon = _acLon; saveST(); }
+      if (task) { task.geoLat = _acLat; task.geoLon = _acLon; task.meteoChantierDate = null; saveST(); }
+    } else if (window._jobLat && window._jobLon) {
+      // Coords from voice-input geocoding
+      var task = ST.tasks.find(function(t) { return t.id === _savedTaskId; });
+      if (task) { task.geoLat = window._jobLat; task.geoLon = window._jobLon; task.meteoChantierDate = null; saveST(); }
     } else {
       (function(taskId, addr) {
         geocodeAddress(addr).then(function(geo) {
           if (!geo) return;
           var task = ST.tasks.find(function(t) { return t.id === taskId; });
-          if (task && !task.geoLat) { task.geoLat = geo.lat; task.geoLon = geo.lon; saveST(); }
+          if (task && !task.geoLat) { task.geoLat = geo.lat; task.geoLon = geo.lon; task.meteoChantierDate = null; saveST(); }
         });
       })(_savedTaskId, location);
     }
@@ -10122,8 +10141,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   loadWeather();
-  // Prefetch local forecast then show weather alerts and re-render
-  chargerMeteoTousLesJobs().then(function() {
+  // Geocode missing coords, then prefetch chantier weather, then render + alerts
+  migrerCoordonneesManquantes().then(function() {
+    return chargerMeteoTousLesJobs();
+  }).then(function() {
     renderDayStrip();
     afficherAlertesMeteojobs();
   });

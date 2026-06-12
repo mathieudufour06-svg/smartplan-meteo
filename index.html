@@ -2396,6 +2396,8 @@
     }
     .cal-cell .cc-dot.warn { background: var(--orange); }
     .cal-cell .cc-dot.bad { background: var(--red); }
+    .cal-cell.has-oublies .cc-num { color: var(--orange); font-weight: 800; }
+    .cal-cell.has-oublies::after { content:''; display:block; width:5px; height:5px; border-radius:50%; background:var(--orange); margin:1px auto 0; }
     .cal-cell .cc-more {
       font-size: 9px;
       font-weight: 800;
@@ -2750,6 +2752,17 @@
     .djs-time { font-size: 12px; color: var(--t-2); flex-shrink: 0; }
     .djs-wx { font-size: 12px; color: var(--t-2); flex-shrink: 0; }
     .djs-wx-loading { opacity: 0.4; }
+
+    /* Jobs oubliés modal */
+    .oublie-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line-1); }
+    .oublie-row:last-child { border-bottom:none; }
+    .oublie-info { flex:1; min-width:0; }
+    .oublie-name { display:block; font-size:14px; font-weight:700; color:var(--t-1); }
+    .oublie-meta { display:block; font-size:12px; color:var(--t-3); margin-top:2px; }
+    .oublie-btns { display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+    .oublie-btn-bank, .oublie-btn-done { font-size:12px; font-weight:700; padding:6px 10px; border-radius:var(--r-md); border:none; cursor:pointer; white-space:nowrap; }
+    .oublie-btn-bank { background:var(--surface-2); color:var(--t-1); }
+    .oublie-btn-done { background:var(--green); color:#fff; }
 
     /* Empty state */
     .dd-empty { text-align: center; padding: 28px 16px; background: var(--surface-1); border: 1px dashed var(--line-2); border-radius: var(--r-lg); }
@@ -3358,11 +3371,12 @@
       <span class="nt-label">Accueil</span>
     </button>
     <button class="nav-tab" data-tab="calendar" onclick="switchTab('calendar')">
-      <span class="nt-icon">
+      <span class="nt-icon" style="position:relative">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <rect x="3.5" y="5" width="17" height="15" rx="2.5"/>
           <path d="M3.5 9.5h17M8 3.5v3.5M16 3.5v3.5"/>
         </svg>
+        <span id="navCalBadge" style="display:none;position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;line-height:16px;text-align:center;padding:0 3px"></span>
       </span>
       <span class="nt-label">Calendrier</span>
     </button>
@@ -3873,6 +3887,23 @@
       <button type="button" class="modal-back" onclick="closeModal('notifOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
     </div>
     <div id="notifModalContent"></div>
+  </div>
+</div>
+
+<!-- JOBS OUBLIÉS MODAL -->
+<div class="overlay" id="oubliesOverlay" onclick="overlayClick(event,'oubliesOverlay')">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" onclick="closeModal('oubliesOverlay')" aria-label="Fermer">✕</button>
+    <div class="modal-header">
+      <button type="button" class="modal-back" onclick="closeModal('oubliesOverlay')" aria-label="Retour"><span class="back-arrow">←</span> Retour</button>
+      <h3 class="modal-header-title" id="oubliesTitle">⚠️ Travaux non complétés</h3>
+    </div>
+    <p id="oubliesIntro" style="font-size:13px;color:var(--t-2);margin:0 0 12px;padding:0 2px"></p>
+    <div id="oubliesList"></div>
+    <div class="mf" style="margin-top:16px;gap:10px">
+      <button class="btn-secondary" id="oubliesToutBanque" onclick="oubliesToutEnBanque()" style="display:none">📥 Tout en banque</button>
+      <button class="btn-cancel" onclick="closeModal('oubliesOverlay')">Fermer</button>
+    </div>
   </div>
 </div>
 
@@ -5095,6 +5126,100 @@ function afficherAlertesMeteojobs() {
   });
 }
 
+/* ════════════════════════════════════════════════════════════════
+   JOBS OUBLIÉS — détection et alerte
+════════════════════════════════════════════════════════════════ */
+function getJobsOublies() {
+  var todayIso = jourVersISO(0);
+  return (ST.tasks || []).filter(function(t) {
+    if (t.status === 'backlog' || t.status === 'done') return false;
+    if (!t.scheduledDate) return false;
+    return t.scheduledDate < todayIso;
+  });
+}
+
+function renderBadgeOublies() {
+  var oublies = getJobsOublies();
+  var badge = document.getElementById('navCalBadge');
+  if (!badge) return;
+  if (oublies.length) {
+    badge.textContent = oublies.length;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function oubliesToutEnBanque() {
+  var oublies = getJobsOublies();
+  oublies.forEach(function(t) { _oublieEnBanque(t.id, false); });
+  saveST();
+  closeModal('oubliesOverlay');
+  renderBadgeOublies();
+  renderDayStrip();
+  renderCalendar();
+  toast('📥 ' + oublies.length + ' travail(s) envoyé(s) en banque');
+}
+
+function _oublieEnBanque(id, doSave) {
+  var t = ST.tasks.find(function(x) { return x.id === id; });
+  if (!t) return;
+  t.status = 'backlog';
+  t.scheduledDate = null;
+  t.dayIndex = null;
+  if (doSave !== false) { saveST(); renderBadgeOublies(); renderDayStrip(); renderCalendar(); }
+}
+
+function _oublieTermine(id) {
+  var t = ST.tasks.find(function(x) { return x.id === id; });
+  if (!t) return;
+  t.status = 'done';
+  saveST();
+  // Re-render modal
+  var remaining = getJobsOublies();
+  if (!remaining.length) {
+    closeModal('oubliesOverlay');
+  } else {
+    afficherAlertesJobsOublies(true);
+  }
+  renderBadgeOublies();
+  renderDayStrip();
+  renderCalendar();
+}
+
+function afficherAlertesJobsOublies(force) {
+  if (!force && sessionStorage.getItem('alerteOubliesVue')) return;
+  var oublies = getJobsOublies();
+  if (!oublies.length) return;
+  sessionStorage.setItem('alerteOubliesVue', '1');
+
+  var MONTHS_SHORT = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('oubliesIntro').textContent =
+    'Tu as ' + oublies.length + ' travail' + (oublies.length > 1 ? 's' : '') + ' passé' + (oublies.length > 1 ? 's' : '') + ' non complété' + (oublies.length > 1 ? 's' : '') + ' :';
+
+  var html = '';
+  oublies.forEach(function(t) {
+    var d = new Date(t.scheduledDate + 'T00:00:00');
+    var dateStr = d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()];
+    html += '<div class="oublie-row">'
+         +    '<div class="oublie-info">'
+         +      '<span class="oublie-name">' + esc(t.name || 'Sans titre') + '</span>'
+         +      '<span class="oublie-meta">' + dateStr + (t.client ? ' · ' + esc(t.client) : '') + '</span>'
+         +    '</div>'
+         +    '<div class="oublie-btns">'
+         +      '<button type="button" class="oublie-btn-bank" onclick="_oublieEnBanque(\'' + esc(t.id) + '\');this.closest(\'.oublie-row\').remove();renderBadgeOublies();renderDayStrip();renderCalendar();var r=document.getElementById(\'oubliesList\');if(!r||!r.querySelector(\'.oublie-row\'))closeModal(\'oubliesOverlay\')">📥 Banque</button>'
+         +      '<button type="button" class="oublie-btn-done" onclick="_oublieTermine(\'' + esc(t.id) + '\')">✅ Terminé</button>'
+         +    '</div>'
+         +  '</div>';
+  });
+  document.getElementById('oubliesList').innerHTML = html;
+
+  var btnTout = document.getElementById('oubliesToutBanque');
+  if (btnTout) btnTout.style.display = oublies.length > 1 ? '' : 'none';
+
+  openModal('oubliesOverlay');
+}
+
 var _locWxCache = {};
 async function fetchWeatherForLoc(lat, lon) {
   var key = lat.toFixed(3) + ',' + lon.toFixed(3);
@@ -5375,6 +5500,9 @@ function renderCalMonth() {
 
     if (iso === todayIso)  cell.classList.add('today');
     if (iso === activeIso) cell.classList.add('selected');
+    if (iso < todayIso && dayJobs.some(function(t) { return t.status !== 'backlog' && t.status !== 'done'; })) {
+      cell.classList.add('has-oublies');
+    }
 
     var html = '<span class="cc-num">' + dayNum + '</span>';
     html += w
@@ -10264,6 +10392,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   loadWeather();
   // Geocode missing coords, then prefetch chantier weather, then render + alerts
+  renderBadgeOublies();
+  // Show forgotten-jobs alert once per session (after short delay to let app settle)
+  setTimeout(afficherAlertesJobsOublies, 800);
+
   migrerCoordonneesManquantes().then(function() {
     return chargerMeteoTousLesJobs();
   }).then(function() {

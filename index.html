@@ -360,6 +360,9 @@
     }
     .home-hero-wx-icon  { font-size: 42px; line-height: 1; margin-bottom: 2px; }
     .home-hero-wx-temp  { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: var(--t-1); line-height: 1; }
+    .wx-alert-banner { width: 100%; padding: 11px 16px; font-size: 13px; font-weight: 700; color: #1a1a00; cursor: pointer; border-radius: var(--r-md); margin-bottom: 2px; }
+    .wx-alert-banner.orage  { background: #ff9800; }
+    .wx-alert-banner.pluie  { background: #ffd600; }
     .home-hero-wx-label { font-size: 11px; font-weight: 600; color: var(--t-3); text-align: center; }
     .home-hero-wx-label.ok     { color: var(--green); }
     .home-hero-wx-label.warn   { color: var(--orange); }
@@ -2739,6 +2742,15 @@
     .dd-chev { font-size: 12px; color: var(--t-3); transition: transform 0.2s var(--ease); }
     details[open] > summary .dd-chev { transform: rotate(180deg); }
 
+    /* Per-job weather summary rows */
+    .dd-jobs-wx-sum { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: var(--surface-1); border: 1px solid var(--line-1); border-radius: var(--r-lg); }
+    .djs-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--t-1); min-height: 28px; }
+    .djs-icon { font-size: 15px; flex-shrink: 0; }
+    .djs-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .djs-time { font-size: 12px; color: var(--t-2); flex-shrink: 0; }
+    .djs-wx { font-size: 12px; color: var(--t-2); flex-shrink: 0; }
+    .djs-wx-loading { opacity: 0.4; }
+
     /* Empty state */
     .dd-empty { text-align: center; padding: 28px 16px; background: var(--surface-1); border: 1px dashed var(--line-2); border-radius: var(--r-lg); }
     .dd-empty-icon { font-size: 32px; line-height: 1; margin-bottom: 6px; }
@@ -3187,6 +3199,9 @@
           <span id="wxOrb" data-level="idle" style="display:none"></span>
         </div>
       </button>
+
+      <!-- Bandeau alerte météo sévère -->
+      <div id="wxAlertBanner" style="display:none" class="wx-alert-banner" onclick="document.getElementById('vueChantierSection')&&document.getElementById('vueChantierSection').scrollIntoView({behavior:'smooth'})"></div>
 
       <!-- 2. JOBS DE LA SEMAINE -->
       <div class="section">
@@ -4548,7 +4563,7 @@ async function fetchForecast(lat, lon, startDate) {
       + ',precipitation_sum,windspeed_10m_max,precipitation_probability_max'
       + ',sunrise,sunset,uv_index_max'
       + '&hourly=temperature_2m,apparent_temperature,weathercode,precipitation_probability,windspeed_10m,relativehumidity_2m,is_day'
-      + '&models=gem_seamless'
+      + '&models=best_match'
       + '&timezone=auto' + dateParam;
     var res  = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -4589,7 +4604,7 @@ async function fetchCurrentConditions(lat, lon) {
     var url = 'https://api.open-meteo.com/v1/forecast'
       + '?latitude=' + lat + '&longitude=' + lon
       + '&current=temperature_2m,apparent_temperature,weathercode,precipitation,windspeed_10m,is_day'
-      + '&models=gem_seamless'
+      + '&models=best_match'
       + '&timezone=auto';
     var res = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -4752,13 +4767,27 @@ async function migrerCoordonneesManquantes() {
   var sans = ST.tasks.filter(function(t) { return t.location && (!t.geoLat || !t.geoLon); });
   if (!sans.length) return;
   var changed = false;
-  var pending = sans.map(async function(t) {
+  for (var i = 0; i < sans.length; i++) {
+    var t = sans[i];
     try {
       var geo = await geocodeAddress(t.location);
-      if (geo) { t.geoLat = geo.lat; t.geoLon = geo.lon; t.meteoChantierDate = null; changed = true; }
-    } catch(e) {}
-  });
-  await Promise.race([Promise.all(pending), new Promise(function(r) { setTimeout(r, 8000); })]);
+      if (!geo) {
+        // Fallback: try city-only
+        var ville = extraireVille(t.location);
+        if (ville) geo = await geocodeAddress(ville + ', QC, Canada');
+      }
+      if (geo) {
+        t.geoLat = geo.lat; t.geoLon = geo.lon; t.meteoChantierDate = null;
+        changed = true;
+        console.log('[migrer] ✓', t.name, '→', geo.lat, geo.lon);
+      } else {
+        console.log('[migrer] ✗', t.name, t.location);
+      }
+    } catch(e) {
+      console.warn('[migrer] erreur', t.name, e);
+    }
+    if (i < sans.length - 1) await new Promise(function(r) { setTimeout(r, 1100); });
+  }
   if (changed) saveST();
 }
 
@@ -5764,6 +5793,25 @@ function renderMiniWeather() {
       : '💨 ' + windMax + ' km/h max';
     windEl.textContent = windTxt;
     windEl.className   = 'home-hero-wx-wind' + (windCls ? ' ' + windCls : '');
+  }
+
+  // Severe weather alert banner
+  var banner = document.getElementById('wxAlertBanner');
+  if (banner) {
+    var code = displayCode;
+    var ORAGES = [95, 96, 99];
+    var PLUIE_FORTE = [65, 67, 82];
+    if (ORAGES.indexOf(code) !== -1) {
+      banner.textContent = '⚡ Risque d\'orages — vérifiez vos jobs planifiés';
+      banner.className = 'wx-alert-banner orage';
+      banner.style.display = '';
+    } else if (PLUIE_FORTE.indexOf(code) !== -1) {
+      banner.textContent = '🌧 Pluie forte prévue — vérifiez vos jobs planifiés';
+      banner.className = 'wx-alert-banner pluie';
+      banner.style.display = '';
+    } else {
+      banner.style.display = 'none';
+    }
   }
 }
 
@@ -6807,6 +6855,28 @@ function _openCalDaySheet(iso) {
   var jobsDef = getMergedJobTypes();
   var html = '';
   if (tasks.length) {
+    // Per-job weather summary rows (async update via _enrichJobsWithLocalWeather)
+    html += '<section class="dd-section dd-jobs-wx-sum" id="dd-jobs-wx-sum">';
+    tasks.forEach(function(t) {
+      var jd = jobsDef[t.type] || { icon: '🔧', name: t.type };
+      var localW = _getLocalWeatherDay(t, iso);
+      var wxBit = '';
+      if (localW) {
+        var wxr = assess(t.type, localW, t.weather);
+        var wxBadge = wxr.level === 'ok' ? '' : (wxr.level === 'risk' ? ' ⚠️' : ' 🚫');
+        var ville = extraireVille(t.location || '');
+        wxBit = ' <span class="djs-wx">' + wIcon(localW.weathercode) + wxBadge + (ville ? ' ' + ville : '') + '</span>';
+      } else if (t.geoLat) {
+        wxBit = ' <span class="djs-wx djs-wx-loading" id="djs-wx-' + t.id + '">…</span>';
+      }
+      html += '<div class="djs-row" id="djs-row-' + esc(t.id) + '">'
+           +    '<span class="djs-icon">' + jd.icon + '</span>'
+           +    '<span class="djs-name">' + esc(t.name || 'Sans titre') + '</span>'
+           +    (t.time ? '<span class="djs-time">' + esc(t.time) + '</span>' : '')
+           +    wxBit
+           +  '</div>';
+    });
+    html += '</section>';
     html += '<section class="dd-section dd-jobs"><div class="dd-sec-head"><span class="dd-sec-eyebrow">Travaux</span><span class="dd-sec-count">' + tasks.length + '</span></div>';
     tasks.forEach(function(t) { html += _ddBuildJobDossier(t, day || {}, jobsDef); });
     html += '</section>';
@@ -6815,7 +6885,7 @@ function _openCalDaySheet(iso) {
   }
   if (day) {
     var st = simpleStatus(day);
-    html += '<section class="dd-section dd-weather">'
+    html += '<section class="dd-section dd-weather" id="dd-worst-wx">'
          +  '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Météo</span>'
          +    '<span class="status-pill ' + st.level + ' dd-w-pill"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
          +  '</div>'
@@ -6873,6 +6943,28 @@ function openDayDetail(di) {
 
   // 1) JOB DOSSIERS — travaux first, weather later
   if (tasks.length) {
+    // Compact per-job weather summary row (async update via _enrichJobsWithLocalWeather)
+    html += '<section class="dd-section dd-jobs-wx-sum" id="dd-jobs-wx-sum">';
+    tasks.forEach(function(t) {
+      var jd = jobsDef[t.type] || { icon: '🔧', name: t.type };
+      var localW = _getLocalWeatherDay(t, dayIso);
+      var wxBit = '';
+      if (localW) {
+        var wxr = assess(t.type, localW, t.weather);
+        var wxBadge = wxr.level === 'ok' ? '' : (wxr.level === 'risk' ? ' ⚠️' : ' 🚫');
+        var ville = extraireVille(t.location || '');
+        wxBit = ' <span class="djs-wx">' + wIcon(localW.weathercode) + wxBadge + (ville ? ' ' + ville : '') + '</span>';
+      } else if (t.geoLat) {
+        wxBit = ' <span class="djs-wx djs-wx-loading" id="djs-wx-' + t.id + '">…</span>';
+      }
+      html += '<div class="djs-row" id="djs-row-' + esc(t.id) + '">'
+           +    '<span class="djs-icon">' + jd.icon + '</span>'
+           +    '<span class="djs-name">' + esc(t.name || 'Sans titre') + '</span>'
+           +    (t.time ? '<span class="djs-time">' + esc(t.time) + '</span>' : '')
+           +    wxBit
+           +  '</div>';
+    });
+    html += '</section>';
     html += '<section class="dd-section dd-jobs">'
          +    '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Travaux</span><span class="dd-sec-count">' + tasks.length + '</span></div>';
     tasks.forEach(function(t) { html += _ddBuildJobDossier(t, day, jobsDef); });
@@ -6886,8 +6978,8 @@ function openDayDetail(di) {
          +  '</section>';
   }
 
-  // 2) COMPACT WEATHER
-  html += '<section class="dd-section dd-weather">'
+  // 2) COMPACT WEATHER (global, updated async to worst-chantier by _enrichJobsWithLocalWeather)
+  html += '<section class="dd-section dd-weather" id="dd-worst-wx">'
        +    '<div class="dd-sec-head"><span class="dd-sec-eyebrow">Météo</span>'
        +      '<span class="status-pill ' + st.level + ' dd-w-pill"><span class="sp-icon">' + st.icon + '</span><span>' + st.label + '</span></span>'
        +    '</div>'
@@ -6982,6 +7074,10 @@ function openDayJobsOnly(iso) {
 }
 
 async function _enrichJobsWithLocalWeather(tasks, dayIso) {
+  var worstLevel = 0; // 0=ok,1=risk,2=danger
+  var worstW = null, worstVille = '';
+  var levelRank = { ok: 0, risk: 1, danger: 2 };
+
   for (var i = 0; i < tasks.length; i++) {
     var t = tasks[i];
     if (!t.location) continue;
@@ -6998,22 +7094,23 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
     if (!fc) continue;
     var w = fc.find(function(f) { return isoDate(f.date) === dayIso; });
     if (!w) continue;
-    // Update weather badge next to address
-    var wxSpan = document.getElementById('dj-wx-' + t.id);
-    if (wxSpan) {
-      wxSpan.innerHTML = '<span class="dj-wx-loc-badge">'
-        + wIcon(w.weathercode) + ' ' + w.temp_max + '°/' + w.temp_min + '°'
-        + ' · ☔' + w.rain_prob + '%'
-        + ' · 💨' + w.windspeed + ' km/h'
-        + '</span>';
+    var _cv = extraireVille(t.location || '');
+
+    // Update per-job summary row (compact, top of day detail)
+    var sumWxEl = document.getElementById('djs-wx-' + t.id);
+    if (sumWxEl) {
+      var sr = assess(t.type, w, t.weather);
+      var sBadge = sr.level === 'ok' ? '' : (sr.level === 'risk' ? ' ⚠️' : ' 🚫');
+      sumWxEl.className = 'djs-wx';
+      sumWxEl.innerHTML = wIcon(w.weathercode) + sBadge + (_cv ? ' ' + _cv : '');
     }
+
     // Re-assess risk using local weather and update chip + section title
     var chip = document.getElementById('dj-chip-' + t.id);
     if (chip) {
       var res = assess(t.type, w, t.weather);
       var lvl = res.level === 'ok' ? 'ok' : (res.level === 'risk' ? 'warn' : 'bad');
       var ico = res.level === 'ok' ? '✓' : (res.level === 'risk' ? '⚠' : '✕');
-      var _cv = extraireVille(t.location || '');
       var _cl = res.msg || (res.level === 'ok' ? 'Conditions favorables' : 'Conditions à surveiller');
       chip.className = 'dj-w-chip ' + lvl;
       chip.innerHTML = '<span class="dj-w-chip-i">' + ico + '</span><span>' + esc(_cl) + '</span>';
@@ -7025,6 +7122,31 @@ async function _enrichJobsWithLocalWeather(tasks, dayIso) {
         var srcLabel = chip.parentElement.querySelector('.dj-wx-source');
         if (srcLabel) srcLabel.textContent = '📍 Météo ' + _prep + _cv;
       }
+      // Track worst
+      var rank = levelRank[res.level] || 0;
+      if (rank >= worstLevel) { worstLevel = rank; worstW = w; worstVille = _cv; }
+    }
+  }
+
+  // Update bottom météo section with worst chantier weather
+  if (worstW) {
+    var sec = document.getElementById('dd-worst-wx');
+    if (sec) {
+      var wSt = simpleStatus(worstW);
+      var _prep2 = worstVille && worstVille.match(/^[AEIOUÀÂÉÈÊËÎÏÔÙÛÜ]/i) ? "d'" : 'de ';
+      var wxLabel = worstVille ? ('Météo ' + _prep2 + worstVille) : 'Météo chantier';
+      sec.innerHTML = '<div class="dd-sec-head"><span class="dd-sec-eyebrow">' + wxLabel + '</span>'
+        + '<span class="status-pill ' + wSt.level + ' dd-w-pill"><span class="sp-icon">' + wSt.icon + '</span><span>' + wSt.label + '</span></span>'
+        + '</div>'
+        + '<div class="dd-w-card"><div class="dd-w-main">'
+        +   '<span class="dd-w-icon">' + wIcon(worstW.weathercode) + '</span>'
+        +   '<div class="dd-w-num"><div class="dd-w-temp">' + worstW.temp_max + '°<span class="dd-w-tmin"> / ' + worstW.temp_min + '°</span></div>'
+        +   '<div class="dd-w-label">' + wLabel(worstW.weathercode) + '</div></div></div>'
+        + '<div class="dd-w-stats">'
+        +   '<span class="dd-w-stat"><span class="dd-w-stat-i">💨</span>' + worstW.windspeed + ' km/h</span>'
+        +   '<span class="dd-w-stat"><span class="dd-w-stat-i">☔</span>' + worstW.rain_prob + '%</span>'
+        +   '<span class="dd-w-stat"><span class="dd-w-stat-i">💧</span>' + worstW.precipitation + ' mm</span>'
+        + '</div></div>';
     }
   }
 }
